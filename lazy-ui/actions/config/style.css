@@ -1,0 +1,30 @@
+/* config item */
+.download-item {
+	border:2px solid;
+	border-radius:40px;
+	padding: 15px;
+	margin: 25px;
+	position:relative;
+	font-size: 180%;
+	text-align: left;
+	overflow:hidden;
+}
+
+.download-item img {
+	margin-right: 10px;
+	margin-left: 5px;
+	width: 60px;
+}
+
+
+.download-item .left-col {
+	min-height: 45px;
+	vertical-align:text-top;
+	float: left;
+	width: 95px;
+}
+
+.smalltxt {
+	font-size: 60%;
+	padding: 20px;
+}
