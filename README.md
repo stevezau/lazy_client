@@ -1,7 +1,3 @@
-Lazy Download Manager.
-=====
-
-
 Project Lazy
 =====
 This is the backend command line for Lazy. 
