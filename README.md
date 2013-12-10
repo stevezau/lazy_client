@@ -1,4 +1,7 @@
-Steve
+Project Lazy
 =====
+This is the backend command line for Lazy. 
 
-Steve's Repo
+Project Lazy-UI
+=====
+This is the frontend php page for Lazy.
