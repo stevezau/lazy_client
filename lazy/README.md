@@ -5,16 +5,16 @@ Lazy is designed to run on a linux server. Theses steps are for Ubuntu.
 
 1. Install required packages
 
-  #sudo apt-get install unrar cksfv python-dev python-setuptools libxml2 libxml2-dev libxslt1.1 libxslt1-dev python-formencode lftp sqlite xinit libsqlite3-0 sqlite3 
+  sudo apt-get install unrar cksfv python-dev python-setuptools libxml2 libxml2-dev libxslt1.1 libxslt1-dev python-formencode lftp sqlite xinit libsqlite3-0 sqlite3 
 
 2. Install required python packages
 
-  #sudo easy_install flexget IMDBpy IPy pexpect easy_extract
+  sudo easy_install flexget IMDBpy IPy pexpect easy_extract
 
 
 3. Install lazy. Download the lazy egg.
 
-  #sudo easy_install lazy-x.egg
+  sudo easy_install lazy-x.egg
   
 
 Configuration of Lazy
