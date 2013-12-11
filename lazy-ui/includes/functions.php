@@ -163,7 +163,7 @@ function delete($path)
 				PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8',
 		);
 		
-		$xbmcdb = new PDO($dsn, $username, $password, $options);
+		//$xbmcdb = new PDO($dsn, $username, $password, $options);
 	
 	} catch(PDOException $e) {
 		// Print PDOException message
