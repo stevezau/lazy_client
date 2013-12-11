@@ -1,0 +1,57 @@
+This is to setup a frontend player (XBMC and Mythtv)
+====
+
+install EVRouter
+====
+wget http://debian.bedroomlan.org/debian/pool/main/e/evrouter/evrouter_0.4_amd64.deb
+sudo dpkg -i evrouter_0.4_amd64.deb 
+
+Install Mythtv
+====
+wget http://www.mythbuntu.org/files/mythbuntu-repos.deb
+sudo dpkg -i mythbuntu-repos.deb 
+sudo apt-get update
+sudo apt-get install mythtv-frontend mythtv-backend pwgen
+
+
+Install XBMC
+====
+sudo add-apt-repository ppa:team-xbmc/ppa
+sudo apt-add-repository ppa:nathan-renniewaldock/xbmc-stable
+sudo apt-get update
+sudo apt-get install xbmc01dF0I" name="00N30000001dF0I" tabindex="11"><option value="">--None--</option><option value="ACCOUNT - Deal Reviews">ACCOUNT - Deal Reviews</option><option value="ACCOUNT - Planning/Strategy">ACCOUNT - Planning/Strategy</option><option value="CLIENT - Conference Call">CLIENT - Conference Call</option><option value="CLIENT - EBC Visit">CLIENT - EBC Visit</option><option value="CLIENT – HVN">CLIENT – HVN</option><option value="CLIENT - Onsite Meeting">CLIENT - Onsite Meeting</option><option value="CLIENT - Prep/Follow Up">CLIENT - Prep/Follow Up</option><option value="CLIENT - RFP/RFI/RFx">CLIENT - RFP/RFI/RFx</option><option value="CLIENT - Services/HLD">CLIENT - Services/HLD</option><option value="CST - MVP/DVP">CST - MVP/DVP</option><option value="DEMO - Onsite">DEMO - Onsite</option><option value="DEMO - Web/Online">DEMO - Web/Online</option><option value="EDUCATION - Delivery">EDUCATION - Delivery</option><option value="EDUCATION - Development">EDUCATION - Development</option><option value="PARTNER - Enablement/Planning">PARTNER - Enablement/Planning</option><option value="PARTNER - Lab/Demo Support">PARTNER - Lab/Demo Support</option><option value="PARTNER - Onsite Meeting">PARTNER - Onsite Meeting</option><option value="PARTNER - Sales Training">PARTNER - Sales Training</option><option value="PARTNER - Technical Training">PARTNER - Technical Training</option><option value="POC - CTD/Web Trial">POC - CTD/Web Trial</option><option value="POC - Onsite Trial">POC - Onsite Trial</option><option value="POC - Prep/Planning">POC - Prep/Planning</option><option value="PRESALES - Coaching">PRESALES - Coaching</option><option value="PRESALES - Demo Creation">PRESALES - Demo Creation</option><option value="PRESALES - DOD/LOD Support">PRESALES - DOD/LOD Support</option><option value="PRESALES - Internal Meeting">PRESALES - Internal Meeting</option><option value="PRESALES - Professional Training">PRESALES - Professional Training</option><option value="PRESALES - Technical Training">PRESALES - Technical Training</option><option value="PRESALES – Testimonial">PRESALES – Testimonial</option><option value="PRESALES - Time Off">PRESALES - Time Off</option><option value="PRESALES - Tradeshow/Event">PRESALES - Tradeshow/Event</option><option value="PRESALES - Travel">PRESALES - Travel</option><option value="ROI - Initiation">ROI - Initiation</option><option value="ROI - Support">ROI - Support</option><option value="SERVICES - Billable">SERVICES - Billable</option><option value="SERVICES - Escalation">SERVICES - Escalation</option><option value="SUPPORT - Escalation">SUPPORT - Escalation</option><option value="SUPPORT - Onsite Meeting">SUPPORT - Onsite Meeting</option><option value="SUPPORT - Remediation">SUPPORT - Remediation</option></select>
+
+
+do hdd setup
+====
+mhddfs 
+
+Install Nvidia driver
+====
+download from net and install
+http://us.download.nvidia.com/XFree86/Linux-x86_64/295.59/NVIDIA-Linux-x86_64-295.59.run
+
+
+install xrdp and others 
+====
+sudo apt-get install xrdp mingetty screen vim phpmyadmin libapache2-mod-suphp suphp-common mysql-server
+
+
+Change /etc/init/tty1.conf
+====
+Comment out the existing exec command and put in
+exec /sbin/mingetty --autologin media tty1
+
+Change /etc/udev/rules.d/65-persistent-hauppauge.rules
+====
+SUBSYSTEM=="input", KERNEL=="event*", ATTRS{idVendor}=="2040", ATTRS{idProduct}=="8400", SYMLINK+="lirc0"
+
+Change /etc/udev/rules.d/99.input.rules
+====
+KERNEL=="event*",       NAME="input/%k", MODE:="660", GROUP="input"
+KERNEL=="js*",          NAME="input/%k", MODE:="664", GROUP="input"
+KERNEL=="rtc0", GROUP="audio"
+
+Final step to make sure its all up-to-date
+====
+sudo apt-get update && sudo apt-get upgrade
