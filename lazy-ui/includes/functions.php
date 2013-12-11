@@ -195,7 +195,7 @@ function delete($path)
 	{
 		$dir = trim($dir);
 		
-		$output = exec('du -sb ' . $dir);
+		$output = exec('du -sb "' . $dir . '"');
 
 		$filesize = (int) trim(str_replace($dir, '', $output));
 		
