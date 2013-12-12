@@ -35,7 +35,7 @@ function getApproved() {
 					
 				if (array_key_exists('posterImg', $tvdbRow)) {
 					if ($tvdbRow['posterImg'] != '') {
-						$img = "<img src='/images/downloaded/$show-tvdb.jpg'>";
+						$img = "<img src='images/downloaded/$show-tvdb.jpg'>";
 					}
 						
 				}						
@@ -57,7 +57,7 @@ function getApproved() {
 					
 							file_put_contents($imgFile, file_get_contents($posterurl));
 							chmod($imgFile, 0777);
-							$img = "<img src='/images/downloaded/$show-tvdb.jpg'>";
+							$img = "<img src='images/downloaded/$show-tvdb.jpg'>";
 							
 						}
 	
@@ -210,7 +210,7 @@ function addNewMapping() {
 		if (count($results) == 0) {
 			echo "<div class='left'><h3>No results found on thetvdb.com... try again</h3></div><div style='clear:both'></div>";
 			echo "<div>Search for the TVDBShow below or enter thetvdb.com show id which corrosponds to the title</div>
-			<form id='smapTitle' method='post' action='/index.php?action=config&t=addnewmapping'>
+			<form id='smapTitle' method='post' action='index.php?action=config&t=addnewmapping'>
 			<input type='text' name='tvdbsearch' size='21' maxlength='120'>
 			<input type='hidden' name='smapTitle' size='21' value='$smapTitle'>
 			<input type='submit' value='Search TVDB'>
@@ -257,7 +257,7 @@ function doIgnore() {
 	$html = '<h3>Ignore Downloads</h3>';
 	
 	echo "
-			<form id='addignore' method='post' action='/index.php?action=config&t=i'>
+			<form id='addignore' method='post' action='index.php?action=config&t=i'>
         		<input type='text' class='addignore' name='addignore' size='21' maxlength='120'><input type='submit' value='add' class='addignore'>
 			</form>";
 	
@@ -306,7 +306,7 @@ function getShowMappings() {
 			<div class='download-item'>
 				<div class='left-col'>
 					<div style='float:left'><input role='checkbox' type='checkbox' class='item_$tvdbID' name='item[]' value='$show'></div>
-					<div style='float:right'><img src='/images/downloaded/$tvdbID-tvdb.jpg'></div>
+					<div style='float:right'><img src='images/downloaded/$tvdbID-tvdb.jpg'></div>
 					<div style='clear:both'></div>
 				</div>
 				<div class='right-col'>Title: $show</div>

@@ -80,7 +80,7 @@ class action implements actionInterface {
 		
 		
 		$html .= "
-			<form id='search' method='post' action='/index.php?action=other&t=find'>
+			<form id='search' method='post' action='index.php?action=other&t=find'>
         		<input type='text' name='search' size='21' maxlength='120'><input type='submit' value='Search'>
 			</form>";
 		
@@ -134,7 +134,7 @@ class action implements actionInterface {
 		
 		#First lets get all the shows in TVShows folder
 		$html .= "
-			<form method='post' action='/index.php?action=other&t=getmissing'>
+			<form method='post' action='index.php?action=other&t=getmissing'>
 				<select name='getmissingShow'>
 					<option>Select TV Show</option>
 					$showOptions	
@@ -206,17 +206,16 @@ class action implements actionInterface {
 	function getSubMenu() {
 		echo '
 				<ul id="page-actions2">
-					<li><a href="/index.php?action=other&t=jobs">Jobs</a></li>
-					<li><a href="/index.php?action=other&t=getmissing">Find Missing TV</a></li>
-					<li><a href="/index.php?action=other&t=find">Manual Download</a></li>
-					<li><a href="/index.php?action=other&t=find">Manaul Find TV/Movie</a></li>
+					<li><a href="index.php?action=other&t=jobs">Jobs</a></li>
+					<li><a href="index.php?action=other&t=getmissing">Find Missing TV</a></li>
+					<li><a href="index.php?action=other&t=find">Manaul Find TV/Movie</a></li>
 				</ul>';
 	}
 	
 	function getHeader() {
 		echo '
-					<script src="/actions/other/other.js"></script>
-					<link rel="stylesheet" type="text/css" href="/actions/other/style.css">';
+					<script src="actions/other/other.js"></script>
+					<link rel="stylesheet" type="text/css" href="actions/other/style.css">';
 	}
 	
 }

@@ -17,12 +17,11 @@ $aClass = new action();
 ?>
 <html>
 <head>
-	<link rel="stylesheet" type="text/css" href="/style.css">
-	<script src="/jquery.js"></script>
-	<script src="/jquery-ui.js"></script>
-	<link rel="stylesheet" href="/jquery-ui-1.10.3.custom.css"/>
-	<script src="lazy.js"></script>
 	<link rel="stylesheet" type="text/css" href="style.css">
+	<script src="jquery.js"></script>
+	<script src="jquery-ui.js"></script>
+	<link rel="stylesheet" href="jquery-ui-1.10.3.custom.css"/>
+	<script src="lazy.js"></script>
 	<?php $aClass->getHeader() ?>
 </head>
 
@@ -31,7 +30,7 @@ $aClass = new action();
 		<h1>Steve's Media Manager</h1>
 		<div id="head-menu">
 			<ul>
-				<li><a href="/" title="">Home</a></li>
+				<li><a href="index.php?action=home" title="">Home</a></li>
 				<li><a href="index.php?action=downloads" title="">Downloads</a></li>
 				<li><a href="index.php?action=other" title="">Other</a></li>
 				<li><a href="index.php?action=config" title="">Config</a></li>

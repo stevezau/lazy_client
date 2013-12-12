@@ -136,12 +136,12 @@ class moveother:
                     try:
                         movetv.moveTV(dlItem, dstFolder)
                     except LazyError as e:
-                        logger.error("error moving %s due to %s" % (dlItem.localpath, e.msg))
+                        logger.error("error moving %s due to %s" % (dlItem.localpath, e.message))
                 
                 #MoveMovies
                 if re.match('(?i)(XVID|HD)', dlItem.section):
                     try:
                         movetv.moveTV(dlItem, dstFolder)
                     except LazyError as e:
-                        logger.error("error moving %s due to %s" % (dlItem.localpath, e.msg))
+                        logger.error("error moving %s due to %s" % (dlItem.localpath, e.message))
                 

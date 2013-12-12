@@ -29,7 +29,7 @@ class action implements actionInterface {
 		echo "<h2>Search for Shows</h2>";
 		
 		echo "
-				<form id='tvdbsearch' method='post' action='/index.php?action=config&t=addnew'>
+				<form id='tvdbsearch' method='post' action='index.php?action=config&t=addnew'>
 	        		<input type='text' class='tvdbsearch' name='tvdbsearch' size='21' maxlength='120'><input type='submit' value='search' class='tvdbsearch'>
 				</form>";
 		
@@ -52,14 +52,14 @@ class action implements actionInterface {
 			
 			$html .= "<div class='left'><h3>Select the correct show below that corrosponds to any shows with the title: $title</h3></div><div style='clear:both'></div>";
 			
-			$html .= "<div class='downloads' getType='addnewmapping' action='config' refresh='false' okPage='/index.php?action=config&t=smap' post='&smapTitle=$title&search=$search'></div>";
+			$html .= "<div class='downloads' getType='addnewmapping' action='config' refresh='false' okPage='index.php?action=config&t=smap' post='&smapTitle=$title&search=$search'></div>";
 			
 		} else if (array_key_exists('smapTitle', $_POST)) {
 			$title = htmlspecialchars($_POST['smapTitle'], ENT_QUOTES);
 						
 			$html .= "<div class='left'><h3>Mapping show $title</h3></div><div style='clear:both'></div>
 					  <div>Search for the TVDBShow below or enter thetvdb.com show id which corrosponds to the title</div>
-				<form id='smapTitle' method='post' action='/index.php?action=config&t=addnewmapping'>
+				<form id='smapTitle' method='post' action='index.php?action=config&t=addnewmapping'>
 					<input type='text' name='tvdbsearch' size='21' maxlength='120'>
 					<input type='hidden' name='smapTitle' size='21' maxlength='120' value='$title'>
 					<input type='submit' value='Search TVDB'>
@@ -68,7 +68,7 @@ class action implements actionInterface {
 			$html .= "<div class='left'><h3>Enter the title you want to map</h3></div>
 					<div style='clear:both'></div>
 					<div>
-						<form id='smapTitle' method='post' action='/index.php?action=config&t=addnewmapping'>
+						<form id='smapTitle' method='post' action='index.php?action=config&t=addnewmapping'>
 	        			<input type='text' name='smapTitle' size='21' maxlength='120'><input type='submit' value='Submit Title' class='smapTitle'>
 						</form>
 					</div>";
@@ -108,7 +108,7 @@ class action implements actionInterface {
 		echo "<h2>Add show manually</h2>";
 		
 		echo "
-				<form id='manualshow' method='post' action='/index.php?action=config&t=manual'>
+				<form id='manualshow' method='post' action='index.php?action=config&t=manual'>
 	        		<input type='text' class='manualshow' name='manualshow' size='21' maxlength='120'><input type='submit' value='add' class='manualshow'>
 				</form>";
 		
@@ -182,15 +182,15 @@ class action implements actionInterface {
 	function getSubMenu() {
 			echo '
 				<ul id="page-actions2">
-					<li><a href="/index.php?action=config&t=g">General</a></li>
-					<li><a href="/index.php?action=config&t=a">Approved Shows</a></li>
-					<li><a href="/index.php?action=config&t=i">Ignore Shows</a></li>
-					<li><a href="/index.php?action=config&t=smap">Manual Show Mapping</a></li>
+					<li><a href="index.php?action=config&t=g">General</a></li>
+					<li><a href="index.php?action=config&t=a">Approved Shows</a></li>
+					<li><a href="index.php?action=config&t=i">Ignore Shows</a></li>
+					<li><a href="index.php?action=config&t=smap">Manual Show Mapping</a></li>
 				</ul>';
 	}
 	
 	function getHeader() {
-		echo '<link rel="stylesheet" href="/actions/config/style.css"/>';
+		echo '<link rel="stylesheet" href="actions/config/style.css"/>';
 		
 	}
 	

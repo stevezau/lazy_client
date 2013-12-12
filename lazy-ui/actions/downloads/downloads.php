@@ -127,11 +127,11 @@
 		function getSubMenu() {
 			echo '
 				<ul id="page-actions2">
-					<li><a href="/index.php?action=downloads&t=d">Downloading</a></li>
-					<li><a href="/index.php?action=downloads&t=q">Queue</a></li>
-					<li><a href="/index.php?action=downloads&t=p">Pending Approval</a></li>
-					<li><a href="/index.php?action=downloads&t=e">Errors</a></li>
-					<li><a href="/index.php?action=downloads&t=a">Recent</a></li>
+					<li><a href="index.php?action=downloads&t=d">Downloading</a></li>
+					<li><a href="index.php?action=downloads&t=q">Queue</a></li>
+					<li><a href="index.php?action=downloads&t=p">Pending Approval</a></li>
+					<li><a href="index.php?action=downloads&t=e">Errors</a></li>
+					<li><a href="index.php?action=downloads&t=a">Recent</a></li>
 				</ul>';
 		}
 		

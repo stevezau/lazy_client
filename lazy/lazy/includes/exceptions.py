@@ -32,5 +32,5 @@ class FTPError(Error):
 
 
 
-    def __init__(self, msg):
-        self.msg = msg
+    def __init__(self, message):
+        self.message = message

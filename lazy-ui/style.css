@@ -6,6 +6,7 @@
 	
 }
 
+
 .stat {
 	margin: 10px 5px 10px 5px;
 	height: 80px;
@@ -85,7 +86,7 @@ h3 {
 }
 
 #head-menu {
-	background:transparent url(/images/tabs-border-bottom.png) 0 100% repeat-x;
+	background:transparent url(images/tabs-border-bottom.png) 0 100% repeat-x;
 	width:100%;
 	float:left;
 	margin:0;
@@ -115,7 +116,7 @@ h3 {
 	float:left;
 	text-decoration:none;
 	color:#555;
-	background:#eaeaea url(/images/tab-background.png) 0 100% repeat-x;
+	background:#eaeaea url(images/tab-background.png) 0 100% repeat-x;
 	padding:3px 7px 3px 7px;
 	border:2px solid #ccc;
 	border-bottom:0px solid transparent;
@@ -290,8 +291,8 @@ ul#page-actions-more a:hover, ul#page-actions-more a:focus{
     width: 100%;
 }
 
-a.button {
-    background: transparent url('/images/bg_button_a.gif') no-repeat scroll top right;
+div.button {
+    background: transparent url('images/bg_button_a.gif') no-repeat scroll top right;
     color: #444;
     display: block;
     float: left;
@@ -302,8 +303,8 @@ a.button {
     text-decoration: none;
 }
 
-a.button span {
-    background: transparent url('/images/bg_button_span.gif') no-repeat;
+div.button span {
+    background: transparent url('images/bg_button_span.gif') no-repeat;
     display: block;
     line-height: 14px;
     padding: 5px 0 5px 18px;

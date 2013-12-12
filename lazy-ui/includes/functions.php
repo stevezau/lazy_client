@@ -39,22 +39,68 @@ class configMgr
 	static function loadConfig($file) {
 		self::$configFile = new Config_Lite($file);
 
+		self::$lazy_home = self::ckConfigItem('general', 'lazy_home');
+		
+		if (!is_dir(self::$lazy_home)) {
+			exit("Lazy Home does not exist: " . self::$lazy_home);
+		}
+		
+		self::$lazy_exec = self::ckConfigItem('general', 'lazy_exec');
+		
+		if (!is_file(self::$lazy_exec)) {
+			exit("Lazy Exec does not exist: " . self::$lazy_exec);
+		}
+
+		self::$lftpPath = self::ckConfigItem('general', 'lftp');
+		
+		if (!is_file(self::$lftpPath)) {
+			exit("LFTP exec location in correct or not installed.. check it exists: " . self::$lftpPath);
+		}
+		
+		self::$ftpHost = self::ckConfigItem('ftp', 'ftp_ip');
+		self::$ftpPort = self::ckConfigItem('ftp', 'ftp_port');
+		self::$ftpUserName = self::ckConfigItem('ftp', 'ftp_user');
+		self::$ftpPwd = self::ckConfigItem('ftp', 'ftp_pass');
+		
+		
+		self::$ignore_file = self::ckConfigItem('general', 'ignore_file');
+		
+		if (!is_file(self::$ignore_file)) {
+			exit("Ignore file does not exist: " . self::$ignore_file);
+		}
+		
+		self::$approved_file = self::ckConfigItem('general', 'approved_file');
+		
+		if (!is_file(self::$approved_file)) {
+			exit("Approved file does not exist: " . self::$approved_file);
+		}
+		
+		self::$download_images = self::ckConfigItem('general', 'download_images');
+		
+		if (!is_dir(self::$download_images)) {
+			exit("Download Images folder does does not exist: " . self::$download_images);
+		}
+		
+		self::$tvshowsPath = self::ckConfigItem('sections', 'TV');
+		self::$showMappings = self::ckConfigItem('TVShowID');
+		self::$tvdbAccountID = self::ckConfigItem('general', 'tvdb_accountid');
+
+	}
+	
+	static private function ckConfigItem($section, $var = null) {
+		try {
+			if (isset($var)) {
+				return self::$configFile->get($section, $var);
+			} else {
+				return self::$configFile->get($section);
+			}
 			
-		self::$lazy_home = self::$configFile['general']['lazy_home'];
-		self::$lazy_exec = self::$configFile['general']['lazy_exec'];
-
-		self::$lftpPath = self::$configFile['general']['lftp'];
-		self::$ftpHost = self::$configFile['ftp']['ftp_ip'];
-		self::$ftpPort = self::$configFile['ftp']['ftp_port'];
-		self::$ftpUserName = self::$configFile['ftp']['ftp_user'];
-		self::$ftpPwd = self::$configFile['ftp']['ftp_pass'];
-		self::$ignore_file = self::$configFile['general']['ignore_file'];
-		self::$approved_file = self::$configFile['general']['approved_file'];
-		self::$download_images = self::$configFile['general']['download_images'];
-		self::$tvshowsPath = self::$configFile['sections']['TV'];
-		self::$showMappings = self::$configFile['TVShowID'];
-		self::$tvdbAccountID = self::$configFile['general']['tvdb_accountid'];
-
+		} catch (Config_Lite_Exception_UnexpectedValue $e) {
+			exit("<div class='error'>Error loading config item $var, please fix it!</div>");		
+		} catch (Config_Lite_Exception_Runtime $e) {
+			exit("<div class='error'>Error loading config item $var, please fix it!</div>");
+		}
+		
 	}
 
 	static function toHTML() {
@@ -84,7 +130,9 @@ function execInBackground($cmd) {
 		pclose(popen("start /B ". $cmd, "r"));
 	}
 	else {
-		exec($cmd . " > /dev/null &");
+		print "test";
+		print exec($cmd . " >> /tmp/test &");
+		print "test222";
 	}
 }
 
@@ -96,7 +144,14 @@ function createButtons($buttons) {
 	foreach ($buttons as $button) {
 		$class = $button['class'];
 		$name = $button['name'];
-		$buttonsHTML .= "<a class='button' href=''><span class='$class'>$name</span></a>";
+		
+		$other = '';
+		
+		if (array_key_exists('other', $button)) {
+			$other = $button['other'];
+		}
+		
+		$buttonsHTML .= "<div style='cursor:pointer' class='button' $other><span class='$class'>$name</span></div>";
 	}
 		
 	$buttonsHTML .= '</div></div>';

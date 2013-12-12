@@ -36,16 +36,19 @@ def main():
         parser.print_help()
         sys.exit(1)
 
-    manager = Manager(mainArgs)
-
     #Now check if compoment exists
     try:
+        manager = Manager(mainArgs)
         logger.debug("trying to load module: " + action)
         module = __import__('actions.' + action, globals(), locals(), [action])
         actionClass = getattr(module, action)
         logger.debug("Loaded module: " + action)
+    except (LazyError) as e:
+        logger.exception(e)
+        sys.exit(e.id)
     except (ImportError, AttributeError) as e:
         logger.exception(e)
+        logger.error(e.message)
         sys.exit(1)
 
     # Setup action object and check parms
@@ -57,4 +60,5 @@ def main():
         actionObj.execute()
         functions.removePidFile(action)
     except LazyError as e:
-        sys.exit(1)
+        logger.error(e.message)
+        sys.exit(e.id)

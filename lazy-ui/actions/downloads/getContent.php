@@ -148,7 +148,7 @@ function buildDiv($array) {
 			if (array_key_exists('posterImg', $imdbRow)) {
 			
 				if ($imdbRow['posterImg'] != '') {
-					$img = "<img src='/images/downloaded/$imdbid.jpg'>";
+					$img = "<img src='images/downloaded/$imdbid.jpg'>";
 				}
 			}
 						
@@ -192,7 +192,7 @@ function buildDiv($array) {
 			if ($img == '') {
 				if (array_key_exists('posterImg', $tvdbRow)) {
 					if ($tvdbRow['posterImg'] != '') {
-						$img = "<img src='/images/downloaded/$tvdbid-tvdb.jpg'>";
+						$img = "<img src='images/downloaded/$tvdbid-tvdb.jpg'>";
 					}
 					
 				}
@@ -239,7 +239,7 @@ function buildDiv($array) {
 	}
 	
 	if ($img == '') {
-		$img = "<img src='/images/noimg.gif'>";
+		$img = "<img src='images/noimg.gif'>";
 	}
 				
 	if ($count == 1) {

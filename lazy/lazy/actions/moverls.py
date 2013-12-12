@@ -78,9 +78,9 @@ class moverls:
                     if e.id == 2:
                         dlItem.status = DownloadItem.DOWNLOAD_NEW
                     dlItem.retries += 1
-                    dlItem.message = e.msg
+                    dlItem.message = e.message
                     session.commit()
-                    logger.error("error moving %s due to %s" % (dlItem.localpath, e.msg))
+                    logger.error("error moving %s due to %s" % (dlItem.localpath, e.message))
             elif re.match('(?i)(TV|TVHD)', dlItem.section):
                 try:
                     movetv.moveTV(dlItem, dstFolder)
@@ -91,9 +91,9 @@ class moverls:
                     if e.id == 2:
                         dlItem.status = DownloadItem.DOWNLOAD_NEW
                     dlItem.retries += 1
-                    dlItem.message = e.msg
+                    dlItem.message = e.message
                     session.commit()
-                    logger.error("error moving %s due to %s" % (dlItem.localpath, e.msg))
+                    logger.error("error moving %s due to %s" % (dlItem.localpath, e.message))
             else:
                 logger.error("Cannot figure out what type of thing this is..")
             

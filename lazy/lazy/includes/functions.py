@@ -184,7 +184,7 @@ def error_handler(reason):
     logger.error(reason)
     raise LazyError(reason)
 
-def raiseError(logObj , reason, id = 0):
+def raiseError(logObj, reason, id = 0):
     logObj.exception(reason)
     raise LazyError(reason, id)
 
@@ -243,7 +243,7 @@ def moveFile(src, dst, checkExisting = False):
 
 def getSeriesInfo(title):
     seriesInfo = MetainfoSeries()
-    parser = seriesInfo.guess_series(title, True)
+    parser = seriesInfo.guess_series(title, allow_seasonless=True)
 
     return parser
 

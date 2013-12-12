@@ -21,6 +21,20 @@ global config
 
 
 class Manager(object):
+
+    lazy_home = None
+    lftpPath = None
+    ftpHost = None
+    ftpUserName = None
+    ftpPwd = None
+    ftpPort = None
+    lazy_exec = None
+    ignore_file = None
+    download_images = None
+    approved_file = None
+    tvshowsPath = None
+    showMappings = None
+    tvdbAccountID = None
     
     mainArgs = None
 
@@ -33,7 +47,6 @@ class Manager(object):
 
         self.setupLogging()
         self.setupConfig()
-        self.lazyPath = config.get("general", "lazy_home")
 
         self.setupDB()
 
@@ -47,7 +60,7 @@ class Manager(object):
         except NoOptionError:
             pass
 
-        dbFile = os.path.join(self.lazyPath, 'lazy.db')
+        dbFile = os.path.join(self.lazy_home, 'lazy.db')
 
         dbFile = os.path.expanduser(dbFile)
         dbFile = os.path.abspath(dbFile)
@@ -96,23 +109,69 @@ class Manager(object):
         global manager
         manager = None
 
+    def ckConfigItem(self, section, var):
+        logger.debug("Checking config item %s" % var)
+        configItem = config.get(section, var)
+
+        if configItem is None or configItem == '':
+            functions.raiseError(logger, "Config item is missing %s" % var)
+
+        return configItem
+
     def setupConfig(self):
         global config
 
-        
         # Load Lazy Manager
         if self.mainArgs.configFile:
             confFile = self.mainArgs.configFile
         else:
             confFile = os.path.expanduser('~/.lazy/config.cfg')
 
+        if not os.path.isfile(confFile):
+            functions.raiseError(logger, "Config file does not exist: %s" % confFile)
+
         config = simpleconfigparser()
 
         config.readfp(open(confFile))
-        
-        # read the ftp configurations for all sites
-        #ftp_site = 1
-        #while config.has_section("ftp" + str(ftp_site)):
-        #    print "ftp%s settings" % str(ftp_site)
-        #    print config.items("ftp" + str(ftp_site))
-        #    ftp_site += 1
+
+
+        self.lazy_home = self.ckConfigItem('general', 'lazy_home')
+
+        if not os.path.isdir(self.lazy_home):
+            functions.raiseError(logger, "Lazy Home does not exist: %s" % self.lazy_home)
+
+        self.lazy_exec = self.ckConfigItem('general', 'lazy_exec')
+
+        if not os.path.isfile(self.lazy_exec):
+            functions.raiseError(logger, "Lazy Exec does not exist: %s" % self.lazy_exec)
+
+        self.lftpPath = self.ckConfigItem('general', 'lftp')
+
+        if not os.path.isfile(self.lftpPath):
+            functions.raiseError(logger, "LFTP exec location in correct or not installed.. check it exists: " . self.lftpPath)
+
+        self.ftpHost = self.ckConfigItem('ftp', 'ftp_ip')
+        self.ftpPort = self.ckConfigItem('ftp', 'ftp_port')
+        self.ftpUserName = self.ckConfigItem('ftp', 'ftp_user')
+        self.ftpPwd = self.ckConfigItem('ftp', 'ftp_pass')
+
+        self.ignore_file = self.ckConfigItem('general', 'ignore_file')
+
+        if not os.path.isfile(self.ignore_file):
+            functions.raiseError(logger, "Ignore file does not exist: %s" % self.ignore_file)
+
+        self.approved_file = self.ckConfigItem('general', 'approved_file')
+
+        if not os.path.isfile(self.approved_file):
+            functions.raiseError(logger, "Approved file does not exist: %s" % self.approved_file)
+
+        self.download_images = self.ckConfigItem('general', 'download_images')
+
+        if not os.path.isdir(self.download_images):
+            functions.raiseError(logger, "Download Images folder does does not exist: " . self.download_images)
+
+        self.tvshowsPath = self.ckConfigItem('sections', 'TV')
+
+        self.tvdbAccountID = self.ckConfigItem('general', 'tvdb_accountid')
+
+        self.showMappings = config.items('TVShowID')

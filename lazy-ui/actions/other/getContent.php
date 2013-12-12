@@ -591,9 +591,9 @@ function doJobs() {
 		
 		if(array_key_exists('status', $row)) {
 			if ($row['status'] == 1) {
-				$status = "<div class='overview green'>(Job Finished)<br><a href='/index.php?action=other&t=getreport&id=$id'><span>Open</span></a></div>";
+				$status = "<div class='overview green'>(Job Finished)<br><a href='index.php?action=other&t=getreport&id=$id'><span>Open</span></a></div>";
 			} else {
-				$status = "<div class='overview green'>(Job Still Running)<br><a href='/index.php?action=other&t=getreport&id=$id'><span>Open</span></a></div>";
+				$status = "<div class='overview green'>(Job Still Running)<br><a href='index.php?action=other&t=getreport&id=$id'><span>Open</span></a></div>";
 			}
 		}
 		

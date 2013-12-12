@@ -64,7 +64,7 @@ def moveMovie(dlItem, dstFolder):
 
                         moveMovie(newDLItem, dstFolder)
                     except LazyError as e:
-                        functions.raiseError(logger, 'some error ' + e.msg)
+                        functions.raiseError(logger, 'some error ' + e.message)
                 else:
                     #If its small its prob an nfo so ignore
                     size = os.path.getsize(filePath)

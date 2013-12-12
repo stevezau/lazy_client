@@ -129,11 +129,11 @@ $( document ).ready(function() {
 				get += "&id[]=" + txt;
 		
 		    });
-			window.location = '/index.php?action=' + action + '&t=' + pgname + get;
+			window.location = 'index.php?action=' + action + '&t=' + pgname + get;
 			return;
 		}
 
-		$.post("/actions/" + action + "/update.php?action=" + name,formdata).done(function(data){
+		$.post("actions/" + action + "/update.php?action=" + name,formdata).done(function(data){
 			
 			if (refresh != 'false') {
 				getContent();
@@ -152,7 +152,7 @@ $( document ).ready(function() {
 			      width: 700,
 			      modal: true,
 			      resize: "auto",
-
+			     
 			      buttons: {
 			          Ok: function() {
 				    	  	if (okPage == undefined) {
@@ -161,11 +161,11 @@ $( document ).ready(function() {
 				    	  		window.location.href = okPage;
 				    	  		
 				    	  	}
+				    	  	$(window).scrollTop(0);
 			          }
 			        }
 			    });
-				
-			
+
 		});
 		return false;
 	});
