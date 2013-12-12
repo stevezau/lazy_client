@@ -45,8 +45,11 @@ Setup Conjobs
 The follow cronjobs are required. Make sure you edit the paths to reflect your server.
 
 */15 * * * * /usr/local/bin/flexget --cron -c /home/media/.flexget/config-xvid.yml
+
 */15 * * * * /usr/local/bin/flexget --cron --disable-advancement
+
 */2 * * * * /usr/local/bin/lazy queuemanager -q update &> /dev/null
+
 */10 * * * * /usr/local/bin/lazy moverls &> /dev/null
 
 
