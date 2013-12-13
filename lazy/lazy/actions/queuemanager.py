@@ -144,20 +144,22 @@ class queuemanager:
                         session.commit()
                     else:
                         #Didnt finish properly
-                        if dlItem.retries > 200:
+                        if dlItem.retries > 10:
                             #Failed download
                             #TODO: Notify
                             logger.info("%s didn't download properly after 10 retries" % dlItem.path)
-                            dlItem.message = "didn't download properly after 10 retries"
-                            session.commit()                            
+                            dlItem.message = "didn't download properly after 10 retries, stopping download"
+                            dlItem.status = DownloadItem.DOWNLOAD_FAILED
+                            session.commit()
                         else:
-                            #Lets kick it off again
+                            #Didnt download properly, put it back in the queue and let others try download first.
                             logger.info("%s didn't download properly, trying again" % dlItem.path)
                             
                             dlItem.retries += 1
-                                                 
-                            dlItem.lftppid = ftpManager.mirror(dlItem.localpath, dlItem.path, dlItem.id)
+                            dlItem.message = "Failed Download, will try again (Retry Count: %s)" % dlItem.retries
+                            dlItem.status = DownloadItem.DOWNLOAD_NEW
                             dlItem.dlstart = datetime.now()
+
                             session.commit()
                 else:
                     #Lets make sure the job has not been running for over x hours
@@ -165,7 +167,7 @@ class queuemanager:
                     diff = curTime - dlItem.dlstart
                     hours =  diff.seconds / 60 / 60
                     if hours > 8:
-                        logger.info("Job as has been running for over 5hours, killing job and setting to retry: %s" % dlItem.path)
+                        logger.info("Job as has been running for over 8 hours, killing job and setting to retry: %s" % dlItem.path)
                         dlItem.retries += 1
                         FTPManager.stopJob(dlItem.lftppid)
                         session.commit()
@@ -176,7 +178,7 @@ class queuemanager:
             count = query.count()
             
             startnew = self.__maxlftp - count 
-            logger.info("Starting %s new jobs" % startnew)
+            logger.info("Going to try start %s new jobs" % startnew)
             
             #If jobs running is smaller then the config then start new jobs
             if (startnew > 0):
@@ -193,17 +195,26 @@ class queuemanager:
                 for dlItem in results:
                     
                     if (count < startnew):
+
+                        if dlItem.dlstart:
+                            curTime = datetime.now()
+                            diff = curTime - dlItem.dlstart
+                            minutes = diff.seconds / 60
+
+                            if minutes < 20:
+                                logger.info("skipping job as it was just retired: %s" % dlItem.title)
+                                continue
+
                         logger.info("Starting job: %s" % dlItem.path)
 
                         if (dlItem.retries > 10):
                             logger.info("Job hit too many retires, setting to failed")
-                            #dlItem.status = DownloadItem.DOWNLOAD_FAILED
-                            #session.commit()
+                            dlItem.status = DownloadItem.DOWNLOAD_FAILED
+                            session.commit()
 
                         remotesize = False
 
                         try:
-
                             if dlItem.getEps and dlItem.getEps != '':
                                 #we dont want to get everything.. lets figure this out
                                 downloadEps = self.getEps(dlItem)

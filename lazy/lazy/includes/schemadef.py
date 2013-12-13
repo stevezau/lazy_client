@@ -29,8 +29,8 @@ class DownloadItem(Base):
     DOWNLOAD_STARTED = 2
     DOWNLOAD_MOVE = 3
     DOWNLOAD_COMPLETE = 4
-    DOWNLOAD_WAITING = 5
     DOWNLOAD_PENDING = 6
+    DOWNLOAD_FAILED = 5
 
     __tablename__ = 'download'
     
