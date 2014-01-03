@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/lazy-mobile.css" />
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/jquery-ui.css" />
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/jquery-mobile.css" />
+    <script src="{{ STATIC_URL }}js/jquery.js"></script>
+    <script src="{{ STATIC_URL }}js/jquery-ui.js"></script>
+    <script src="{{ STATIC_URL }}js/lazy-mobile.js"></script>
+    <script src="{{ STATIC_URL }}js/jquery.mobile.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <title>{% block title %}Download Manager{% endblock %}</title>
+</head>
+
+
+<body>
+<div data-role="page">
+    <div data-role="header">
+        <a href="#popupNested" data-rel="popup" data-role="button" data-inline="true" data-icon="bars" data-theme="b" data-transition="pop">Menu</a>
+        <div data-role="popup" id="popupNested" data-theme="none">
+            <div data-role="collapsible-set" data-theme="b" data-content-theme="c" data-collapsed-icon="arrow-r" data-expanded-icon="arrow-d" style="margin:0; width:250px;">
+                {% load sitetree %}
+                {% sitetree_menu from "lazymenu" include "trunk"  template "mobile/headermenu.html" %}
+            </div><!-- /collapsible set -->
+        </div><!-- /popup -->
+    </div>
+
+    <div data-role="content" id="content">
+        {% block content %}{% endblock %}
+    </div>
+
+    <div data-role="footer">
+        <ul>
+            <li><a href="?flavour=full">Get the full experience</a>
+            <li><a href="?flavour=mobile">View our mobile version</a>
+            <li><a href="?flavour=ipad">View our iPad version</a>
+        </ul>
+    </div>
+</div>
+
+</body>
+</html>

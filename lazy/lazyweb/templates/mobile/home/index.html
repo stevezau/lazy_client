@@ -1,0 +1,31 @@
+{% extends "mobile/base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+    <h3>Media Server Status</h3>
+
+    <div class='stats'>
+        <div class='left'>
+            <div class='stat'><a href='{% url 'downloads.index' 'downloading' %}'><img src='{{ STATIC_URL }}images/icons/download.jpg'></a>Downloading <strong>{{ downloading }}</strong> items</div>
+            <div style='clear:both'></div>
+            <div class='stat'><a href='{% url 'downloads.index' 'queue' %}'><img src='{{ STATIC_URL }}images/icons/download_queue.jpg'></a>Queue <strong>{{ queue }}</strong> items</div>
+            <div style='clear:both'></div>
+            <div class='stat'><a href='{% url 'downloads.index' 'pending' %}'><img src='{{ STATIC_URL }}images/icons/approval.jpg'></a>Waiting Approval (Pending) <strong>{{ pending }}</strong></div>
+            <div style='clear:both'></div>
+        </div>
+        <div class='right'>
+            <div class='stat'>
+                    <div class='progressbar_10'></div>
+                    <div class='middle'><strong>{{ percentUsed }}% Used ({{ gbFree }} GB Free)</strong></div>
+                <script>doReverseProgressbar(10, {{ percentUsed }})</script>
+            </div>
+            <div style='clear:both'></div>
+            <div class='stat'><img src='{{ STATIC_URL }}images/icons/extracting.png'>Extracting <strong>{{ extracting }}</strong></div>
+            <div style='clear:both'></div>
+            <div class='stat'><a href='{% url 'downloads.index' 'error' %}'><img src='{{ STATIC_URL }}images/icons/error.jpg'></a>Errors: <strong>{{ errors }}</strong></div>
+            <div style='clear:both'></div>
+        </div>
+    </div>
+
+{% endblock %}

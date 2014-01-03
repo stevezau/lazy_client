@@ -1,0 +1,54 @@
+<div class='download-item'>
+    <div class='left-col'>
+        <div style='float:left'><input role='checkbox' type='checkbox' class='multiitem_{{ downloadgroup.grouper.title }}' name='multiitem_{{ downloadgroup.grouper.title }}'></div>
+        <div style='float:right'>
+            {% if downloadgroup.grouper.posterimg %}
+               <img src="{{ downloadgroup.grouper.posterimg.url }}">
+            {% else %}
+                    <img src="{{ STATIC_URL }}images/noimg.gif">
+            {% endif %}
+        </div>
+        <div style='clear:both'></div>
+    </div>
+    <div class='right-col'>
+        <b>Title:</b> {{ downloadgroup.grouper.title }} {% if downloadgroup.grouper.imdbid.year %}<b>{{ downloadgroup.grouper.imdbid.year }}</b>{% endif %}
+
+        {% if downloadgroup.grouper.imdbid.score %}
+            <br><b>Score:</b> {{ downloadgroup.grouper.imdbid.score }} {% if downloadgroup.grouper.imdbid.votes %}({{ downloadgroup.grouper.imdbid.votes }} votes){% endif %}
+        {% endif %}
+
+
+        {% if downloadgroup.grouper.genres %}
+            <br><b>Genre:</b> {{ downloadgroup.grouper.genres }}
+        {% else %}
+            {% if downloadgroup.grouper.imdbid.genres %}
+                   <br><b>Genre:</b> {{ downloadgroup.grouper.imdbid.genres }}
+            {% endif %}
+        {% endif %}
+
+        {% if downloadgroup.grouper.networks %}
+            <br><b>Networks:</b> {{ downloadgroup.grouper.networks }}
+        {% endif %}
+
+        <p>
+            {% if downloadgroup.grouper.description %}
+               {{ downloadgroup.grouper.description }}
+            {% else %}
+                {% if downloadgroup.grouper.imdbid.description %}
+                       {{ downloadgroup.grouper.imdbid.description }}
+                {% endif %}
+            {% endif %}
+        </p>
+
+        <div class="multi-items">
+            <b>Episodes to download</b>
+            {% for download in downloadgroup.list %}
+                <div class="download-item-small">
+					<span class="inner"><input role="checkbox" type="checkbox" class="item_{{ download.id }}" name="item" value="{{ download.id }}">{{ download.title }}</span>
+				</div>
+            {% endfor %}
+        </div>
+
+    </div>
+</div>
+<div style='clear: both;'></div>

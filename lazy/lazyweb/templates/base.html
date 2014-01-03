@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/lazy.css" />
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/jquery-ui.css" />
+    <script src="{{ STATIC_URL }}js/jquery.js"></script>
+    <script src="{{ STATIC_URL }}js/jquery-ui.js"></script>
+    <script src="{{ STATIC_URL }}js/lazy.js"></script>
+
+    <title>{% block title %}Download Manager{% endblock %}</title>
+</head>
+
+<body>
+{% include "header.html" %}
+{% block submenu %}{% endblock %}
+<br><br>
+<div id="body-wrapper">
+		<div id="content" lang="en" dir="ltr">
+			<div id="loading" style='display:none'>
+				<div id="floatingBarsG">
+					<div class="blockG" id="rotateG_01"></div>
+					<div class="blockG" id="rotateG_02"></div>
+					<div class="blockG" id="rotateG_03"></div>
+					<div class="blockG" id="rotateG_04"></div>
+					<div class="blockG" id="rotateG_05"></div>
+					<div class="blockG" id="rotateG_06"></div>
+					<div class="blockG" id="rotateG_07"></div>
+					<div class="blockG" id="rotateG_08"></div>
+				</div>
+				Loading...
+			</div>
+		</div>
+
+    <div id="content">
+        {% block content %}{% endblock %}
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load sitetree %}
+
+{% block title %}{{ type }}{% endblock %}
+{% block submenu %}
+    {% sitetree_menu from "lazymenu" include "downloads" template "headersubmenu.html" %}
+{% endblock %}
+
+{% block content %}
+    <h1>Manual Override</h1>
+
+    {% if object_list|length > 0 %}
+        <form id="formID" action="" method="post">
+        {% csrf_token %}
+        {% for download in object_list %}
+            <div class='download-item'>
+                <div class='left'>{{ download.title }}</div>
+                <div class='right'>
+                    <select class="season-select" id="{{ download.tvdbid_id }}" name="{{ download.id }}">
+                        <option>Select Season</option>
+                        {% for season_no in download.tvdbid.get_seasons %}
+                            <option value='ses~{{ season_no }}'>Season {{ season_no }}</option>
+                        {% endfor %}
+                    </select>
+                    <select class="ep-select" name="{{ download.id }}"></select>
+                </div>
+            </div>
+        {% endfor %}
+        <div class="middle"><input type="submit" value="Save"></div>
+
+        </form>
+    {% else %}
+        <h3>No more shows to process. Back to <a href="{% url "downloads.index" "error" %}">errors</a></h3>
+    {% endif %}
+
+{% endblock %}

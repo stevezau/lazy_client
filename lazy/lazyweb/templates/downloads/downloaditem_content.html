@@ -1,0 +1,29 @@
+{% if object_list.count > 0 %}
+
+    <div class="middle pad10">Found {{ object_list.count }}</div>
+
+    <form id="formID">
+    {% csrf_token %}
+
+    {% if doregroup %}
+        {% regroup object_list_regroup by tvdbid as object_list_grouped %}
+
+        {% for downloadgroup in object_list_grouped %}
+            {% with count=downloadgroup.list|length %}
+                {%  if downloadgroup.grouper == None or count == 1%}
+                    {% for download in downloadgroup.list %}
+                        {% include "downloads/downloaditem_detail.html" %}
+                    {% endfor %}
+                {% else %}
+                    {% include "downloads/downloaditem_group.html" %}
+                {% endif %}
+            {% endwith %}
+        {%  endfor %}
+    {% else %}
+        {% for download in object_list %}
+            {% include "downloads/downloaditem_detail.html" %}
+        {% endfor %}
+   {% endif %}
+{% else %}
+    <div class="middle pad10">No items found with status of {{ type }}</div>
+{% endif %}

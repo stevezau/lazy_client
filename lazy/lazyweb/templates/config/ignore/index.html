@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% load sitetree %}
+
+{% block title %}{{ type }}{% endblock %}
+{% block submenu %}
+    {% sitetree_menu from "lazymenu" include "config" template "headersubmenu.html" %}
+{% endblock %}
+
+{% block content %}
+    <h1>{{ type|title }}</h1>
+    {% sitetree_menu from "lazymenu" include "this-children" template "buttons.html" %}
+    <div class='downloads' action='{% url 'config.ignore.list' %}'></div>
+    {% sitetree_menu from "lazymenu" include "this-children" template "buttons.html" %}
+{% endblock %}

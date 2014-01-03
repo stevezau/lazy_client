@@ -1,0 +1,29 @@
+{% if object_list.count > 0 %}
+
+    <div class="middle pad10">Found {{ object_list.count }} Mappings</div>
+
+    <form id="formID">
+    {% csrf_token %}
+
+    {% for tvmap in object_list %}
+        <div class="config-item selectable">
+				<div class="left-col">
+					<div style="float:left"><input role="checkbox" type="checkbox" class="item_{{ tvmap.id }}" name="item" value="{{ tvmap.id }}"></div>
+                    {% if tvmap.tvdbid.posterimg %}
+                        <div style="float:right"><img src="{{ tvmap.tvdbid.posterimg.url }}"></div>
+                    {% else %}
+                        <div style="float:right"><img src="{{ STATIC_URL }}images/noimg.gif"></div>
+                    {% endif %}
+
+					<div style="clear:both"></div>
+				</div>
+				<div class="right-col"><b>Title:</b> {{ tvmap.title }}</div>
+				<div class="right-col smalltxt">Mapped Show: <a href="http://thetvdb.com/?tab=series&amp;id={{ tvmap.tvdbid_id }}">http://thetvdb.com/?tab=series&amp;id={{ tvmap.tvdbid_id }}</a></div>
+        </div>
+    {% endfor %}
+
+    </form>
+
+{% else %}
+    <div class="middle pad10">No TV Show Mappings found</div>
+{% endif %}

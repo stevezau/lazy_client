@@ -1,0 +1,35 @@
+<div id="middle-outer">
+    <div id="middle-inner">
+        <div style="cursor:pointer" class="button">
+            <span class="button_post" url="{% url "other.update" "download_torrent" %}">Download</span>
+        </div>
+        <div style="cursor:pointer" class="button">
+            <a href="{% url "other.find.index" %}"><span class="button_page" url="{% url "other.find.index" %}">New Search</span></a>
+        </div>
+    </div>
+</div>
+
+<form id="formID">
+{% csrf_token %}
+    {% for site_name,site in search_results.items %}
+        {% if site_name == "global" %}
+            {% for error in site.errors %}
+                <div class="error">{{ error }}</div>
+            {% endfor %}
+        {% else %}
+            <div class="show">
+                <div class="title">{{ site.torrents.items|length }} matches found on site {{ site_name }}</div>
+                    {% for error in site.errors %}
+                        <div class="error">{{ error }}</div>
+                    {% endfor %}
+                    {% for torrent_name,torrent in site.torrents.items %}
+                        <div class="ep selectable">
+                            <input role="checkbox" type="checkbox" name="item" value="{{ site_name }}~{{ torrent_name }}">
+                             <b>{{ torrent_name }}</b> ({{ torrent.size }})
+                        </div>
+                    {% endfor %}
+        {% endif %}
+
+        </div>
+    {% endfor %}
+</form>

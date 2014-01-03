@@ -1,0 +1,30 @@
+{% load sitetree %}
+<div data-role="page" id="home">
+    <div id="header" data-role="header">
+        <ul id="menu-left" data-role="menu">
+            <li>
+               <span data-role="button" data-icon="arrow-d" data-iconpos="left"></span>
+               <ul data-role="listview" data-inset="true">
+                   <li data-icon="false"><a href="#A1">A1</a></li>
+                   <li data-icon="false"><a href="#A2">Option A2 is really long</a></li>
+                   <li data-icon="false"><a href="#logoutDialog" data-rel="dialog">Logout</a></li>
+               </ul>
+            </li>
+        </ul>
+        <ul id="menu-right" data-role="menu">
+            <li>
+                <span data-role="button" data-icon="arrow-d" data-iconpos="right">Actions</span>
+                <ul data-role="listview" data-inset="true">
+                    <li data-icon="false"><a href="#a1">Option B1</a></li>
+                       <li data-icon="false"><a href="#a1">Option B2</a></li>
+                </ul>
+            </li>
+        </ul>
+        <h1>
+            <a href="#" data-role="button" data-icon="arrow-l" data-iconpos="notext" data-inline="true"></a>
+            <p id="txtSpan">Page One</p>
+            <a href="#" data-role="button" data-icon="arrow-r" data-iconpos="notext" data-inline="true"></a>
+        </h1>
+        <h2>second line of text</h2>
+    </div><!-- /header -->
+</div><!-- /page -->

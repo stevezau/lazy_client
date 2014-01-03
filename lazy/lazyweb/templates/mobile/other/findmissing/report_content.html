@@ -1,0 +1,96 @@
+<div id="middle-outer">
+    <div id="middle-inner">
+        <div style="cursor:pointer" class="button">
+            <span class="button_post" url="{% url "other.update" "fix_missing_seasons" %}">Try Fix Selected</span>
+        </div>
+    </div>
+    <div id="middle-inner">
+        <div style="cursor:pointer" class="button">
+            <span id="hide-missing-seasons">Hide Missing Seasons</span>
+        </div>
+    </div>
+    <div id="middle-inner">
+        <div style="cursor:pointer" class="button">
+            <span id="hide-shows-no-missing">Hide shows with none missing</span>
+        </div>
+    </div>
+
+</div>
+
+<div id="report_count"></div>
+
+<form id="formID">
+{% csrf_token %}
+    {% for tvshow_name,tvshow_report in report.items %}
+        <div class="show">
+            <div class="title">{{ tvshow_name }}</div>
+            <div id="middle-outer">
+
+                {% if tvshow_report.errors|length %}
+                    <div class="error">
+                        {% for error in tvshow_report.errors %}
+                            <div>{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                {% for season_no,season_report in tvshow_report.items %}
+
+                    {% if season_report.percent >= 100 %}
+                        <div class="season">
+                            <div class="seasontitle">Season {{ season_no }}</div>
+                            <div class="season-all-exists">None Missing!</div>
+                        </div>
+                    {% else %}
+                        {% if season_report.status == "wont_fix" %}
+                            <div class="season">
+                                <div class="seasontitle">Season {{ season_no }}</div>
+                                <div class="season-wont-fix">Wont Fix Season!</div>
+                            </div>
+                        {% endif %}
+
+                        {% if season_report.status == "already_in_queue" %}
+                            <div class="season">
+                                <div class="seasontitle">Season {{ season_no }}</div>
+                                <div class="downloading-season">SEASON ALREADY IN QUEUE</div>
+                            </div>
+                        {% endif %}
+
+                        {% if season_report.status == "missing" %}
+                            {% if selectable == True %}
+                                <div class="season selectable">
+                                    <div class="left"><input role="checkbox" type="checkbox" name="item" value="{{ season_no }}~{{ tvshow_name }}"></div>
+                                    <div class="seasontitle">Season {{ season_no }}</div>
+                                    <div class="missing-all-season">Missing Season</div>
+                                </div>
+                            {% else %}
+                                <div class="season">
+                                    <div class="seasontitle">Season {{ season_no }}</div>
+                                    <div class="missing-all-season">Missing Season</div>
+                                </div>
+                            {% endif %}
+                        {% endif %}
+
+                        {% if season_report.status == "downloading_entire_season" %}
+                            <div class="season">
+                                <div class="seasontitle">Season {{ season_no }}</div>
+                                <div class="downloading-season">Downloading Season</div>
+                            </div>
+                        {% endif %}
+
+                        {% if season_report.status == "exists" %}
+                            <div class="season {% if selectable == True %}selectable{% endif %}">
+                                {% if selectable == True %}<div class="left"><input role="checkbox" type="checkbox" name="item" value="{{ season_no }}~{{ tvshow_name }}"></div>{% endif %}
+                                <div class="seasontitle">Season {{ season_no }}</div>
+                                {% include "other/findmissing/report_content_ep.html" %}
+                            </div>
+                        {% endif %}
+
+                    {% endif %}
+                {% endfor %}
+
+            </div>
+        </div>
+    {% endfor %}
+
+</form>

@@ -1,0 +1,29 @@
+{% if favs.count > 0 %}
+
+    <div class="middle pad10">Found {{ favs|length }} approved shows</div>
+
+    <form id="formID">
+    {% csrf_token %}
+
+    {% for fav in favs %}
+        <div class="config-item selectable">
+			<div class="left-col">
+			    <div style="float:left"><input role="checkbox" type="checkbox" class="item_{{ fav.id }}" name="item" value="{{ fav.id }}"></div>
+                {% if fav.posterimg %}
+                    <div style="float:right"><img src="{{ fav.posterimg.url }}"></div>
+                {% else %}
+                    <div style="float:right"><img src="{{ STATIC_URL }}images/noimg.gif"></div>
+                {% endif %}
+
+			    <div style="clear:both"></div>
+			</div>
+			<div class="right-col">{{ fav }}</div>
+            <div class="right-col smalltxt">Show: <a href="http://thetvdb.com/?tab=series&amp;id={{ fav.id }}">http://thetvdb.com/?tab=series&amp;id={{ fav.id }}</a></div>
+        </div>
+    {% endfor %}
+
+    </form>
+
+{% else %}
+    <div class="middle pad10">No TheTVDB.com Favs found (Might be due to www.thetvdb.com being down)</div>
+{% endif %}

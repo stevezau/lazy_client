@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% load sitetree %}
+
+{% block title %}{{ type }}{% endblock %}
+{% block submenu %}
+    {% sitetree_menu from "lazymenu" include "other" template "headersubmenu.html" %}
+{% endblock %}
+
+{% block content %}
+    <h1>Missing report for {{ tvshow|title }}</h1>
+
+    <div class='downloads' refresh="false" action='{% url 'other.findmissing.report.content' tvshow %}'></div>
+{% endblock %}
