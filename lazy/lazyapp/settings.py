@@ -14,7 +14,7 @@ import os
 ###################
 TMPFOLDER = "/tmp"
 
-MEDIA_ROOT = "/home/media/.lazy/imgs"
+MEDIA_ROOT = "/home/media/lazy"
 MEDIA_URL = "/media/"
 
 FLEXGET_APPROVED = "/home/media/.flexget/approve.yml"
@@ -22,7 +22,7 @@ FLEXGET_IGNORE = "/home/media/.flexget/ignore.yml"
 
 TVDB_ACCOUNTID = "289F895955772DE3"
 
-LFTP_BIN = "/usr/local/bin/lftp"
+LFTP_BIN = "/usr/bin/lftp"
 
 MAX_SIM_DOWNLOAD_JOBS = 2
 LFTP_THREAD_PER_DOWNLOAD = 3
@@ -114,11 +114,29 @@ ILLEGAL_CHARS_REGEX = '[():\"*?<>|]+'
 ### CHECK LAZY PATHTS ###
 #########################
 
-for path in [FLEXGET_APPROVED,
-             FLEXGET_IGNORE,
-             TMPFOLDER,
+if not os.path.isfile(FLEXGET_IGNORE):
+    #Lets create it
+    approved_file = open(FLEXGET_APPROVED, 'a')
+    approved_file.write("regexp:\n")
+    approved_file.write("  from: title\n")
+    approved_file.write("  reject:\n")
+    approved_file.write("    - ^FIRST.IGNORE.DEL.ME.AFTER.YOU.ADD.MORE\n")
+
+if not os.path.isfile(FLEXGET_APPROVED):
+    #Lets create it
+    approved_file = open(FLEXGET_APPROVED, 'a')
+    approved_file.write("regexp:\n")
+    approved_file.write("  from: title\n")
+    approved_file.write("  accept:\n")
+    approved_file.write("    - national.geographic\n")
+    approved_file.write("    - discovery.channel\n")
+    approved_file.write("    - history.channel\n")
+
+if not os.path.isfile(LFTP_BIN):
+    raise Exception("Cannot find lftp in %s" % LFTP_BIN)
+
+for path in [TMPFOLDER,
              MEDIA_ROOT,
-             LFTP_BIN,
              DATA_PATH,
              INCOMING_PATH,
              TVHD,
@@ -131,7 +149,7 @@ for path in [FLEXGET_APPROVED,
     if not os.path.exists(path):
         raise Exception("Folder dose not exist %s" % path)
     if not os.access(path, os.W_OK):
-        raise Exception("Cannot write to folder " % path)
+        raise Exception("Cannot write to folder %s" % path)
 
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
