@@ -1,3 +1,11 @@
-django
 flexget
+django
+south
 djangorestframework
+django-sitetree
+django-jquery
+django-jquery-ui
+django-celery
+django-mobile
+easy_extract
+django-jsonfield

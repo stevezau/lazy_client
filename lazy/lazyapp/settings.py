@@ -9,12 +9,17 @@ https://docs.djangoproject.com/en/1.6/ref/settings/
 """
 import os
 
-#Lazy settings
+###################
+###Lazy settings###
+###################
 TMPFOLDER = "/tmp"
-FLEXGET_IGNORE = "/home/media/.flexget/ignore.yml"
+
 MEDIA_ROOT = "/home/media/.lazy/imgs"
 MEDIA_URL = "/media/"
+
 FLEXGET_APPROVED = "/home/media/.flexget/approve.yml"
+FLEXGET_IGNORE = "/home/media/.flexget/ignore.yml"
+
 TVDB_ACCOUNTID = "289F895955772DE3"
 
 LFTP_BIN = "/usr/local/bin/lftp"
@@ -38,6 +43,10 @@ FTP_IP = "66.90.113.62"
 FTP_PORT = 32245
 FTP_USER = "steve"
 FTP_PASS = "site990"
+
+#############################################
+#### !!!!DO NOT CHANGE ANYTHING BELOW!!!! ###
+#############################################
 
 TVSHOW_REGEX = (
     '(?i).+\.S[0-9]+E[0-9]+.+',
@@ -101,10 +110,33 @@ TVSHOW_AUTOFIX_REPLACEMENTS = {
 
 ILLEGAL_CHARS_REGEX = '[():\"*?<>|]+'
 
+#########################
+### CHECK LAZY PATHTS ###
+#########################
+
+for path in [FLEXGET_APPROVED,
+             FLEXGET_IGNORE,
+             TMPFOLDER,
+             MEDIA_ROOT,
+             LFTP_BIN,
+             DATA_PATH,
+             INCOMING_PATH,
+             TVHD,
+             TVHD_TEMP,
+             XVID,
+             XVID_TEMP,
+             REQUESTS_TEMP,
+             HD,
+             HD_TEMP]:
+    if not os.path.exists(path):
+        raise Exception("Folder dose not exist %s" % path)
+    if not os.access(path, os.W_OK):
+        raise Exception("Cannot write to folder " % path)
+
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-LAZY_DIR = "/home/media/.lazy"
 
 
 # Quick-start development settings - unsuitable for production
