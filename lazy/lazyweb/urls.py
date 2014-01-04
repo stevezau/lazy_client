@@ -1,16 +1,14 @@
 from django.conf.urls import patterns, url
-from rest_framework.urlpatterns import format_suffix_patterns
 from lazyweb.views import downloads, home, config, other
 from django.views.generic import RedirectView
+from django.core.urlresolvers import reverse_lazy
 
 urlpatterns = patterns('',
-    #TODO: Convert refirect to url django
-
     #Home - Default Index
     url(r'^$', home.IndexView.as_view(), name='home'),
 
     #Downloads
-    url(r'^downloads$', RedirectView.as_view(url='/lazy/downloads/downloading'), name='downloads.redirect'),
+    url(r'^downloads$', RedirectView.as_view(url=reverse_lazy('downloads.index', args=['downloading'])), name='downloads.redirect'),
     url(r'^downloads/get/(?P<type>\w+)/$', downloads.DownloadsListView.as_view(), name='downloads.get'),
     url(r'^downloads/update/(?P<type>\w+)/$', downloads.update, name='downloads.update'),
     url(r'^downloads/manualfix/$', downloads.DownloadsManuallyFix.as_view(), name='downloads.manualfix'),
@@ -36,7 +34,7 @@ urlpatterns = patterns('',
     url(r'^config/tvmap/list$', config.TVMappingsListView.as_view(), name='config.tvmap.list'),
 
     #Other - Redirect
-    url(r'^other$', RedirectView.as_view(url='/lazy/other/find/'), name='other.redirect'),
+    url(r'^other$', RedirectView.as_view(url=reverse_lazy('other.find.index')), name='other.redirect'),
     url(r'^other/update/report_all/$', other.report_all, name='other.findmissing.report_all'),
     url(r'^other/update/fix_all/$', other.fix_all, name='other.findmissing.fix_all'),
     url(r'^other/update/(?P<type>\w+)/$', other.update, name='other.update'),
