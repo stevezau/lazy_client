@@ -14,8 +14,8 @@ import os
 ###################
 TMPFOLDER = "/tmp"
 
-MEDIA_ROOT = "/home/media/lazy"
-MEDIA_URL = "/media/"
+MEDIA_ROOT = "/home/media/lazy/static/media"
+MEDIA_URL = "/lazy/static/media/"
 
 FLEXGET_APPROVED = "/home/media/.flexget/approve.yml"
 FLEXGET_IGNORE = "/home/media/.flexget/ignore.yml"
@@ -134,6 +134,10 @@ if not os.path.isfile(FLEXGET_APPROVED):
 
 if not os.path.isfile(LFTP_BIN):
     raise Exception("Cannot find lftp in %s" % LFTP_BIN)
+
+if not os.path.exists(MEDIA_ROOT):
+    #create it
+    os.mkdir(MEDIA_ROOT)
 
 for path in [TMPFOLDER,
              MEDIA_ROOT,
@@ -299,7 +303,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.6/howto/static-files/
 
-STATIC_URL = '/static/'
+STATIC_URL = '/lazy/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 
