@@ -18,15 +18,13 @@ Configure flexget
 =====
 Flexget will watch the FTP site for new releases. It will tell lazy about any releases which meets certain criteria.
 
-1. Install Flexget
-
+1) Install Flexget
 
 	$ sudo pip install flexget
 
-2. Copy folder flexget-conf from git and rename it to /home/media/.flexget
+2) Copy folder flexget-conf from git and rename it to /home/media/.flexget
 
-3. Edit the below files as required
-
+3) Edit the below files as required
 
 	$ /home/media/.flexget/config.yml
 	$ /home/media/.flexget/config-xvid.yml
@@ -36,7 +34,7 @@ LFTP Config.
 =====
 LFTP is used to download the files from the FTP
 
-1. Copy the lftprc file from git hub to 
+1) Copy the lftprc file from git hub to 
 
 
 	$ /home/media/.lftp/rc
@@ -54,43 +52,36 @@ Setup storage folders
 
 Lazy Install
 =====
-1. Export the lazy folder from git to /home/media/lazy
+1) Export the lazy folder from git to /home/media/lazy
 
-2. Setup requirements for lazy
-
+2) Setup requirements for lazy
 
 	$ sudo pip install -U -r /home/media/lazy/requirements.txt
 
-3. Initial setup of database
-
+3) Initial setup of database
 
 	$ cd /home/media/lazy
 	$ python manage.py syncdb
 	
 (Create a superuser for the admin section of the site when it asks)
 
-4. Update database schema
-
+4) Update database schema
 
 	$ python manage.py migrate
 
-5. Load menu data
-
+5) Load menu data
 
 	$ python manage.py sitetreeload --mode=replace /home/media/lazy/lazyweb/fixtures/lazyweb_initialdata.json
 
-5. Collect static files
-
+5) Collect static files
 
 	$ python manage.py collectstatic
 
-6. Create cache table
-
+6) Create cache table
 
 	$ python manage.py createcachetable lazy_cache
 
-7. Setup background processor for autostartup (as media)
-
+7) Setup background processor for autostartup (as media)
 
 	$ mkdir /var/log/celery
 	$ sudo ln -s /home/media/lazy/serverconf/lazy-supervisor.conf /etc/supervisor/conf.d/lazy.conf 
