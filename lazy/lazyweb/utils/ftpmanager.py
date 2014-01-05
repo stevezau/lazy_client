@@ -192,7 +192,10 @@ class FTPManager():
     def getRemoteSize(self, remote):
         ftpCMD = 'cd %s' % remote
 
-        size = self.ftps.size(remote)
+        try:
+            size = self.ftps.size(remote)
+        except:
+            return 0
 
         return size
 

@@ -12,43 +12,55 @@ import os
 ###################
 ###Lazy settings###
 ###################
-MYSQL_USER = 'root'
-MYSQL_PASS = 'drift990'
-MYSQL_IP = 'localhost'
-MYSQL_PORT = '3389'
+import lazysettings
 
-TVDB_ACCOUNTID = "xxxx"
+#DONT THIS THESES IMPORTS
+import os
 
-FTP_IP = "66.90.113.62"
-FTP_PORT = 32245
-FTP_USER = "xxxx"
-FTP_PASS = "xxxx"
+# MYSQL Details
+
+MYSQL_USER = lazysettings.MYSQL_USER
+MYSQL_PASS = lazysettings.MYSQL_PASS
+MYSQL_IP = lazysettings.MYSQL_IP
+MYSQL_PORT = lazysettings.MYSQL_PORT
+
+TMPFOLDER = lazysettings.TMPFOLDER
+
+TVDB_ACCOUNTID = lazysettings.TVDB_ACCOUNTID
+
+MAX_SIM_DOWNLOAD_JOBS = lazysettings.MAX_SIM_DOWNLOAD_JOBS
+LFTP_THREAD_PER_DOWNLOAD = lazysettings.LFTP_THREAD_PER_DOWNLOAD
+
+# Where is your data path
+DATA_PATH = lazysettings.DATA_PATH
+INCOMING_PATH = lazysettings.INCOMING_PATH
+
+# Folders, shouldnt need to edit this
+
+TVHD_TEMP = lazysettings.TVHD_TEMP
+HD_TEMP = lazysettings.HD_TEMP
+XVID_TEMP = lazysettings.XVID_TEMP
+REQUESTS_TEMP = lazysettings.REQUESTS_TEMP
+
+TVHD = lazysettings.TVHD
+HD = lazysettings.HD
+XVID = lazysettings.XVID
+
+# FTP Details
+FTP_IP = lazysettings.FTP_IP
+FTP_PORT = lazysettings.FTP_PORT
+FTP_USER = lazysettings.FTP_USER
+FTP_PASS = lazysettings.FTP_PASS
+
+LFTP_BIN = lazysettings.LFTP_BIN
 
 
-TMPFOLDER = "/tmp"
+# Shouldnt need to change these
+MEDIA_ROOT = lazysettings.MEDIA_ROOT
+MEDIA_URL = lazysettings.MEDIA_URL
 
-MEDIA_ROOT = "/home/media/lazy/static/media"
-MEDIA_URL = "/lazy/media/"
-
-FLEXGET_APPROVED = "/home/media/.flexget/approve.yml"
-FLEXGET_IGNORE = "/home/media/.flexget/ignore.yml"
-
-LFTP_BIN = "/usr/local/bin/lftp"
-
-MAX_SIM_DOWNLOAD_JOBS = 2
-LFTP_THREAD_PER_DOWNLOAD = 3
-
-DATA_PATH = os.sep + "data" + os.sep + "Videos"
-INCOMING_PATH = os.path.join(DATA_PATH, "_incoming")
-
-TVHD_TEMP = os.path.join(INCOMING_PATH, "TVShows")
-HD_TEMP = os.path.join(INCOMING_PATH, "Movies")
-XVID_TEMP = os.path.join(INCOMING_PATH, "Movies")
-REQUESTS_TEMP = os.path.join(INCOMING_PATH, "Requests")
-
-TVHD = os.path.join(DATA_PATH, "TVShows")
-HD = os.path.join(DATA_PATH, "Movies")
-XVID = os.path.join(DATA_PATH, "Movies")
+FLEXGET_APPROVED = lazysettings.FLEXGET_APPROVED
+FLEXGET_IGNORE = lazysettings.FLEXGET_IGNORE
 
 
 #############################################
