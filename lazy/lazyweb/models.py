@@ -63,10 +63,11 @@ class DownloadItem(models.Model):
     localpath = models.CharField(max_length=255, blank=True, null=True)
     status = models.IntegerField(choices=STATUS_CHOICES, blank=True, null=True)
     pid = models.IntegerField(default=0, null=True)
+    taskid = models.CharField(max_length=255, blank=True, null=True)
     retries = models.IntegerField(default=0, null=True)
     dateadded = models.DateTimeField(db_index=True, auto_now_add=True, blank=True)
     dlstart = models.DateTimeField(blank=True, null=True)
-    remotesize = models.IntegerField(default=0, null=True)
+    remotesize = models.BigIntegerField(default=0, null=True)
     priority = models.IntegerField(default=10, null=True)
     requested = models.BooleanField(default=False)
     localsize = models.IntegerField(default=0, null=True)
@@ -422,129 +423,116 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
             except:
                 raise Exception("Unable to find section path in config: %s" % section)
 
+    tvdbapi = Tvdb()
 
-@receiver(post_save, sender=DownloadItem)
-def add_new_downloaditem_post(sender, created, instance, **kwargs):
+    is_tv_show = utils.match_str_regex(settings.TVSHOW_REGEX, instance.title)
 
-    if created:
-        tvdbapi = Tvdb()
+    #must be a tvshow
+    if is_tv_show:
+        if instance.tvdbid_id is None:
+            logger.debug("Looks like we are working with a TVShow")
 
-        is_tv_show = utils.match_str_regex(settings.TVSHOW_REGEX, instance.title)
+            #We need to try find the series info
+            parser = utils.get_series_info(instance.title)
 
-        #must be a tvshow
-        if is_tv_show:
-            if instance.tvdbid_id is None:
-                logger.debug("Looks like we are working with a TVShow")
+            logger.info(parser)
 
-                #We need to try find the series info
-                parser = utils.get_series_info(instance.title)
+            if parser:
+                seriesName = parser.name
 
-                logger.info(parser)
-
-                if parser:
-                    seriesName = parser.name
-
-                    logger.info(seriesName)
-
-                    try:
-                        match = tvdbapi[seriesName]
-                        logger.debug("Show found")
-                        instance.tvdbid_id = int(match['id'])
-
-                        if match['imdb_id'] is not None:
-                            logger.debug("also found imdbid %s from thetvdb" % match['imdb_id'])
-                            instance.imdbid_id = int(match['imdb_id'].lstrip("tt"))
-
-                    except Exception as e:
-                        raise Exception("Error finding : %s via thetvdb.com due to  %s" % (seriesName, e.message))
-                else:
-                    raise Exception("Unable to parse series info")
-
-        #must be a movie!
-        else:
-            if instance.imdbid_id is None:
-                logger.debug("Looks like we are working with a Movie")
-                #Lets try find the movie details
-                movieName, movieYear = utils.get_movie_info(instance.title)
-
-                imdbs = ImdbSearch()
-                results = imdbs.best_match(movieName, movieYear)
-
-                if results and results['match'] > 0.70:
-                    movieObj = ImdbParser()
-                    movieObj.parse(results['url'])
-
-                    logger.debug("Found imdb movie id %s" % movieObj.imdb_id)
-
-                    instance.imdbid_id = int(movieObj.imdb_id.lstrip("tt"))
-                else:
-                    logger.debug("Didnt find a good enough match on imdb")
-
-        #Now we have sorted both imdbid and thetvdbid lets sort it all out
-
-        #If we have a tvdbid do we need to add it to the db or does it exist
-        if instance.tvdbid_id is not None:
-            #Does it already exist?
-            try:
-                if instance.tvdbid:
-                    #found the record
-                    logger.debug("Found existing tvdb record")
-
-                    #Do we need to update it
-                    curTime = datetime.now()
-                    hours = 0
-
-                    if instance.tvdbid.updated is None:
-                        hours = 50
-                    else:
-                        diff = curTime - instance.tvdbid.updated.replace(tzinfo=None)
-                        hours = diff.seconds / 60 / 60
-
-                    if hours > 24:
-                        instance.tvdbid.update_from_tvdb()
-            except ObjectDoesNotExist as e:
-                logger.debug("Getting tvdb data for release")
-
-                #Get latest tvdb DATA
-                tvdb_obj = tvdbapi[int(instance.tvdbid_id)]
-
-                new_tvdb_item = Tvdbcache()
-                new_tvdb_item.title = tvdb_obj['seriesname'].replace(".", " ").strip()
-                new_tvdb_item.id = int(tvdb_obj['id'])
-                new_tvdb_item.save()
-
-        #If we have a imdbid do we need to add it to the db or does it exist
-        if instance.imdbid_id is not None:
-            try:
-                if instance.imdbid:
-                    logger.debug("Found existing imdb record")
-
-                    #Do we need to update it
-                    curTime = datetime.now()
-                    diff = curTime - instance.imdbid.updated.replace(tzinfo=None)
-                    hours = diff.seconds / 60 / 60
-
-                    if hours > 24:
-                        instance.imdbid.update_from_imdb()
-
-            except ObjectDoesNotExist as e:
-
-                logger.debug("Getting IMDB data for release")
+                logger.info(seriesName)
 
                 try:
-                    #Get latest IMDB DATA
-                    imdbobj = ImdbParser()
-                    imdbobj.parse("tt" + str(instance.imdbid_id))
+                    match = tvdbapi[seriesName]
+                    logger.debug("Show found")
+                    instance.tvdbid_id = int(match['id'])
 
-                    if imdbobj.name:
-                        #insert into db
-                        new_imdb = Imdbcache()
-                        new_imdb.title = imdbobj.name
-                        new_imdb.id = int(imdbobj.imdb_id.lstrip("tt"))
-                        new_imdb.save()
+                    if match['imdb_id'] is not None:
+                        logger.debug("also found imdbid %s from thetvdb" % match['imdb_id'])
+                        instance.imdbid_id = int(match['imdb_id'].lstrip("tt"))
 
                 except Exception as e:
-                    logger.exception("error gettig imdb information.. from website " + e.message)
+                    raise Exception("Error finding : %s via thetvdb.com due to  %s" % (seriesName, e.message))
+            else:
+                raise Exception("Unable to parse series info")
 
-        instance.save()
-        logger.info("Added release to database")
+    #must be a movie!
+    else:
+        if instance.imdbid_id is None:
+            logger.debug("Looks like we are working with a Movie")
+            #Lets try find the movie details
+            movieName, movieYear = utils.get_movie_info(instance.title)
+
+            imdbs = ImdbSearch()
+            results = imdbs.best_match(movieName, movieYear)
+
+            if results and results['match'] > 0.70:
+                movieObj = ImdbParser()
+                movieObj.parse(results['url'])
+
+                logger.debug("Found imdb movie id %s" % movieObj.imdb_id)
+
+                instance.imdbid_id = int(movieObj.imdb_id.lstrip("tt"))
+            else:
+                logger.debug("Didnt find a good enough match on imdb")
+
+    #Now we have sorted both imdbid and thetvdbid lets sort it all out
+
+    #If we have a tvdbid do we need to add it to the db or does it exist
+    if instance.tvdbid_id is not None:
+        #Does it already exist?
+        try:
+            if instance.tvdbid:
+                #Do we need to update it
+                curTime = datetime.now()
+                hours = 0
+
+                if instance.tvdbid.updated is None:
+                    hours = 50
+                else:
+                    diff = curTime - instance.tvdbid.updated.replace(tzinfo=None)
+                    hours = diff.seconds / 60 / 60
+
+                if hours > 24:
+                    instance.tvdbid.update_from_tvdb()
+        except ObjectDoesNotExist as e:
+            logger.debug("Getting tvdb data for release")
+
+            #Get latest tvdb DATA
+            tvdb_obj = tvdbapi[int(instance.tvdbid_id)]
+
+            new_tvdb_item = Tvdbcache()
+            new_tvdb_item.title = tvdb_obj['seriesname'].replace(".", " ").strip()
+            new_tvdb_item.id = int(tvdb_obj['id'])
+            new_tvdb_item.save()
+
+    #If we have a imdbid do we need to add it to the db or does it exist
+    if instance.imdbid_id is not None:
+        try:
+            if instance.imdbid:
+                #Do we need to update it
+                curTime = datetime.now()
+                diff = curTime - instance.imdbid.updated.replace(tzinfo=None)
+                hours = diff.seconds / 60 / 60
+
+                if hours > 24:
+                    instance.imdbid.update_from_imdb()
+
+        except ObjectDoesNotExist as e:
+
+            logger.debug("Getting IMDB data for release")
+
+            try:
+                #Get latest IMDB DATA
+                imdbobj = ImdbParser()
+                imdbobj.parse("tt" + str(instance.imdbid_id))
+
+                if imdbobj.name:
+                    #insert into db
+                    new_imdb = Imdbcache()
+                    new_imdb.title = imdbobj.name
+                    new_imdb.id = int(imdbobj.imdb_id.lstrip("tt"))
+                    new_imdb.save()
+
+            except Exception as e:
+                logger.exception("error gettig imdb information.. from website " + e.message)

@@ -28,7 +28,7 @@ class Command(BaseCommand):
                             help='Option help message'),
                   )
 
-    @periodic_task(bind=True, run_every=timedelta(seconds=120))
+    @periodic_task(bind=True, run_every=timedelta(seconds=60))
     def handle(self, *app_labels, **options):
         """
         app_labels - app labels (eg. myapp in "manage.py reset myapp")
@@ -67,7 +67,7 @@ class Command(BaseCommand):
                 logger.info('Checking job: %s' % dlItem.title)
 
                 #Now check if its finished
-                if ftp_manager.jobFinished(dlItem.pid):
+                if ftp_manager.jobFinished(dlItem.taskid):
 
                     #Lets make sure it finished downloading properly
                     logger.info('Job has finished')
@@ -116,15 +116,17 @@ class Command(BaseCommand):
 
                             dlItem.save()
                 else:
+                    pass
+                    #TODO remove this
                     #Lets make sure the job has not been running for over x hours
-                    curTime = datetime.now()
-                    diff = curTime - dlItem.dlstart.replace(tzinfo=None)
-                    hours = diff.seconds / 60 / 60
-                    if hours > 5:
-                        logger.info("Job as has been running for over 8 hours, killing job and setting to retry: %s" % dlItem.ftppath)
-                        dlItem.retries += 1
-                        FTPManager.stopJob(dlItem.pid)
-                        dlItem.save()
+                    #curTime = datetime.now()
+                    #diff = curTime - dlItem.dlstart.replace(tzinfo=None)
+                    #hours = diff.seconds / 60 / 60
+                    #if hours > 5:
+                    #    logger.info("Job as has been running for over 8 hours, killing job and setting to retry: %s" % dlItem.ftppath)
+                    #    dlItem.retries += 1
+                    #    FTPManager.stopJob(dlItem.taskid)
+                    #    dlItem.save()
 
             #Figure out the number of jobs running after the above checks
             count = DownloadItem.objects.all().filter(status=DownloadItem.DOWNLOADING).count()
@@ -205,11 +207,11 @@ class Command(BaseCommand):
                         if dlItem.onlyget:
                             cmd = Command()
                             task = ftp_manager.mirrorMulti.delay(dlItem.localpath, get_folders, dlItem.id)
-                            dlItem.pid = task.task_id
+                            dlItem.taskid = task.task_id
                         else:
                             cmd = Command()
                             task = ftp_manager.mirror.delay(dlItem.localpath, dlItem.ftppath, dlItem.id)
-                            dlItem.pid = task.task_id
+                            dlItem.taskid = task.task_id
 
                         dlItem.message = None
                         dlItem.dlstart = datetime.now()

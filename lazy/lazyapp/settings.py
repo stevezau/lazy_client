@@ -27,9 +27,9 @@ FLEXGET_IGNORE = "/home/media/.flexget/ignore.yml"
 
 TVDB_ACCOUNTID = "289F895955772DE3"
 
-LFTP_BIN = "/usr/bin/lftp"
+LFTP_BIN = "/usr/local/bin/lftp"
 
-MAX_SIM_DOWNLOAD_JOBS = 1
+MAX_SIM_DOWNLOAD_JOBS = 2
 LFTP_THREAD_PER_DOWNLOAD = 3
 
 DATA_PATH = os.sep + "data" + os.sep + "Videos"

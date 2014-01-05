@@ -12,7 +12,9 @@ import signal
 from ftplib import FTP_TLS
 from django.conf import settings
 from lazyweb import utils
-from celery.task.base import periodic_task, task
+from djcelery_transactions import task
+from celery.result import AsyncResult
+from lazyweb.models import DownloadItem
 
 
 logger = logging.getLogger(__name__)
@@ -406,8 +408,11 @@ class FTPManager():
             return False
         return True
 
+
     @task(bind=True)
-    def mirror(self, local, remote, jobid = 0):
+    def mirror(self, local, remote, jobid=0):
+
+        dlitemid = jobid
         local = local.strip()
         print "Starting mirroring of %s to %s" % (remote,local)
         local, remote = os.path.normpath(local), os.path.normpath(remote)
@@ -415,45 +420,46 @@ class FTPManager():
 
         m = re.match(".*\.(mkv|avi|mp4)$", remote)
 
+        script = open(os.path.join(settings.TMPFOLDER, jobid), 'w')
+
         if m:
             #we have a file
             #Build the lftp script for the job
-            with open('{0}/{1}'.format(settings.TMPFOLDER, jobid), 'w') as script:
-                lines = ('open -u "{0},{1}" ftp://{2}:{3}'.format(settings.FTP_USER, settings.FTP_PASS, settings.FTP_IP, settings.FTP_PORT),
+            lines = ('open -u "{0},{1}" ftp://{2}:{3}'.format(settings.FTP_USER, settings.FTP_PASS, settings.FTP_IP, settings.FTP_PORT),
                          'get -c {0} -o {1}'.format("'" + remote + "'", "'" + local + "'"),
                          'exit')
-                script.write(os.linesep.join(lines))
+            script.write(os.linesep.join(lines))
+            script.close()
 
-                # mirror
-                cmd = [settings.LFTP_BIN, '-d', '-f', script.name]
-                print 'starting lftp with script %s' % script.name
-                sync = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
-                print 'lftp started under PID: {0}'.format(sync.pid)
-                #TODO DOES LFTP CRASH IF WE remove the script
-                #removeScript(jobid)
-                sync.wait()
         else:
 
             parallel = ' --parallel={0}'.format(settings.LFTP_THREAD_PER_DOWNLOAD) if settings.LFTP_THREAD_PER_DOWNLOAD else ''
             scp_args = ('-vvv -c ' + parallel)
 
             #Build the lftp script for the job
-            with open('{0}/{1}'.format(settings.TMPFOLDER, jobid), 'w') as script:
-                lines = ('open -u "{0},{1}" ftp://{2}:{3}'.format(settings.FTP_USER, settings.FTP_PASS, settings.FTP_IP, settings.FTP_PORT),
+            lines = ('open -u "{0},{1}" ftp://{2}:{3}'.format(settings.FTP_USER, settings.FTP_PASS, settings.FTP_IP, settings.FTP_PORT),
                          'set xfer:log-file "/tmp/{0}.log"'.format(jobid),
                          'set xfer:log true',
                          'mirror {0} {1} {2}'.format(scp_args, "'" + remote + "'", "'" + local + "'"),
                          'exit')
-                script.write(os.linesep.join(lines))
+            script.write(os.linesep.join(lines))
+            script.close()
 
-                # mirror
-                log = "--log=/tmp/" + jobid + "-c.log"
-                cmd = [settings.LFTP_BIN, '-d', '-f', script.name, log]
-                print 'starting lftp with script %s' % script.name
-                sync = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
-                print 'lftp started under PID: {0}'.format(sync.pid)
-                #TODO DOES LFTP CRASH IF WE remove the script
-                sync.wait()
+        # mirror
+        cmd = [settings.LFTP_BIN, '-d', '-f', script.name]
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        print 'starting lftp with script %s' % script.name
+        print 'lftp started under PID: {0}'.format(proc.pid)
+
+        try:
+            dlitem = DownloadItem.objects.get(id=dlitemid)
+            dlitem.pid = proc.pid
+            dlitem.save()
+        except Exception as e:
+            pass
+
+        proc.wait()
 
         if jobid == 0:
             self.removeScript(0)
@@ -465,7 +471,7 @@ class FTPManager():
 
         scriptCMDs = []
 
-
+        dlitemid = jobid
         for remoteFolder in remoteFolders:
             splitRemote = remoteFolder.split("/")
 
@@ -499,23 +505,30 @@ class FTPManager():
                 scriptCMDs.append(cmd)
 
         tmpFile = "%s/%s" % (settings.TMPFOLDER, jobid)
+        script = open(tmpFile, 'w')
 
-        with open(tmpFile, 'w') as script:
-            scriptCMDs.append("exit")
-            scriptCMDs.append('set xfer:log-file "/tmp/%s.log"' % jobid)
-            scriptCMDs.append('set xfer:log true')
-            openCmd = 'open -u "%s,%s" ftp://%s:%s\n' % (settings.FTP_USER, settings.FTP_PASS, settings.FTP_IP, settings.FTP_PORT)
-            script.write(openCmd)
-            script.write(os.linesep.join(scriptCMDs))
+        scriptCMDs.append("exit")
+        scriptCMDs.append('set xfer:log-file "/tmp/%s.log"' % jobid)
+        scriptCMDs.append('set xfer:log true')
+        openCmd = 'open -u "%s,%s" ftp://%s:%s\n' % (settings.FTP_USER, settings.FTP_PASS, settings.FTP_IP, settings.FTP_PORT)
+        script.write(openCmd)
+        script.write(os.linesep.join(scriptCMDs))
+        script.close()
 
-            log = "--log=/tmp/" + jobid + "-c.log"
-            # mirror
-            cmd = [settings.LFTP_BIN, '-d', '-f', script.name, log]
-            logger.info('starting lftp with script %s' % script.name)
-            sync = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setpgrp)
-            logger.info('lftp started under PID: {0}'.format(sync.pid))
-            #TODO DOES LFTP CRASH IF WE remove the script
-            sync.wait()
+        # mirror
+        cmd = [settings.LFTP_BIN, '-d', '-f', script.name]
+        sync = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        logger.info('starting lftp with script %s' % script.name)
+        logger.info('lftp started under PID: {0}'.format(sync.pid))
+        #TODO DOES LFTP CRASH IF WE remove the script
+        try:
+            dlitem = DownloadItem.objects.get(id=dlitemid)
+            dlitem.pid = sync.pid
+            dlitem.save()
+        except Exception as e:
+            pass
+        sync.wait()
 
         if jobid == 0:
             self.removeScript(0)
@@ -527,11 +540,12 @@ class FTPManager():
             print logger, "error killing the process"
 
 
-    def jobFinished(self, pid):
-        if os.path.exists('/proc/{0}'.format(pid)):
-            return False
-        else:
+    def jobFinished(self, taskid):
+        if taskid == None or taskid == "":
             return True
+
+        result = AsyncResult(taskid)
+        return result.ready()
 
     def sendcmd(self, cmd):
 
