@@ -15,7 +15,7 @@ import os
 TMPFOLDER = "/tmp"
 
 MEDIA_ROOT = "/home/media/lazy/static/media"
-MEDIA_URL = "/lazy/static/media/"
+MEDIA_URL = "/lazy/media/"
 
 FLEXGET_APPROVED = "/home/media/.flexget/approve.yml"
 FLEXGET_IGNORE = "/home/media/.flexget/ignore.yml"
