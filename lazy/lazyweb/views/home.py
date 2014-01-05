@@ -25,7 +25,11 @@ class IndexView(TemplateView):
         dt = statvfs.f_frsize * statvfs.f_blocks     # Size of filesystem in bytes
         df = statvfs.f_frsize * statvfs.f_bfree      # Actual number of free bytes
 
+        percentfree = (df / float(dt)) * 100
+        percentused = round(100 - percentfree, 2)
+
         context['gbFree'] = df / 1024 / 1024 / 1024
-        context['percentUsed'] = 100 - dt / df
+        context['percentUsed'] = percentused
+
 
         return context

@@ -116,11 +116,12 @@ ILLEGAL_CHARS_REGEX = '[():\"*?<>|]+'
 
 if not os.path.isfile(FLEXGET_IGNORE):
     #Lets create it
-    approved_file = open(FLEXGET_APPROVED, 'a')
-    approved_file.write("regexp:\n")
-    approved_file.write("  from: title\n")
-    approved_file.write("  reject:\n")
-    approved_file.write("    - ^FIRST.IGNORE.DEL.ME.AFTER.YOU.ADD.MORE\n")
+    ignore_file = open(FLEXGET_IGNORE, 'a')
+    ignore_file.write("regexp:\n")
+    ignore_file.write("  from: title\n")
+    ignore_file.write("  reject:\n")
+    ignore_file.write("    - ^FIRST.IGNORE.DEL.ME.AFTER.YOU.ADD.MORE\n")
+    ignore_file.close()
 
 if not os.path.isfile(FLEXGET_APPROVED):
     #Lets create it
@@ -131,6 +132,7 @@ if not os.path.isfile(FLEXGET_APPROVED):
     approved_file.write("    - national.geographic\n")
     approved_file.write("    - discovery.channel\n")
     approved_file.write("    - history.channel\n")
+    approved_file.close()
 
 if not os.path.isfile(LFTP_BIN):
     raise Exception("Cannot find lftp in %s" % LFTP_BIN)
@@ -235,6 +237,13 @@ LOGGING = {
         #    'handlers': ['console', 'logfile'],
         #    'level': 'DEBUG',
         #},
+    }
+}
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'lazy_cache',
     }
 }
 

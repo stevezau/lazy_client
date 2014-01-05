@@ -267,7 +267,7 @@ class Tvdbcache(models.Model):
         logger.info("Updating %s %s" % (str(self.id), self.title))
 
         try:
-            tvdbapi = Tvdb()
+            tvdbapi = Tvdb(banners=True)
             tvdb_obj = tvdbapi[self.id]
 
             self.updated = datetime.now()

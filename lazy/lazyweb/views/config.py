@@ -115,9 +115,9 @@ class IgnoredListView(TemplateView):
         # Call the base implementation first to get a context
         context = super(IgnoredListView, self).get_context_data(**kwargs)
 
-        if os.path.exists(settings.FLEXGET_IGNORE):
+        titles = []
 
-            titles = []
+        if os.path.exists(settings.FLEXGET_IGNORE):
 
             with open(settings.FLEXGET_IGNORE) as f:
                 content = f.readlines()
