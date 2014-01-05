@@ -10,4 +10,4 @@ django-mobile
 easy_extract
 django-jsonfield
 mysql-python
-djcelery-transactions
+django-celery-transactions
