@@ -64,7 +64,7 @@ Lazy Install
 
 	$ sudo pip install -U -r /home/media/lazy/requirements.txt
 
-3) !!IMPORTANT!! Edit the settings in file /home/media/lazy/lazyapp/settings.py
+3) !!IMPORTANT!! Edit the settings in file /home/media/lazy/lazysettings.py
 
 
 4) Initial setup of database
