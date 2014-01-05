@@ -88,4 +88,9 @@ Lazy Install
 	$ sudo service supervisor restart
 
 
+Setup Apache
+=====
 
+	$ sudo ln -s /home/media/lazy/serverconf/lazy-apache.conf /etc/apache2/sites-available
+	$ sudo a2ensite lazy
+	$ sudo service apache2 restart
