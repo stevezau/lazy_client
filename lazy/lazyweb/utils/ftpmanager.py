@@ -545,6 +545,7 @@ class FTPManager():
             return True
 
         result = AsyncResult(taskid)
+        print result
         return result.ready()
 
     def sendcmd(self, cmd):
