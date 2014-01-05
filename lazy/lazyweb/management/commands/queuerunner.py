@@ -7,7 +7,7 @@ from lazyweb.utils.ftpmanager import FTPManager
 from decimal import Decimal
 from datetime import datetime
 from django.conf import settings
-from celery.task.base import periodic_task
+from celery.task.base import periodic_task, task
 from django.core.cache import cache
 from datetime import timedelta
 
@@ -200,11 +200,16 @@ class Command(BaseCommand):
 
                             continue
 
+
                         #Time to start a new one!.
                         if dlItem.onlyget:
-                            dlItem.pid = ftp_manager.mirrorMulti(dlItem.localpath, get_folders, dlItem.id)
+                            cmd = Command()
+                            task = ftp_manager.mirrorMulti.delay(dlItem.localpath, get_folders, dlItem.id)
+                            dlItem.pid = task.task_id
                         else:
-                            dlItem.pid = ftp_manager.mirror(dlItem.localpath, dlItem.ftppath, dlItem.id)
+                            cmd = Command()
+                            task = ftp_manager.mirror.delay(dlItem.localpath, dlItem.ftppath, dlItem.id)
+                            dlItem.pid = task.task_id
 
                         dlItem.message = None
                         dlItem.dlstart = datetime.now()

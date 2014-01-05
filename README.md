@@ -12,8 +12,14 @@ Install Ubuntu Packages
 Execute the following on server
 
 
-	$ sudo apt-get install apache2 libapache2-mod-wsgi lftp git python-pip supervisor
+	$ sudo apt-get install apache2 libapache2-mod-wsgi lftp git python-pip supervisor mysql-server phpmyadmin
 
+Setup Mysql
+=====
+
+1) Create database in mysql called lazy
+
+	
 Configure flexget
 =====
 Flexget will watch the FTP site for new releases. It will tell lazy about any releases which meets certain criteria.
@@ -62,12 +68,10 @@ Lazy Install
 
 	$ cd /home/media/lazy
 	$ python manage.py syncdb
-	
-(Create a superuser for the admin section of the site when it asks)
-
-4) Update database schema
-
+	$ python manage.py createcachetable lazy_cache
 	$ python manage.py migrate
+
+	(Create a superuser for the admin section of the site when it asks)
 
 5) Load menu data
 
@@ -77,15 +81,14 @@ Lazy Install
 
 	$ python manage.py collectstatic
 
-6) Create cache table
-
-	$ python manage.py createcachetable lazy_cache
-
+	
 7) Setup background processor for autostartup (as media)
 
 	$ mkdir /var/log/celery
 	$ sudo ln -s /home/media/lazy/serverconf/lazy-supervisor.conf /etc/supervisor/conf.d/lazy.conf 
 	$ sudo service supervisor restart
+	
+8) Edit the settings in file /home/media/lazy/lazyapp/settings.py
 
 
 Setup Apache

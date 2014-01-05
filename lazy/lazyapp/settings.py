@@ -12,6 +12,11 @@ import os
 ###################
 ###Lazy settings###
 ###################
+MYSQL_USER = 'root'
+MYSQL_PASS = 'drift990'
+MYSQL_IP = 'localhost'
+MYSQL_PORT = '3389'
+
 TMPFOLDER = "/tmp"
 
 MEDIA_ROOT = "/home/media/lazy/static/media"
@@ -24,7 +29,7 @@ TVDB_ACCOUNTID = "289F895955772DE3"
 
 LFTP_BIN = "/usr/bin/lftp"
 
-MAX_SIM_DOWNLOAD_JOBS = 2
+MAX_SIM_DOWNLOAD_JOBS = 1
 LFTP_THREAD_PER_DOWNLOAD = 3
 
 DATA_PATH = os.sep + "data" + os.sep + "Videos"
@@ -245,6 +250,7 @@ CACHES = {
         'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
         'LOCATION': 'lazy_cache',
     }
+
 }
 
 INSTALLED_APPS = (
@@ -288,10 +294,16 @@ WSGI_APPLICATION = 'lazyapp.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.default'),
-    },
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'lazy',                      # Or path to database file if using sqlite3.
+        'USER': MYSQL_USER,                      # Not used with sqlite3.
+        'PASSWORD': MYSQL_PASS,                  # Not used with sqlite3.
+        'HOST': MYSQL_IP,                      # Set to empty string for localhost. Not used with sqlite3.
+        'PORT': MYSQL_PORT,                      # Set to empty string for default. Not used with sqlite3.
+    }
 }
+
+
 
 #DATABASE_ROUTERS = ['lazyapp.router.LazyRouter']
 

@@ -289,6 +289,14 @@ class Tvdbcache(models.Model):
                     try:
                         imdbid_id = tvdb_obj['imdb_id'].lstrip("tt")
                         self.imdbid_id = int(imdbid_id)
+
+                        try:
+                            imdbobj = Imdbcache.objects.get(id=int(imdbid_id))
+                        except ObjectDoesNotExist:
+                            imdbobj = Imdbcache()
+                            imdbobj.id = int(imdbid_id)
+                            imdbobj.save()
+
                     except:
                         pass
 
@@ -380,9 +388,11 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
                         for get_ep in get_eps:
                             existing_obj.add_download(get_season, get_ep)
 
-                existing_obj.reset()
-                existing_obj.save()
-                raise AlradyExists_Updated()
+                    existing_obj.reset()
+                    existing_obj.save()
+                    raise AlradyExists_Updated()
+                else:
+                    raise Exception("download already exists")
 
         #Get section
         if instance.status is None:
