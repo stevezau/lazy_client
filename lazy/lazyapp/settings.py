@@ -17,6 +17,14 @@ MYSQL_PASS = 'drift990'
 MYSQL_IP = 'localhost'
 MYSQL_PORT = '3389'
 
+TVDB_ACCOUNTID = "xxxx"
+
+FTP_IP = "66.90.113.62"
+FTP_PORT = 32245
+FTP_USER = "xxxx"
+FTP_PASS = "xxxx"
+
+
 TMPFOLDER = "/tmp"
 
 MEDIA_ROOT = "/home/media/lazy/static/media"
@@ -24,8 +32,6 @@ MEDIA_URL = "/lazy/media/"
 
 FLEXGET_APPROVED = "/home/media/.flexget/approve.yml"
 FLEXGET_IGNORE = "/home/media/.flexget/ignore.yml"
-
-TVDB_ACCOUNTID = "289F895955772DE3"
 
 LFTP_BIN = "/usr/local/bin/lftp"
 
@@ -44,10 +50,6 @@ TVHD = os.path.join(DATA_PATH, "TVShows")
 HD = os.path.join(DATA_PATH, "Movies")
 XVID = os.path.join(DATA_PATH, "Movies")
 
-FTP_IP = "66.90.113.62"
-FTP_PORT = 32245
-FTP_USER = "steve"
-FTP_PASS = "site990"
 
 #############################################
 #### !!!!DO NOT CHANGE ANYTHING BELOW!!!! ###
