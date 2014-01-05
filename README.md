@@ -11,9 +11,8 @@ Install Ubuntu Packages
 =====
 Execute the following on server
 
-.. code-block:: bash
 
-$ sudo apt-get install apache2 libapache2-mod-wsgi lftp git python-pip supervisor
+	$ sudo apt-get install apache2 libapache2-mod-wsgi lftp git python-pip supervisor
 
 Configure flexget
 =====
