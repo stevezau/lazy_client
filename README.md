@@ -64,7 +64,10 @@ Lazy Install
 
 	$ sudo pip install -U -r /home/media/lazy/requirements.txt
 
-3) Initial setup of database
+3) !!IMPORTANT!! Edit the settings in file /home/media/lazy/lazyapp/settings.py
+
+
+4) Initial setup of database
 
 	$ cd /home/media/lazy
 	$ python manage.py syncdb
@@ -77,7 +80,7 @@ Lazy Install
 
 	$ python manage.py sitetreeload --mode=replace /home/media/lazy/lazyweb/fixtures/lazyweb_initialdata.json
 
-5) Collect static files
+6) Collect static files
 
 	$ python manage.py collectstatic
 
@@ -88,7 +91,6 @@ Lazy Install
 	$ sudo ln -s /home/media/lazy/serverconf/lazy-supervisor.conf /etc/supervisor/conf.d/lazy.conf 
 	$ sudo service supervisor restart
 	
-8) Edit the settings in file /home/media/lazy/lazyapp/settings.py
 
 
 Setup Apache
