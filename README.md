@@ -12,7 +12,7 @@ Install Ubuntu Packages
 Execute the following on server
 
 
-	$ sudo apt-get install apache2 libapache2-mod-wsgi lftp git python-pip supervisor mysql-server phpmyadmin
+	$ sudo apt-get install apache2 libapache2-mod-wsgi lftp git python-pip supervisor mysql-server phpmyadmin python-mysqldb 
 
 Setup Mysql
 =====
@@ -70,6 +70,7 @@ Lazy Install
 4) Initial setup of database
 
 	$ cd /home/media/lazy
+	$ mkdir -p static/media
 	$ python manage.py syncdb
 	$ python manage.py createcachetable lazy_cache
 	$ python manage.py migrate
@@ -87,7 +88,8 @@ Lazy Install
 	
 7) Setup background processor for autostartup (as media)
 
-	$ mkdir /var/log/celery
+	$ sudo mkdir /var/log/celery
+	$ sudo chown media:media /var/log/celery
 	$ sudo ln -s /home/media/lazy/serverconf/lazy-supervisor.conf /etc/supervisor/conf.d/lazy.conf 
 	$ sudo service supervisor restart
 	
@@ -96,6 +98,6 @@ Lazy Install
 Setup Apache
 =====
 
-	$ sudo ln -s /home/media/lazy/serverconf/lazy-apache.conf /etc/apache2/sites-available
+	$ sudo ln -s /home/media/lazy/serverconf/lazy-apache.conf /etc/apache2/sites-available/lazy.conf
 	$ sudo a2ensite lazy
 	$ sudo service apache2 restart
