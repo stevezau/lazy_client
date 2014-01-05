@@ -1,0 +1,41 @@
+presets:
+  global:
+    retry_failed:
+      retry_time: 60 minutes
+      retry_time_multiplier: 2 # Amount retry time will be multiplied by after each successive failure
+      max_retries: 20
+    lazy:
+      api: http://localhost:8000/api
+  FTPRSS:
+    rss:
+      #url: /home/media/.flexget/xvid.xml
+      url: http://www.drifthost.com/ftprss/rss.php?cat=XVID&days=4
+      username: XXXXXXX
+      password: XXXXXXXX
+      other_fields: [imdb_url,section,path]
+    require_field: section
+  NOTIFY:
+    prowl:
+      apikey: XXXXXXXXXXXXXXXXXXXXXXXX
+  XVID:
+    regexp:
+      reject_excluding:
+        - ^XVID$:
+            from: section
+    exists_hd_movie:
+      - /data/Videos/Movies/
+tasks:
+  XVID:
+    if:
+      - imdb_id == None:
+          set:
+            imdb_id: ''
+    imdb_required: true
+    imdb:
+      min_score: 4.5
+      min_year: 2012
+      min_votes: 400
+    preset:
+      - FTPRSS
+      - NOTIFY
+      - XVID

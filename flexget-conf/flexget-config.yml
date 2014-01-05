@@ -1,0 +1,187 @@
+presets:
+  global:
+    retry_failed:
+      retry_time: 60 minutes
+      retry_time_multiplier: 2 # Amount retry time will be multiplied by after each successive failure
+      max_retries: 20
+    lazy:
+      api: http://localhost:8000/api
+  NOTIFY:
+    prowl:
+      apikey: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  TVHD:
+    rss:
+      #url: /home/media/.flexget/test.xml
+      url: http://www.drifthost.com/ftprss/rss.php?cat=TVHD&days=2
+      username: XXXXXXX
+      password: XXXXXXX
+      other_fields: [imdb_url,section,path]
+    require_field:
+      - section
+    regexp:
+      reject_excluding:
+        - ^TVHD$:
+            from: section
+    exists_series:
+      - /data/Videos/TVShows/
+  HD:
+    rss:
+      url: http://www.drifthost.com/ftprss/rss.php?cat=HD&days=2
+      username: XXXXXX
+      password: XXXXXX
+      other_fields: [imdb_url,section,path]
+    require_field:
+      - section
+    imdb_required: true
+    seen_movies: strict
+    regexp:
+      reject_excluding:
+        - ^HD$:
+            from: section
+
+  HD3D:
+    rss:
+      url: http://www.drifthost.com/ftprss/rss.php?cat=HD3D&days=2
+      username: XXXXXXX
+      password: XXXXXXX
+      other_fields: [imdb_url,section,path]
+    require_field:
+      - section
+    regexp:
+      reject_excluding:
+        - ^HD3D$:
+            from: section
+  IGNORETV:
+    include: ignore.yml
+
+  APPROVE:
+    include: approve.yml
+
+  ACCEPT_SERIES:
+    import_series:
+      from:
+        listdir:
+          - /data/Videos/TVShows
+        thetvdb_favorites:
+          account_id: XXXXXXXXXXXX
+  ACCEPT_SERIES_TVDB:
+    import_series:
+      from:
+        listdir:
+          - /data/Videos/TVShows
+        thetvdb_favorites:
+          account_id: XXXXXXXXXXXX
+      settings:
+        timeframe: 1 hours
+        target: 720p
+        propers: 3 days
+
+tasks:
+#####TV####
+  TVDB:
+    priority: 1
+    thetvdb_lookup: yes
+    metainfo_series: true
+    preset:
+      - NOTIFY
+      - TVHD
+      - APPROVE
+      - ACCEPT_SERIES_TVDB
+
+  TV-MANUAL:
+    priority: 4
+    require_field:
+      - series_guessed
+    thetvdb_lookup: yes
+    metainfo_series: true
+    regexp:
+      accept:
+        - Reality:
+            from: tvdb_genres
+        - Documentary:
+            from: tvdb_genres
+        - Science-Fiction:
+            from: tvdb_genres
+        - Discovery:
+            from: tvdb_network
+        - SciFi:
+            from: tvdb_network
+        - Syfy:
+            from: tvdb_network
+        - National Geographic:
+            from: tvdb_network
+        - History:
+            from: tvdb_network
+        - Animal Planet:
+            from: tvdb_network
+        - Crime and Investigation Network:
+            from: tvdb_network
+      rest: reject
+    lazy:
+      pending: true
+    preset:
+      - IGNORETV
+      - NOTIFY
+      - TVHD
+      - ACCEPT_SERIES
+
+  TV-AUTO:
+    require_field:
+      - series_guessed
+      - tvdb_series_name
+    plugin_priority:
+      imdb: 25
+    priority: 3
+    metainfo_series: true
+    thetvdb_lookup: yes
+    imdb:
+      min_score: 7.5
+      min_votes: 1300
+    preset:
+      - IGNORETV
+      - NOTIFY
+      - TVHD
+      - ACCEPT_SERIES
+    lazy:
+      pending: true
+
+## 3D HD ##
+  HD3D:
+    lazy:
+      pending: true
+    preset:
+      - NOTIFY
+      - HD3D
+    accept_all: yes
+
+#####1080p######
+  1080pLatestRelease:
+    priority: 1
+    quality: 1080p
+    imdb:
+      min_score: 5.2
+      min_votes: 120
+      min_year: 2011
+      accept_languages:
+        - english
+    preset:
+      - NOTIFY
+      - HD
+  1080pRecentRelease:
+    priority: 1
+    quality: 1080p
+    imdb:
+      min_score: 6.5
+      min_votes: 120
+      min_year: 2000
+      max_year: 2010
+      accept_languages:
+        - english
+    preset:
+      - NOTIFY
+      - HD
+
+#####720P######
+  720pLatestRelease:
+    priority: 2
+    delay: 24 hours
