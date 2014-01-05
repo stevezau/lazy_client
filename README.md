@@ -101,3 +101,17 @@ Setup Apache
 	$ sudo ln -s /home/media/lazy/serverconf/lazy-apache.conf /etc/apache2/sites-available/lazy.conf
 	$ sudo a2ensite lazy
 	$ sudo service apache2 restart
+
+
+Conjob for Flexget
+=====
+
+Add the following cron jobs
+
+	$ */15 * * * * /usr/local/bin/flexget --cron -c /home/media/.flexget/config-xvid.yml
+	$ */15 * * * * /usr/local/bin/flexget --cron --disable-advancement
+
+
+
+
+Thats it.. go to http://serverip/lazy
