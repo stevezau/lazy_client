@@ -5,10 +5,27 @@ from rest_framework import generics
 import json
 from django.http import HttpResponse
 from lazyweb.utils.tvdb_api import Tvdb
+from lazyweb.exceptions import AlradyExists_Updated
+from rest_framework.response import Response
+from rest_framework import status
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class DownloadItemList(generics.ListCreateAPIView):
     queryset = DownloadItem.objects.all()[1:10]
     serializer_class = DownloadItemSerializer
+
+    def post(self, request, *args, **kwargs):
+        try:
+            super(DownloadItemList, self).post(request, *args, **kwargs)
+        except AlradyExists_Updated as e:
+            serializer = DownloadItemSerializer(e.existingitem)
+            headers = self.get_success_headers(serializer.data)
+
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
 
 class DownloadItemDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = DownloadItem.objects.all()

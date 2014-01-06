@@ -15,65 +15,20 @@ from lazyweb import utils
 from djcelery_transactions import task
 from celery.result import AsyncResult
 from lazyweb.models import DownloadItem
-from cStringIO import StringIO
-import pycurl, time
-from datetime import datetime
 
 
 logger = logging.getLogger(__name__)
 
-#class Singleton(type):
-#    _instances = {}
-#    def __call__(cls, *args, **kwargs):
-#        if cls not in cls._instances:
-#           cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-#       return cls._instances[cls]
-
-class FTPMirror():
-
-    def __init__(self):
-        m = pycurl.CurlMulti()
-        m.setopt(pycurl.URL, r'ftp://ftp.ncbi.nih.gov/refseq/release/')
-
-    def mirror_ftp_folder(self, remotepath, localpath):
-        curl = pycurl.CurlMulti()
-
-        urls = [] # list of urls
-        # reqs: List of individual requests.
-        # Each list element will be a 3-tuple of url (string), response string buffer
-        # (cStringIO.StringIO), and request handle (pycurl.Curl object).
-        reqs = []
-
-        # Build multi-request object.
-        m = pycurl.CurlMulti()
-        for url in urls:
-            response = StringIO()
-            handle = pycurl.Curl()
-            handle.setopt(pycurl.URL, url)
-            handle.setopt(pycurl.WRITEFUNCTION, response.write)
-            req = (url, response, handle)
-            # Note that the handle must be added to the multi object
-            # by reference to the req tuple (threading?).
-            m.add_handle(req[2])
-            reqs.append(req)
-
-        # Perform multi-request.
-        # This code copied from pycurl docs, modified to explicitly
-        # set num_handles before the outer while loop.
-        SELECT_TIMEOUT = 1.0
-        num_handles = len(reqs)
-        while num_handles:
-            ret = m.select(SELECT_TIMEOUT)
-            if ret == -1:
-                continue
-            while 1:
-                ret, num_handles = m.perform()
-                if ret != pycurl.E_CALL_MULTI_PERFORM:
-                    break
-
-
+class Singleton(type):
+    _instances = {}
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
 
 class FTPManager():
+    __metaclass__ = Singleton
+
     ftps = None
 
     def __init__(self):
@@ -81,122 +36,19 @@ class FTPManager():
             self.connect()
         except Exception as e:
             #lets try again
-            print "failed connecting to ftp, trying again."
-            self.connect()
+            try:
+                print "failed connecting to ftp, trying again."
+                self.connect()
+            except Exception as e:
+                raise e
 
-    def ftpwalk(self, top, topdown=True, onerror=None):
-        """
-        Generator that yields tuples of (root, dirs, nondirs).
-        """
-        # Make the FTP object's current directory to the top dir.
-        self.ftps.cwd(top)
-
-        # We may not have read permission for top, in which case we can't
-        # get a list of the files the directory contains.  os.path.walk
-        # always suppressed the exception then, rather than blow up for a
-        # minor reason when (say) a thousand readable directories are still
-        # left to visit.  That logic is copied here.
-        try:
-            dirs, nondirs = self._ftp_listdir()
-        except os.error, err:
-            if onerror is not None:
-                onerror(err)
-            return
-
-        if topdown:
-            yield top, dirs, nondirs
-        for entry in dirs:
-            dname = entry[0]
-            path = os.path.join(top, dname)
-            if entry[-1] is None: # not a link
-                for x in self.ftpwalk(path, topdown, onerror):
-                    yield x
-        if not topdown:
-            yield top, dirs, nondirs
-
-    def _ftp_listdir(self):
-        """
-        List the contents of the FTP opbject's cwd and return two tuples of
-
-           (filename, size, mtime, mode, link)
-
-        one for subdirectories, and one for non-directories (normal files and other
-        stuff).  If the path is a symbolic link, 'link' is set to the target of the
-        link (note that both files and directories can be symbolic links).
-
-        Note: we only parse Linux/UNIX style listings; this could easily be
-        extended.
-        """
-        _calmonths = dict( (x, i+1) for i, x in
-                   enumerate(('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                              'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')) )
-
-        dirs, nondirs = [], []
-        listing = []
-        self.sendcmd("PRET LIST")
-        self.ftps.retrlines('MLSD', listing.append)
-        for line in listing:
-            # Parse, assuming a UNIX listing
-            print "line: " + line
-            line_values = line.split(";")
-
-            print len(line_values)
-            print line
-            words = line.split(None, 8)
-            print len(words)
-            if len(words) < 6:
-                print words
-                logger.info('Warning: Error reading short line %s' % line)
-                continue
-
-            # Get the filename.
-            filename = words[-1].lstrip()
-            if filename in ('.', '..'):
-                continue
-
-            # Get the link target, if the file is a symlink.
-            extra = None
-            i = filename.find(" -> ")
-            if i >= 0:
-                # words[0] had better start with 'l'...
-                extra = filename[i+4:]
-                filename = filename[:i]
-
-            # Get the file size.
-            size = int(words[4])
-
-            # Get the date.
-            year = datetime.today().year
-            month = _calmonths[words[5]]
-            day = int(words[6])
-            mo = re.match('(\d+):(\d+)', words[7])
-            if mo:
-                hour, min = map(int, mo.groups())
-            else:
-                mo = re.match('(\d\d\d\d)', words[7])
-                if mo:
-                    year = int(mo.group(1))
-                    hour, min = 0, 0
-                else:
-                    raise ValueError("Could not parse time/year in line: '%s'" % line)
-            dt = datetime(year, month, day, hour, min)
-            mtime = time.mktime(dt.timetuple())
-
-            # Get the type and mode.
-            mode = words[0]
-
-            entry = (filename, size, mtime, mode, extra)
-            if mode[0] == 'd':
-                dirs.append(entry)
-            else:
-                nondirs.append(entry)
-        return dirs, nondirs
 
     def connect(self):
         self.ftps = FTP_TLS()
-        self.ftps.set_debuglevel(1)
+        self.ftps.set_debuglevel(0)
         self.ftps.connect(settings.FTP_IP, settings.FTP_PORT, timeout=60)
         self.ftps.login(settings.FTP_USER, settings.FTP_PASS)
+
 
     def getFolderListing(self, folder, onlyDir=False):
         logger.debug("Getting listing of %s" % folder)

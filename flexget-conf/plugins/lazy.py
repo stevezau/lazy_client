@@ -14,13 +14,30 @@ log = getLogger('lazy')
 
 class PluginLazy(object):
     """
-    Parse task content or url for links and adds them to lazy.
+    Parse task content or url for hoster links and adds them to pyLoad.
+
+    Example::
+
+      pyload:
+        api: http://localhost:8000/api
+        request: yes
+        enabled: yes
+
+    Default values for the config elements::
+
+      pyload:
+          api: http://localhost:8000/api
+          queue: no
+          hoster: ALL
+          parse_url: no
+          multiple_hoster: yes
+          enabled: yes
     """
 
     __author__ = 'steve'
     __version__ = '0.1'
 
-    DEFAULT_API = 'http://localhost/lazy/api'
+    DEFAULT_API = 'http://localhost:8000/lazy/api'
     DEFAULT_PENDING = False
     DEFAULT_HANDLE_NO_URL_AS_FAILURE = False
 
@@ -78,7 +95,7 @@ class PluginLazy(object):
             tvdb_id = None
 
             if 'imdb_id' in entry:
-                 imdb_id = extract_id(entry['imdb_id'])
+                 imdb_id = int(extract_id(entry['imdb_id']))
 
             if 'tvdb_id' in entry:
                  tvdb_id = int(entry['tvdb_id'])
@@ -97,7 +114,7 @@ class PluginLazy(object):
 
                 f.write("\n\n %s \n\n" % str(post))
 
-                pid = query_api(api_url, "downloads", post).text
+                query_api(api_url, "downloads", post)
                 log.info('added entry to lazy %s' % entry['path'])
 
             except Exception as e:
@@ -123,9 +140,9 @@ def query_api(url, method, post=None):
         response.raise_for_status()
         return response
     except RequestException as e:
-        log.debug(e.response)
+        log.exception(e.response)
         if e.response.status_code == 500:
-            raise PluginError('Internal API Error: <%s> <%s> <%s>' % (method, url, post), log)
+            raise PluginError('Internal API Error: <%s> <%s> <%s> <%>' % (method, url, post, e), log)
         raise
 
 register_plugin(PluginLazy, 'lazy', api_ver=2)

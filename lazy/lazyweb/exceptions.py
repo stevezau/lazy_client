@@ -20,3 +20,8 @@ class AlradyExists_Updated(Exception):
         msg  -- explanation of the error
     """
 
+    existingitem = None
+
+    def __init__(self, existingitem):
+        self.existingitem = existingitem
+

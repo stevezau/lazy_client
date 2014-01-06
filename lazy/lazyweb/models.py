@@ -391,9 +391,10 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
 
                     existing_obj.reset()
                     existing_obj.save()
-                    raise AlradyExists_Updated()
+                    raise AlradyExists_Updated(existing_obj)
                 else:
-                    raise Exception("download already exists")
+                    logger.debug("download already exists.. ignore this")
+                    raise AlradyExists_Updated(existing_obj)
 
         #Get section
         if instance.status is None:
