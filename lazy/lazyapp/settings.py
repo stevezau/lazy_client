@@ -14,9 +14,6 @@ import os
 ###################
 import lazysettings
 
-#DONT THIS THESES IMPORTS
-import os
-
 # MYSQL Details
 
 MYSQL_USER = lazysettings.MYSQL_USER
@@ -66,6 +63,7 @@ FLEXGET_IGNORE = lazysettings.FLEXGET_IGNORE
 #############################################
 #### !!!!DO NOT CHANGE ANYTHING BELOW!!!! ###
 #############################################
+
 
 TVSHOW_REGEX = (
     '(?i).+\.S[0-9]+E[0-9]+.+',
@@ -194,13 +192,32 @@ DEBUG = True
 TEMPLATE_DEBUG = True
 TEMPLATE_DIRS = [os.path.join(BASE_DIR, 'templates')]
 
-ALLOWED_HOSTS = []
+#ALLOWED_HOSTS = []
 
-import djcelery
-djcelery.setup_loader()
+INSTALLED_APPS = (
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'django.contrib.admin',
+    'rest_framework',
+    'sitetree',
+    'south',
+    'jquery',
+    'djcelery',
+    'jquery_ui',
+    'django_mobile',
+    'lazyweb',
+    'lazyapi',
+)
 
-#CELERY_RESULT_BACKEND='djcelery.backends.database:DatabaseBackend'
-BROKER_URL = 'django://'
+##############
+### CELERY ###
+##############
+BROKER_URL = "amqp://"
+CELERY_RESULT_BACKEND = "amqp://"
 
 # Application definition
 
@@ -267,26 +284,6 @@ CACHES = {
 
 }
 
-INSTALLED_APPS = (
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'django.contrib.admin',
-    'rest_framework',
-    'sitetree',
-    'south',
-    'jquery',
-    'djcelery',
-    'kombu.transport.django',
-    'jquery_ui',
-    'django_mobile',
-    'lazyweb',
-    'lazyapi',
-)
-
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -317,9 +314,6 @@ DATABASES = {
     }
 }
 
-
-
-#DATABASE_ROUTERS = ['lazyapp.router.LazyRouter']
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.6/topics/i18n/

@@ -1,6 +1,6 @@
 from django.http import HttpResponse, HttpResponseRedirect
 from lazyweb.models import DownloadItem
-from django.views.generic import TemplateView, ListView, FormView
+from django.views.generic import TemplateView, ListView, FormView, DetailView
 from django.core.exceptions import ObjectDoesNotExist
 from lazyweb import utils
 import logging
@@ -9,6 +9,18 @@ from lazyweb.utils.tvdb_api import Tvdb
 
 
 logger = logging.getLogger(__name__)
+
+class DownloadLog(DetailView):
+    model = DownloadItem
+    template_name = "downloads/log.html"
+
+    def get_context_data(self, **kwargs):
+        context = super(DownloadLog, self).get_context_data(**kwargs)
+        context['selectable'] = False
+        logs = self.get_object().downloadlog_set.all()
+        context['logs'] = logs
+        return context
+
 
 class DownloadsManuallyFix(ListView):
     model = DownloadItem
@@ -105,7 +117,6 @@ class DownloadsListView(ListView):
             return DownloadItem.objects.all().filter(status=self.dlget)
 
     def key_function(self, dlitem):
-
         try:
             if dlitem.tvdbid is None:
                 return (dlitem.id, None)
@@ -208,9 +219,9 @@ def delete(items):
             dlitem = DownloadItem.objects.get(pk=item)
             dlitem.delete()
             response.write("Deleted %s\n" % dlitem.title)
-        except ObjectDoesNotExist:
+        except Exception as e:
             status = 210
-            response.write("Unable to delete %s as it was not found") % item
+            response.write("Unable to delete %s as " % (item, e.message))
 
     response.status_code = status
     return response
@@ -225,9 +236,9 @@ def reset(items):
             dlitem = DownloadItem.objects.get(pk=item)
             dlitem.reset()
             response.write("Reset %s\n" % dlitem.title)
-        except ObjectDoesNotExist:
+        except Exception as e:
             status = 210
-            response.write("Unable to delete %s as it was not found") % item
+            response.write("Unable to delete %s as %s" % (item, e.message))
 
     response.status_code = status
     return response

@@ -69,7 +69,7 @@ def get_ep_season_from_title(title):
             if epNum != '':
                 eps.append(int(epNum))
 
-        return season, eps
+        return int(season), eps
 
     normal = re.search("(?i)S([0-9]+)E([0-9]+)", title, re.IGNORECASE)
 
@@ -80,11 +80,11 @@ def get_ep_season_from_title(title):
 
                 return season, eps
             except:
-                eps = [00]
-                season = 00
+                eps = [0]
+                season = 0
     else:
-        eps = [00]
-        season = 00
+        eps = [0]
+        season = 0
 
     return season, eps
 
@@ -153,8 +153,9 @@ def crc(fileName):
         store.close()
 
 
-def check_sfv(path):
-    logger.debug("Checking SFV in path %s" % path)
+def check_sfv(dlitem):
+    path = dlitem.localpath
+    dlitem.log(__name__, "Checking SFV in path %s" % path)
 
     os.chdir(path)
 
@@ -166,7 +167,7 @@ def check_sfv(path):
         s = open(sfvFile)
 
         if os.path.getsize(sfvFile) == 0:
-            logger.debug('empty sfv file')
+            dlitem.log(__name__, 'empty sfv file')
             return False
 
         names_list = []
@@ -185,14 +186,13 @@ def check_sfv(path):
         no_errors = True
 
         while(len(names_list)>i):
-            print "Checking " + names_list[i]
             calc_sfv_value=crc(names_list[i])
 
 
             if sfv_list[i].lstrip('0')==calc_sfv_value:
                 pass
             else:
-                logger.info("there was a problem with file deleting it " + names_list[i])
+                dlitem.log(__name__, "there was a problem with file deleting it " + names_list[i])
                 no_errors=False
                 try:
                     os.remove(names_list[i])

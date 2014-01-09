@@ -77,6 +77,8 @@
             <div class='download-error'>{{ download.message }}</div>
         {% endif %}
 
+        <div><a href="{% url "downloads.log" download.id %}">View Log</a></div>
+
     </div>
 </div>
 <div style='clear: both;'></div>
