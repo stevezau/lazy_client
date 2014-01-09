@@ -241,8 +241,8 @@ class TVShowScanner:
             try:
                 self.ftp_manager = FTPManager()
 
-                tvhd_dir = self.ftp_manager.getFolderListing("/TVHD")
-                req_dir = self.ftp_manager.getFolderListing("/REQUESTS")
+                tvhd_dir = self.ftp_manager.get_folders("/TVHD")
+                req_dir = self.ftp_manager.get_folders("/REQUESTS")
 
                 self.ftp_dir = []
 

@@ -36,15 +36,17 @@ Flexget will watch the FTP site for new releases. It will tell lazy about any re
 	$ /home/media/.flexget/config-xvid.yml
 
 	
-LFTP Config. 
+Install RabbitMQ for the Backgound processor queue 
 =====
-LFTP is used to download the files from the FTP
 
-1) Copy the lftprc file from git hub to 
+	$ /etc/apt/sources.list
+	$ deb http://www.rabbitmq.com/debian/ testing main
+	$ wget http://www.rabbitmq.com/rabbitmq-signing-key-public.asc
+	$ sudo apt-key add rabbitmq-signing-key-public.asc
+	$ sudo aot-get update
+	$ sudo apt-get install rabbitmq-server
 
-
-	$ /home/media/.lftp/rc
-
+	
 Setup storage folders
 =====
 

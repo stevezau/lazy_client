@@ -15,10 +15,14 @@ from lazyweb.exceptions import AlradyExists_Updated
 from django.core.files import File
 from django.core.files.temp import NamedTemporaryFile
 import urllib2
+import inspect
 import pprint
+from celery.result import AsyncResult
 from django.db import models
+import time
 from jsonfield import JSONField
-
+from django.core.cache import cache
+from celery.task.control import revoke
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +34,20 @@ class TVShowMappings(models.Model):
 
     title = models.CharField(max_length=150, db_index=True, unique=True)
     tvdbid = models.ForeignKey('Tvdbcache', on_delete=models.DO_NOTHING)
+
+
+class DownloadLog(models.Model):
+
+    def __unicode__(self):
+        return self.title
+
+    download_id = models.ForeignKey('DownloadItem', on_delete=models.DO_NOTHING)
+    date = models.DateTimeField(auto_now_add=True)
+    message = models.TextField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'download_log'
+
 
 class DownloadItem(models.Model):
     class Meta:
@@ -78,6 +96,21 @@ class DownloadItem(models.Model):
     seasonoverride = models.IntegerField(default=0, blank=True, null=True)
     onlyget = JSONField(blank=True, null=True)
 
+    def log(self, name, msg):
+        line = inspect.currentframe().f_back.f_lineno
+        logmsg = "%s(%s): %s" % (name, line, msg)
+
+        self.downloadlog_set.create(download_id=self.id, message=logmsg)
+
+
+    def get_task(self):
+        if self.taskid == None or self.taskid == "":
+            logger.debug("No taskid found for %s" % self.title)
+            return None
+
+        return AsyncResult(self.taskid)
+
+
     def add_download(self, add_season, add_ep):
         if not self.onlyget:
             self.onlyget = {}
@@ -114,7 +147,7 @@ class DownloadItem(models.Model):
     def delete(self):
         import os, shutil
 
-        self.killpid()
+        self.killtask()
 
         if os.path.exists(self.localpath):
             try:
@@ -124,17 +157,41 @@ class DownloadItem(models.Model):
 
         super(DownloadItem, self).delete()
 
-    def killpid(self):
-        import os, signal
-        if self.pid:
-            try:
-                os.kill(self.pid, signal.SIGILL)
-            except OSError as e:
-                pass
+    def killtask(self):
+        task = self.get_task()
 
-    def reset(self):
-        self.killpid()
+        if None is task:
+            return
+
+        if task.state == "PENDING":
+            revoke(self.taskid, terminate=True, signal='SIGKILL')
+            return
+
+        if task.ready():
+            return
+
+        #lets try kill it
+        for i in range(0, 6):
+            task = self.get_task()
+            revoke(self.taskid, terminate=True, signal='SIGKILL')
+            print task.state
+            if task.ready():
+                return
+            time.sleep(5)
+
+        raise Exception("Unable to kill download task/job")
+
+    def reset(self, force=False):
+        if force:
+            try:
+                self.killtask()
+            except:
+                pass
+        else:
+            self.killtask()
+
         self.status = self.QUEUE
+        self.taskid = None
         self.save()
 
     def get_local_size(self):
@@ -513,10 +570,14 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
             if instance.imdbid:
                 #Do we need to update it
                 curTime = datetime.now()
-                diff = curTime - instance.imdbid.updated.replace(tzinfo=None)
-                hours = diff.seconds / 60 / 60
+                imdb_date = instance.imdbid.updated
 
-                if hours > 24:
+                if imdb_date:
+                    diff = curTime - instance.imdbid.updated.replace(tzinfo=None)
+                    hours = diff.seconds / 60 / 60
+                    if hours > 24:
+                        instance.imdbid.update_from_imdb()
+                else:
                     instance.imdbid.update_from_imdb()
 
         except ObjectDoesNotExist as e:

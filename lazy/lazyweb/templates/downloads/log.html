@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% load sitetree %}
+
+{% block submenu %}
+    {% sitetree_menu from "lazymenu" include "downloads" template "headersubmenu.html" %}
+{% endblock %}
+
+{% block content %}
+    <h1>Manual log</h1>
+
+    {% for log in logs %}
+        {{ log.message }}<br><br>
+    {% endfor %}
+
+{% endblock %}

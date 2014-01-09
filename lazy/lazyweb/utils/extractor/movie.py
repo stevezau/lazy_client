@@ -16,7 +16,7 @@ class MovieExtractor():
     def extract(self, download_item, dest_folder):
 
         if utils.match_str_regex(settings.MOVIE_PACKS_REGEX, download_item.title) and '.special.' not in download_item.title.lower():
-                logger.info("Movie pack detected")
+                download_item.log(__name__, "Movie pack detected")
 
                 #Lets build up the first folder
                 files = os.listdir(download_item.localpath)
@@ -68,10 +68,10 @@ class MovieExtractor():
                 src_files = utils.get_video_files(download_item.localpath)
             else:
                 #failed.. lets do sfv check
-                logger.info('failed extract, lets check the sfv')
-                sfvck = utils.check_sfv(download_item.localpath)
+                download_item.log(__name__, 'failed extract, lets check the sfv')
+                sfvck = utils.check_sfv(download_item)
 
-                logger.info("SFV CHECK " + str(sfvck))
+                download_item.log(__name__, "SFV CHECK " + str(sfvck))
 
                 if(sfvck):
                     src_files = utils.get_video_files(download_item.localpath)
@@ -153,7 +153,7 @@ class MovieExtractor():
 
 
     def do_move(self, download_item, movie_name, movie_year, dest_folder, src_files):
-            logger.debug('Found Movie: ' + movie_name + " (Year: " + str(movie_year) + ")")
+            download_item.log(__name__, 'Found Movie: ' + movie_name + " (Year: " + str(movie_year) + ")")
 
             dest_folder = re.sub(settings.ILLEGAL_CHARS_REGEX, "", os.path.abspath(dest_folder + os.sep + movie_name + " (" + str(movie_year) + ")"))
 
@@ -164,16 +164,16 @@ class MovieExtractor():
                     existing_vid_files = utils.get_video_files(dest_folder)
 
                     if len(existing_vid_files) > 0:
-                        logger.info("Found an existing movie folder, lets make sure we are not replacing with a lower xvid quality")
+                        download_item.log(__name__, "Found an existing movie folder, lets make sure we are not replacing with a lower xvid quality")
 
                         fname, ext = os.path.splitext(existing_vid_files[0]['src'])
 
                         if ext == ".mkv":
-                            logger.info("Existing movie is in HD lets keep that one")
+                            download_item.log(__name__, "Existing movie is in HD lets keep that one")
                             return
                         else:
                             # Delete the old movie
-                            logger.info('Deleting existing movie folder as its a lower quality ' + dest_folder)
+                            download_item.log(__name__, 'Deleting existing movie folder as its a lower quality ' + dest_folder)
                             shutil.rmtree(dest_folder)
 
             src_files = utils.setup_dest_files(src_files, dest_folder, movie_name + ' (' + str(movie_year) + ')')

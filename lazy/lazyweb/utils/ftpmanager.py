@@ -4,6 +4,7 @@ Created on 06/04/2012
 @author: Steve
 '''
 from __future__ import division
+from django.core.cache import cache
 import logging
 import os
 import subprocess
@@ -18,9 +19,189 @@ from lazyweb.models import DownloadItem
 from cStringIO import StringIO
 import pycurl, time
 from datetime import datetime
-
+import pprint
+from celery import current_task
 
 logger = logging.getLogger(__name__)
+
+
+def open_file(file, options):
+
+    for x in range(0, 4):
+        try:
+            return open(file, options, 8192)
+        except:
+            time.sleep(1)
+            pass
+
+    #one last try!
+    return open(file, options, 8192)
+
+
+def close_file(file):
+
+    for x in range(0, 4):
+        try:
+            file.close()
+        except:
+            time.sleep(1)
+            pass
+
+    #one last try
+    file.close()
+
+class FTPMirror:
+
+    # We should ignore SIGPIPE when using pycurl.NOSIGNAL - see
+    # the libcurl tutorial for more info.
+
+    @task(bind=True)
+    def mirror_ftp_folder(self, urls, savepath, dlitem):
+
+        current_task.update_state(state='RUNNING', meta={'speed': 'Doing some task'})
+        dlitem.log(__name__, "Starting Download")
+
+        #Find jobs running and if they are finished or not
+        task = dlitem.get_task()
+
+        if None is task:
+            pass
+        elif task.state == "SUCCESS" or task.state == "FAILURE":
+            pass
+        else:
+            dlitem.log(__name__, "%s already being downloaded" % dlitem.ftppath)
+            return
+
+        self.m = pycurl.CurlMulti()
+
+        try:
+            import signal
+            from signal import SIGPIPE, SIG_IGN
+            signal.signal(signal.SIGPIPE, signal.SIG_IGN)
+        except ImportError:
+            pass
+
+
+        # Get args
+        num_conn = settings.LFTP_THREAD_PER_DOWNLOAD
+
+        # Make a queue with (url, filename) tuples
+        queue = []
+
+        for url in urls:
+            url = url.strip()
+            ftpurl = "ftp://%s:%s@%s:%s/%s" % (settings.FTP_USER, settings.FTP_PASS, settings.FTP_IP, settings.FTP_PORT, url.lstrip("/"))
+
+            basepath = ""
+
+            i = 0
+            for path in url.split(os.sep):
+                if i > 2:
+                    basepath = os.path.join(basepath, path)
+                i += 1
+
+            urlsavepath = os.path.join(savepath, basepath)
+
+            try:
+                os.makedirs(os.path.split(urlsavepath)[0])
+            except:
+                pass
+
+             #add it to the queue
+            queue.append((ftpurl, urlsavepath))
+
+        # Pre-allocate a list of curl objects
+        self.m.handles = []
+        for i in range(num_conn):
+            c = pycurl.Curl()
+            c.fp = None
+            c.setopt(pycurl.FOLLOWLOCATION, 1)
+            c.setopt(pycurl.MAXREDIRS, 5)
+            c.setopt(pycurl.NOSIGNAL, 1)
+            #c.setopt(pycurl.VERBOSE, 1)
+            c.setopt(pycurl.FTP_SSL, pycurl.FTPSSL_ALL)
+            c.setopt(pycurl.SSL_VERIFYPEER, 0)
+            c.setopt(pycurl.SSL_VERIFYHOST, 0)
+
+            #PRET SUPPORT
+            c.setopt(188, 1)
+            self.m.handles.append(c)
+
+        num_urls = len(queue)
+        num_conn = min(num_conn, num_urls)
+
+        # Main loop
+        freelist = self.m.handles[:]
+        num_processed = 0
+        while num_processed < num_urls:
+            # If there is an url to process and a free curl object, add to multi stack
+            while queue and freelist:
+                url, filename = queue.pop(0)
+                c = freelist.pop()
+
+                if os.path.isfile(filename):
+                    #lets resume?
+                    f = open_file(filename, "ab")
+                    size = os.path.getsize(filename)
+                    if size == 0:
+                        f = open_file(filename, "wb")
+                    else:
+                        dlitem.log(__name__, "%s GOING TO TRY RESUME FROM %s" % (filename, size))
+                        c.setopt(pycurl.RESUME_FROM, os.path.getsize(filename))
+                else:
+                    f = open_file(filename, "wb")
+
+                c.fp = f
+
+                c.setopt(pycurl.URL, url)
+                c.setopt(pycurl.WRITEDATA, c.fp)
+                self.m.add_handle(c)
+                # store some info
+                c.filename = filename
+                c.url = url
+
+            # Run the internal curl state machine for the multi stack
+            while 1:
+                ret, num_handles = self.m.perform()
+                if ret != pycurl.E_CALL_MULTI_PERFORM:
+                    break
+
+            # Check for curl objects which have terminated, and add them to the freelist
+            while 1:
+                num_q, ok_list, err_list = self.m.info_read()
+                for c in ok_list:
+                    logger.debug("Closing file %s" % c.fp)
+                    close_file(c.fp)
+                    c.fp = None
+                    self.m.remove_handle(c)
+                    msg = "Success:%s %s" % (c.filename, c.getinfo(pycurl.EFFECTIVE_URL))
+                    dlitem.log(__name__, msg)
+                    logger.debug(msg)
+                    freelist.append(c)
+                for c, errno, errmsg in err_list:
+                    close_file(c.fp)
+                    c.fp = None
+                    self.m.remove_handle(c)
+                    msg = "Failed: %s %s %s" % (c.filename, errno, errmsg)
+                    dlitem.log(__name__, msg)
+                    logger.debug(msg)
+                    freelist.append(c)
+                num_processed = num_processed + len(ok_list) + len(err_list)
+                if num_q == 0:
+                    break
+            # Currently no more I/O is pending, could do something in the meantime
+            # (display a progress bar, etc.).
+            # We just call select() to sleep until some more data is available.
+            self.m.select(1.0)
+
+        # Cleanup
+        for c in self.m.handles:
+            if c.fp is not None:
+                close_file(c.fp)
+                c.fp = None
+            c.close()
+        self.m.close()
+
 
 #class Singleton(type):
 #    _instances = {}
@@ -29,51 +210,7 @@ logger = logging.getLogger(__name__)
 #           cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
 #       return cls._instances[cls]
 
-class FTPMirror():
-
-    def __init__(self):
-        m = pycurl.CurlMulti()
-        m.setopt(pycurl.URL, r'ftp://ftp.ncbi.nih.gov/refseq/release/')
-
-    def mirror_ftp_folder(self, remotepath, localpath):
-        curl = pycurl.CurlMulti()
-
-        urls = [] # list of urls
-        # reqs: List of individual requests.
-        # Each list element will be a 3-tuple of url (string), response string buffer
-        # (cStringIO.StringIO), and request handle (pycurl.Curl object).
-        reqs = []
-
-        # Build multi-request object.
-        m = pycurl.CurlMulti()
-        for url in urls:
-            response = StringIO()
-            handle = pycurl.Curl()
-            handle.setopt(pycurl.URL, url)
-            handle.setopt(pycurl.WRITEFUNCTION, response.write)
-            req = (url, response, handle)
-            # Note that the handle must be added to the multi object
-            # by reference to the req tuple (threading?).
-            m.add_handle(req[2])
-            reqs.append(req)
-
-        # Perform multi-request.
-        # This code copied from pycurl docs, modified to explicitly
-        # set num_handles before the outer while loop.
-        SELECT_TIMEOUT = 1.0
-        num_handles = len(reqs)
-        while num_handles:
-            ret = m.select(SELECT_TIMEOUT)
-            if ret == -1:
-                continue
-            while 1:
-                ret, num_handles = m.perform()
-                if ret != pycurl.E_CALL_MULTI_PERFORM:
-                    break
-
-
-
-class FTPManager():
+class FTPManager:
     ftps = None
 
     def __init__(self):
@@ -83,6 +220,7 @@ class FTPManager():
             #lets try again
             print "failed connecting to ftp, trying again."
             self.connect()
+
 
     def ftpwalk(self, top, topdown=True, onerror=None):
         """
@@ -99,6 +237,7 @@ class FTPManager():
         try:
             dirs, nondirs = self._ftp_listdir()
         except os.error, err:
+            print "ERROR"
             if onerror is not None:
                 onerror(err)
             return
@@ -108,11 +247,11 @@ class FTPManager():
         for entry in dirs:
             dname = entry[0]
             path = os.path.join(top, dname)
-            if entry[-1] is None: # not a link
-                for x in self.ftpwalk(path, topdown, onerror):
-                    yield x
+            for x in self.ftpwalk(path, topdown, onerror):
+                yield x
+
         if not topdown:
-            yield top, dirs, nondirs
+                yield top, dirs, nondirs
 
     def _ftp_listdir(self):
         """
@@ -127,123 +266,105 @@ class FTPManager():
         Note: we only parse Linux/UNIX style listings; this could easily be
         extended.
         """
-        _calmonths = dict( (x, i+1) for i, x in
-                   enumerate(('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                              'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')) )
-
         dirs, nondirs = [], []
         listing = []
         self.sendcmd("PRET LIST")
         self.ftps.retrlines('MLSD', listing.append)
         for line in listing:
             # Parse, assuming a UNIX listing
-            print "line: " + line
             line_values = line.split(";")
 
-            print len(line_values)
-            print line
-            words = line.split(None, 8)
-            print len(words)
-            if len(words) < 6:
-                print words
-                logger.info('Warning: Error reading short line %s' % line)
+            if len(line_values) < 6:
+                logger.info('Warning: Error reading short line')
                 continue
 
-            # Get the filename.
-            filename = words[-1].lstrip()
+            type = line_values[0].strip()
+            filename = line_values[-1].lstrip()
+
+            if filename.endswith("-MISSING"):
+                continue
+
             if filename in ('.', '..'):
                 continue
 
-            # Get the link target, if the file is a symlink.
-            extra = None
-            i = filename.find(" -> ")
-            if i >= 0:
-                # words[0] had better start with 'l'...
-                extra = filename[i+4:]
-                filename = filename[:i]
-
             # Get the file size.
-            size = int(words[4])
+            size = int(line_values[1].strip("size="))
 
-            # Get the date.
-            year = datetime.today().year
-            month = _calmonths[words[5]]
-            day = int(words[6])
-            mo = re.match('(\d+):(\d+)', words[7])
-            if mo:
-                hour, min = map(int, mo.groups())
-            else:
-                mo = re.match('(\d\d\d\d)', words[7])
-                if mo:
-                    year = int(mo.group(1))
-                    hour, min = 0, 0
-                else:
-                    raise ValueError("Could not parse time/year in line: '%s'" % line)
-            dt = datetime(year, month, day, hour, min)
-            mtime = time.mktime(dt.timetuple())
-
-            # Get the type and mode.
-            mode = words[0]
-
-            entry = (filename, size, mtime, mode, extra)
-            if mode[0] == 'd':
+            entry = (filename, size)
+            if type == "type=dir":
                 dirs.append(entry)
             else:
                 nondirs.append(entry)
+
         return dirs, nondirs
+
+    def get_files_for_download(self, folders):
+        found_files = []
+        size = 0
+
+        for folder in folders:
+            for curfolder, dirs, files in self.ftpwalk(folder):
+                for file in files:
+                    found_files.append(str(os.path.join(curfolder, file[0])))
+                    size += file[1]
+
+        return found_files, size
+
 
     def connect(self):
         self.ftps = FTP_TLS()
-        self.ftps.set_debuglevel(1)
+        self.ftps.set_debuglevel(0)
         self.ftps.connect(settings.FTP_IP, settings.FTP_PORT, timeout=60)
         self.ftps.login(settings.FTP_USER, settings.FTP_PASS)
 
-    def getFolderListing(self, folder, onlyDir=False):
-        logger.debug("Getting listing of %s" % folder)
 
-        ls = []
 
-        self.ftps.cwd(folder)
+    def get_required_folders_for_multi(self, title, folder, onlyget):
 
-        self.sendcmd("PRET LIST")
+        raise Exception("test")
 
-        cmd = "MLSD"
-        self.ftps.retrlines(cmd, ls.append)
-
-        eps = []
-
-        for item in ls:
-
-            fileValues = item.split(";")
-
-            if onlyDir:
-                isDir = fileValues[0].strip()
-
-                if isDir == 'type=file':
-                    eps.append((fileValues[-1].strip()))
-            else:
-                eps.append((fileValues[-1].strip()))
-
-        # If we get here, then the output has finished and we received no match
-        return eps
-
-    def getRemoteSizeMulti(self, folders):
-        remotesize = False
-        #lets gets get the size in total
-        for folder in folders:
-            folderSize = self.getRemoteSize(folder)
-
-            remotesize = remotesize + folderSize
-
-        return remotesize
-
-    def getRequiredDownloadFolders(self, title, basePath, onlyget):
-        #first lets check if its a multiseason or not
         folders = []
+        files = []
 
-        seasons = utils.get_season_from_title(title)
+        only_get_eps = {}
+        only_get_season = []
 
-        baseDirectoryListing = self.getFolderListing(basePath, onlyDir=True)
+        skipseason = []
+
+        for get_season, get_eps in onlyget.copy():
+            if get_season in skipseason:
+                continue
+
+            #Are we getting a full season
+
+
+        left_to_get = onlyget.copy()
+
+        for curdir, dirs, files in self.ftpwalk(folder, onlyDir=True):
+
+            #Lets check if required items are in folders
+            for dir in dirs:
+
+                found_dir = os.path.join(curdir, found_dir)
+
+                #is this an ep or full season
+                found_ep, found_ep_season = utils.get_ep_season_from_title(dir)
+
+                if found_ep[0] == 0:
+                    continue
+
+                #Ok lets check it
+                for get_season, get_eps in onlyget:
+                    if get_season == found_season:
+
+                        if found_ep in get_eps:
+                            #We found a match
+                            logger.debug("Found a folder to download")
+
+
+
+
+
 
         if len(seasons) > 1:
             #milti season
@@ -259,23 +380,23 @@ class FTPManager():
 
                 #TODO make this into a def so we are not repeating code below
                 if not seasonFolder:
-                    raise Exception('Unable to find season %s folder in path %s' % (season, basePath))
+                    raise Exception('Unable to find season %s folder in path %s' % (season, folder))
 
                 if 0 in get_eps:
                     logger.debug("Looks like we want to download the entire season %s" % season)
-                    folders.append("%s/%s" % (basePath, seasonFolder))
+                    folders.append("%s/%s" % (folder, seasonFolder))
                 else:
                     #lets get the invidiual eps
-                    epDirectoryListing = self.getFolderListing(basePath + "/" + seasonFolder)
+                    epDirectoryListing = self.get_folders(folder + "/" + seasonFolder)
 
                     for epNo in get_eps:
                         #now find each folder
                         epFolder = self.getEpFolder(season, epNo, epDirectoryListing)
 
                         if epFolder and epFolder != '':
-                            folders.append('%s/%s/%s' % (str(basePath), str(seasonFolder), str(epFolder)))
+                            folders.append('%s/%s/%s' % (str(folder), str(seasonFolder), str(epFolder)))
                         else:
-                            error = 'Unable to find ep %s in path %s/%s' % (str(epNo), str(basePath), str(seasonFolder))
+                            error = 'Unable to find ep %s in path %s/%s' % (str(epNo), str(folder), str(seasonFolder))
                             raise Exception(error)
 
 
@@ -288,20 +409,20 @@ class FTPManager():
 
                 if 0 in get_eps:
                     logger.debug("Looks like we want to download the entire season %s" % season)
-                    folders.append(basePath)
+                    folders.append(folder)
                 else:
                     #TODO make this into a def so we are not repeating code below
                     #lets get the invidiual eps
-                    epDirectoryListing = self.getFolderListing(basePath)
+                    epDirectoryListing = self.get_folders(folder)
 
                     for epNo in get_eps:
                         #now find each folder
                         epFolder = self.getEpFolder(season, epNo, epDirectoryListing)
 
                         if epFolder and epFolder != '':
-                            folders.append('%s/%s' % (str(basePath), str(epFolder)))
+                            folders.append('%s/%s' % (str(folder), str(epFolder)))
                         else:
-                            error = 'Unable to find ep %s in path %s' % (str(epNo), str(basePath))
+                            error = 'Unable to find ep %s in path %s' % (str(epNo), str(folder))
                             raise Exception(error)
 
         return folders
@@ -561,61 +682,6 @@ class FTPManager():
 
 
     @task(bind=True)
-    def mirror(self, local, remote, jobid=0):
-
-        dlitemid = jobid
-        local = local.strip()
-        print "Starting mirroring of %s to %s" % (remote,local)
-        local, remote = os.path.normpath(local), os.path.normpath(remote)
-        jobid = 'ftp-%s' % jobid
-
-        m = re.match(".*\.(mkv|avi|mp4)$", remote)
-
-        script = open(os.path.join(settings.TMPFOLDER, jobid), 'w')
-
-        if m:
-            #we have a file
-            #Build the lftp script for the job
-            lines = ('open -u "{0},{1}" ftp://{2}:{3}'.format(settings.FTP_USER, settings.FTP_PASS, settings.FTP_IP, settings.FTP_PORT),
-                         'get -c {0} -o {1}'.format("'" + remote + "'", "'" + local + "'"),
-                         'exit')
-            script.write(os.linesep.join(lines))
-            script.close()
-
-        else:
-
-            parallel = ' --parallel={0}'.format(settings.LFTP_THREAD_PER_DOWNLOAD) if settings.LFTP_THREAD_PER_DOWNLOAD else ''
-            scp_args = ('-vvv -c ' + parallel)
-
-            #Build the lftp script for the job
-            lines = ('open -u "{0},{1}" ftp://{2}:{3}'.format(settings.FTP_USER, settings.FTP_PASS, settings.FTP_IP, settings.FTP_PORT),
-                         'set xfer:log-file "/tmp/{0}.log"'.format(jobid),
-                         'set xfer:log true',
-                         'mirror {0} {1} {2}'.format(scp_args, "'" + remote + "'", "'" + local + "'"),
-                         'exit')
-            script.write(os.linesep.join(lines))
-            script.close()
-
-        # mirror
-        cmd = [settings.LFTP_BIN, '-d', '-f', script.name]
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-        print 'starting lftp with script %s' % script.name
-        print 'lftp started under PID: {0}'.format(proc.pid)
-
-        try:
-            dlitem = DownloadItem.objects.get(id=dlitemid)
-            dlitem.pid = proc.pid
-            dlitem.save()
-        except Exception as e:
-            pass
-
-        proc.wait()
-
-        if jobid == 0:
-            self.removeScript(0)
-
-    @task(bind=True)
     def mirrorMulti(self, localBase, remoteFolders, jobid=0):
 
         jobid = 'ftp-%s' % jobid
@@ -623,6 +689,7 @@ class FTPManager():
         scriptCMDs = []
 
         dlitemid = jobid
+        raise Exception("NOT IMPLEMENTED YET")
         for remoteFolder in remoteFolders:
             splitRemote = remoteFolder.split("/")
 
@@ -689,15 +756,6 @@ class FTPManager():
             os.kill(int(pid), signal.SIGTERM)
         except OSError:
             print logger, "error killing the process"
-
-
-    def jobFinished(self, taskid):
-        if taskid == None or taskid == "":
-            return True
-
-        result = AsyncResult(taskid)
-        print result
-        return result.ready()
 
     def sendcmd(self, cmd):
 

@@ -17,14 +17,16 @@ class TVExtractor:
 
         name = os.path.basename(download_item.localpath)
 
+        download_item.log(__name__, "Start extraction")
+
         if os.path.isdir(download_item.localpath) and utils.match_str_regex(settings.SAMPLES_REGEX, download_item.title):
-            logger.info("skipping sample folder %s" % download_item.title)
+            download_item.log(__name__, "skipping sample folder %s" % download_item.title)
             return True
 
         if os.path.isdir(download_item.localpath):
 
             if utils.match_str_regex(settings.TVSHOW_SEASON_MULTI_PACK_REGEX, download_item.title):
-                logger.info("Multi Season pack detected")
+                download_item.log(__name__, "Multi Season pack detected")
 
                 #Lets build up the first folder
                 files = os.walk(download_item.localpath).next()[1]
@@ -55,7 +57,7 @@ class TVExtractor:
                     return True
 
             elif utils.match_str_regex(settings.TVSHOW_SEASON_PACK_REGEX, download_item.title) and '.special.' not in download_item.title.lower():
-                logger.info("Season pack detected")
+                download_item.log(__name__, "Season pack detected")
 
                 #Lets build up the first folder
                 files = os.listdir(download_item.localpath)
@@ -110,17 +112,17 @@ class TVExtractor:
                 if code == 0:
                     src_files = utils.get_video_files(download_item.localpath)
                 else:
-                    logger.info('failed extract err %s, lets check the sfv' % code)
-                    sfvck = utils.check_sfv(download_item.localpath)
+                    download_item.log(__name__, 'failed extract err %s, lets check the sfv' % code)
+                    sfvck = utils.check_sfv(download_item)
 
-                    logger.info("SFV CHECK " + str(sfvck))
+                    download_item.log(__name__, "SFV CHECK " + str(sfvck))
 
                     if sfvck:
                         #SFV passed, lets get vid files.. maybe it was extracted previously
                         src_files = utils.get_video_files(download_item.localpath)
                     else:
                         if utils.match_str_regex(settings.TVSHOW_SEASON_PACK_REGEX, parent_dir) or utils.match_str_regex(settings.TVSHOW_SEASON_MULTI_PACK_REGEX, parent_dir):
-                            logger.info("SFV check had errors, we cant set this to pending or it will download the whole thing again, it has been added as a seperate download")
+                            download_item.log(__name__, "SFV check had errors, we cant set this to pending or it will download the whole thing again, it has been added as a seperate download")
 
                             mv_path = settings.TVHD_TEMP
 
@@ -206,17 +208,17 @@ class TVExtractor:
 
                 if 'id' in show_obj.data:
                     found_id = int(show_obj['id'])
-                    logger.debug("Found show on tvdb %s" % found_id)
+                    download_item.log(__name__, "Found show on tvdb %s" % found_id)
 
                     try:
                         existing_tvdb = Tvdbcache.objects.get(id=found_id)
 
                         if existing_tvdb:
-                            logger.debug("Found show in database already %s" % existing_tvdb)
+                            download_item.log(__name__, "Found show in database already %s" % existing_tvdb)
                             download_item.tvdbid_id = existing_tvdb.id
                     except:
                         #not found, lets add it
-                        logger.debug("Adding show to the tvdbcache database")
+                        download_item.log(__name__, "Adding show to the tvdbcache database")
                         new_tvdb = Tvdbcache()
                         new_tvdb.id = found_id
                         new_tvdb.update_from_tvdb()
@@ -228,13 +230,12 @@ class TVExtractor:
             xem_season, xem_ep = self.tvdbapi.get_xem_show_convert(download_item.tvdbid_id, (series_season), int(series_ep))
 
             if xem_season is not None and xem_ep is not None:
-                logger.debug("Found entry on thexem, converted the season and ep to %s x %s" % (xem_season, xem_ep))
+                download_item.log(__name__, "Found entry on thexem, converted the season and ep to %s x %s" % (xem_season, xem_ep))
 
                 series_season = str(xem_season)
                 series_ep = str(xem_ep)
 
             #Now lets do the move
-            logger.debug(download_item.tvdbid)
             if download_item.tvdbid_id:
 
                 if download_item.epoverride > 0:
@@ -251,7 +252,7 @@ class TVExtractor:
                         try:
                             series_ep_name = show_obj_season[int(series_ep)]['episodename']
                         except:
-                            logger.info("Found the season but not the ep.. will fake the ep name")
+                            download_item.log(__name__, "Found the season but not the ep.. will fake the ep name")
                             series_ep_name = 'Episode %s' % series_ep
                 except:
                     raise Exception('Could not find tvshow (TVDB) %s x %s' % (series_season, series_ep))
@@ -259,7 +260,7 @@ class TVExtractor:
                 # Now lets move the file
                 series_ep_name = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", series_ep_name)
 
-                logger.debug("Found episode %s title: %s" % (series_ep, series_ep_name))
+                download_item.log(__name__, "Found episode %s title: %s" % (series_ep, series_ep_name))
 
                 #IS this a multiep
                 multi = re.search("(?i)S([0-9]+)(E[0-9]+[E0-9]+).+", download_item.title)
@@ -315,7 +316,7 @@ class TVExtractor:
 
             series_name = re.sub("(?i)National Geographic|Discovery Channel|History Channel", "", series_name).strip()
 
-            logger.debug('Found ' + doco_folder + ' Doco: ' + series_name)
+            download_item.log(__name__, 'Found ' + doco_folder + ' Doco: ' + series_name)
 
             airdate = time.strftime('%Y-%m-%d', time.localtime(os.path.getmtime(src_files[0]['src'])))
 
@@ -335,7 +336,7 @@ class TVExtractor:
             nfof = open(nfo_file, 'w')
             nfof.write(nfo_content)
             nfof.close()
-            logger.debug('Wrote NFO file ' + nfo_file)
+            download_item.log(__name__, 'Wrote NFO file ' + nfo_file)
 
             utils.move_files(src_files, check_existing=True)
 

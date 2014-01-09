@@ -3,7 +3,7 @@ from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 from lazyweb.models import DownloadItem
 import logging, os
-from lazyweb.utils.ftpmanager import FTPManager
+from lazyweb.utils.ftpmanager import FTPManager, FTPMirror
 from decimal import Decimal
 from datetime import datetime
 from django.conf import settings
@@ -27,7 +27,6 @@ class Command(BaseCommand):
                             default='default',
                             help='Option help message'),
                   )
-
     @periodic_task(bind=True, run_every=timedelta(seconds=60))
     def handle(self, *app_labels, **options):
         """
@@ -59,25 +58,46 @@ class Command(BaseCommand):
         logger.info('Performing queue update')
 
         try:
-
             ftp_manager = FTPManager()
 
             for dlItem in DownloadItem.objects.all().filter(status=DownloadItem.DOWNLOADING):
-
                 logger.info('Checking job: %s' % dlItem.title)
 
-                #Now check if its finished
-                if ftp_manager.jobFinished(dlItem.taskid):
+                task = dlItem.get_task()
 
+                if task is not None:
+                    logger.debug("%s status: %s   result: %s" % (dlItem.title, task.state, task.result))
+
+                if None is task:
+                    #No task assigned, it never reached MQ..
+                    msg = "%s had no task assigned for some strange reason.. "
+                    logger.info(msg)
+                    dlItem.retries += 1
+                    dlItem.message = msg
+                    dlItem.status = DownloadItem.QUEUE
+                    dlItem.dlstart = None
+                    dlItem.save()
+
+                elif task.state == "SUCCESS" or task.state == "FAILURE":
+                    #Now check if its finished
                     #Lets make sure it finished downloading properly
-                    logger.info('Job has finished')
+
+                    if task.state == "FAILURE":
+                        msg = 'Job has failed, will check if we got everything anyway'
+                        dlItem.log(__name__, msg)
+                        logger.info(msg)
+                    else:
+                        msg = 'Job has finished'
+                        dlItem.log(__name__, msg)
+                        logger.info(msg)
 
                     localsize = -1
+
                     try:
                         localsize = ftp_manager.getLocalSize(dlItem.localpath)
-                        logger.info('Local size of folder is: %s' % localsize)
+                        dlItem.log(__name__, 'Local size of folder is: %s' % localsize)
                     except:
-                        logger.info("error getting local size of folder: %s" % dlItem.ftppath)
+                        dlItem.log(__name__, "error getting local size of folder: %s" % dlItem.ftppath)
 
                     localsize = localsize / 1024 / 1024
                     remotesize = dlItem.remotesize / 1024 / 1024
@@ -89,44 +109,57 @@ class Command(BaseCommand):
 
                     if percent > 99.3:
                         #Change status to extract
-                        logger.info("Job actually finished, moving release to move status")
-                        ftp_manager.removeScript('ftp-%s' % dlItem.id)
+                        dlItem.log(__name__, "Job actually finished, moving release to move status")
                         dlItem.status = DownloadItem.MOVE
                         dlItem.retries = 0
                         dlItem.message = None
                         dlItem.save()
 
                     else:
+                        #get error msg
+
+                        if task.result:
+                            errormsg = task.result
+                        else:
+                            errormsg = ""
+
                         #Didnt finish properly
-                        if dlItem.retries > 10:
+                        if dlItem.retries > 3:
                             #Failed download
                             #TODO: Notify
-                            logger.info("%s didn't download properly after 10 retries" % dlItem.ftppath)
-                            dlItem.message = "didn't download properly after 10 retries, stopping download"
+                            msg = "didn't download properly after 3 retries cause %s" % errormsg
+                            dlItem.log(__name__, msg)
+                            logger.debug(msg)
+                            dlItem.message = str(msg)
                             dlItem.status = DownloadItem.ERROR
-                            dlItem.save()
+                            try:
+                                dlItem.save()
+                            except:
+                                #ignore collation lation truncate errors
+                                pass
                         else:
                             #Didnt download properly, put it back in the queue and let others try download first.
-                            logger.info("%s didn't download properly, trying again" % dlItem.ftppath)
-
+                            msg = "didn't download properly, trying again cause: %s" % errormsg
+                            dlItem.log(__name__, msg)
+                            logger.debug(msg)
                             dlItem.retries += 1
-                            dlItem.message = "Failed Download, will try again (Retry Count: %s)" % dlItem.retries
+                            dlItem.message = str(msg)
                             dlItem.status = DownloadItem.QUEUE
-                            dlItem.dlstart = datetime.now()
-
-                            dlItem.save()
+                            dlItem.dlstart = None
+                            try:
+                                dlItem.save()
+                            except:
+                                #ignore collation lation truncate errors
+                                pass
                 else:
-                    pass
-                    #TODO remove this
                     #Lets make sure the job has not been running for over x hours
-                    #curTime = datetime.now()
-                    #diff = curTime - dlItem.dlstart.replace(tzinfo=None)
-                    #hours = diff.seconds / 60 / 60
-                    #if hours > 5:
-                    #    logger.info("Job as has been running for over 8 hours, killing job and setting to retry: %s" % dlItem.ftppath)
-                    #    dlItem.retries += 1
-                    #    FTPManager.stopJob(dlItem.taskid)
-                    #    dlItem.save()
+                    curTime = datetime.now()
+                    diff = curTime - dlItem.dlstart.replace(tzinfo=None)
+                    hours = diff.seconds / 60 / 60
+                    if hours > 8:
+                        dlItem.log(__name__, "Job as has been running for over 8 hours, killing job and setting to retry: %s" % dlItem.ftppath)
+                        dlItem.retries += 1
+                        dlItem.reset()
 
             #Figure out the number of jobs running after the above checks
             count = DownloadItem.objects.all().filter(status=DownloadItem.DOWNLOADING).count()
@@ -165,7 +198,7 @@ class Command(BaseCommand):
                         logger.info("Starting job: %s" % dlItem.ftppath)
 
                         if (dlItem.retries > 10):
-                            logger.info("Job hit too many retires, setting to failed")
+                            dlItem.log(__name__, "Job hit too many retires, setting to failed")
                             dlItem.status = DownloadItem.ERROR
                             dlItem.save()
 
@@ -173,8 +206,9 @@ class Command(BaseCommand):
 
                         if dlItem.onlyget:
                             try:
+                                raise Exception("bahhh")
                                 #we dont want to get everything.. lets figure this out
-                                get_folders = ftp_manager.getRequiredDownloadFolders(dlItem.title, dlItem.ftppath, dlItem.onlyget)
+                                get_folders = ftp_manager.get_required_folders_for_multi(dlItem.title, dlItem.ftppath, dlItem.onlyget)
 
                                 remotesize = ftp_manager.getRemoteSizeMulti(get_folders)
                             except Exception as e:
@@ -182,35 +216,33 @@ class Command(BaseCommand):
                                 remotesize == 0
                         else:
                             try:
-                                remotesize = ftp_manager.getRemoteSize(dlItem.ftppath)
+                                files, remotesize = ftp_manager.get_files_for_download([dlItem.ftppath])
                             except Exception as e:
                                 logger.exception(e)
                                 remotesize = 0
 
-                        if remotesize > 0:
+                        if remotesize > 0 and len(files) > 0:
                             dlItem.remotesize = remotesize
                         else:
                             if dlItem.requested == True:
-                                logger.info("Unable to get remote size for %s" % dlItem.ftppath)
+                                log.debug("Unable to get size and files for %s" % dlItem.ftppath)
                                 dlItem.message = 'Waiting for item to appear on ftp'
                                 dlItem.save()
                             else:
-                                logger.info("Unable to get remote size for %s" % dlItem.ftppath)
-                                dlItem.message = 'Unable to get remote size on the ftp'
+                                dlItem.log(__name__, "Unable to get size and files for %s" % dlItem.ftppath)
+                                logger.info("Unable to get size and files for %s" % dlItem.ftppath)
+                                dlItem.message = 'Unable to get size and files'
                                 dlItem.retries += 1
                                 dlItem.save()
-
                             continue
-
 
                         #Time to start a new one!.
                         if dlItem.onlyget:
-                            cmd = Command()
-                            task = ftp_manager.mirrorMulti.delay(dlItem.localpath, get_folders, dlItem.id)
+                            task = ftp_manager.mirrorMulti.delay(dlItem.localpath, urls, dlItem.id)
                             dlItem.taskid = task.task_id
                         else:
-                            cmd = Command()
-                            task = ftp_manager.mirror.delay(dlItem.localpath, dlItem.ftppath, dlItem.id)
+                            mirror = FTPMirror()
+                            task = mirror.mirror_ftp_folder.delay(files, dlItem.localpath, dlItem)
                             dlItem.taskid = task.task_id
 
                         dlItem.message = None

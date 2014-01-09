@@ -10,9 +10,11 @@ urlpatterns = patterns('',
     #Downloads
     url(r'^downloads$', RedirectView.as_view(url=reverse_lazy('downloads.index', args=['downloading'])), name='downloads.redirect'),
     url(r'^downloads/get/(?P<type>\w+)/$', downloads.DownloadsListView.as_view(), name='downloads.get'),
+    url(r'^downloads/log/(?P<pk>\w+)/$', downloads.DownloadLog.as_view(), name='downloads.log'),
     url(r'^downloads/update/(?P<type>\w+)/$', downloads.update, name='downloads.update'),
     url(r'^downloads/manualfix/$', downloads.DownloadsManuallyFix.as_view(), name='downloads.manualfix'),
     url(r'^downloads/(?P<type>\w+)/$', downloads.DownloadsIndexView.as_view(), name='downloads.index'),
+
 
     #Config - Redirect
     url(r'^config$', RedirectView.as_view(url='/lazy/config/tvmap/'), name='config.redirect'),
