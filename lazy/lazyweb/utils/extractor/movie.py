@@ -69,7 +69,7 @@ class MovieExtractor():
             else:
                 #failed.. lets do sfv check
                 download_item.log(__name__, 'failed extract, lets check the sfv')
-                sfvck = utils.check_sfv(download_item)
+                sfvck = utils.check_crc(download_item)
 
                 download_item.log(__name__, "SFV CHECK " + str(sfvck))
 

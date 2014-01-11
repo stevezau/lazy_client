@@ -23,3 +23,4 @@ class RarArchive(Archive):
         errCode = subprocess.call('cd ' + base + ' ; unrar -o- x ' + first_archive + ' > /dev/null', shell=True)
 
         return errCode
+

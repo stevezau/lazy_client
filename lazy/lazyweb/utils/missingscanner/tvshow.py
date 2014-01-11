@@ -241,21 +241,31 @@ class TVShowScanner:
             try:
                 self.ftp_manager = FTPManager()
 
-                tvhd_dir = self.ftp_manager.get_folders("/TVHD")
-                req_dir = self.ftp_manager.get_folders("/REQUESTS")
-
                 self.ftp_dir = []
 
-                for dir in tvhd_dir:
-                    self.ftp_dir.append("/TVHD/%s" % dir)
+                for curfolder, dirs, files in self.ftp_manager.ftpwalk("/TVHD", max_depth=0):
+                    for file in files:
+                        file_found = str(os.path.join(curfolder, file[0]))
+                        self.ftp_dir.append(file_found)
 
-                for dir in req_dir:
-                    self.ftp_dir.append("/REQUESTS/%s" % dir)
+                    for dir in dirs:
+                        dir_found = str(os.path.join(curfolder, dir[0]))
+                        self.ftp_dir.append(dir_found)
+
+                for curfolder, dirs, files in self.ftp_manager.ftpwalk("/REQUESTS", max_depth=0):
+                    for file in files:
+                        file_found = str(os.path.join(curfolder, file[0]))
+                        self.ftp_dir.append(file_found)
+
+                    for dir in dirs:
+                        dir_found = str(os.path.join(curfolder, dir[0]))
+                        self.ftp_dir.append(dir_found)
 
                 if len(self.ftp_dir) == 0:
                     raise Exception("Unable to get directory listing from FTP")
             except Exception as e:
-               raise Exception("Unable to get directory listing from FTP")
+                logger.exception(e)
+                raise Exception("Unable to get directory listing from FTP: %" % e.message)
         else:
             self.ftp_dir = ftp_dir
 

@@ -328,6 +328,9 @@ USE_L10N = True
 
 USE_TZ = True
 
+INTERNAL_IPS = (
+    '192.168.0.200'
+)
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.6/howto/static-files/

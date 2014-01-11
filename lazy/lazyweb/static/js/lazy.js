@@ -192,8 +192,11 @@ $( document ).ready(function() {
 
             seasons_count = $(this).find(".season:visible").length
             all_exist_count = $(this).find(".season-all-exists:visible").length
+            wont_fix_count = $(this).find(".season-wont-fix:visible").length
 
-            if (seasons_count == all_exist_count) {
+            count = all_exist_count + wont_fix_count
+
+            if (seasons_count == count) {
                 $(this).hide()
             }
         });

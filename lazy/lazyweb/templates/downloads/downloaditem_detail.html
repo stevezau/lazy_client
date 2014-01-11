@@ -79,6 +79,10 @@
 
         <div><a href="{% url "downloads.log" download.id %}">View Log</a></div>
 
+        {% if debug %}
+            <div><a href="/admin/lazyweb/downloaditem/{{ download.id }}/">View Entry</a></div>
+        {% endif %}
+
     </div>
 </div>
 <div style='clear: both;'></div>

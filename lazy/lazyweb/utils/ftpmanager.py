@@ -87,28 +87,46 @@ class FTPMirror:
 
         # Make a queue with (url, filename) tuples
         queue = []
+        priority = []
 
         for url in urls:
-            url = url.strip()
-            ftpurl = "ftp://%s:%s@%s:%s/%s" % (settings.FTP_USER, settings.FTP_PASS, settings.FTP_IP, settings.FTP_PORT, url.lstrip("/"))
+            size = url[1]
+            urlpath = url[0].strip()
+
+            ftpurl = "ftp://%s:%s@%s:%s/%s" % (settings.FTP_USER, settings.FTP_PASS, settings.FTP_IP, settings.FTP_PORT, urlpath.lstrip("/"))
 
             basepath = ""
 
             i = 0
-            for path in url.split(os.sep):
+            for path in urlpath.split(os.sep):
                 if i > 2:
                     basepath = os.path.join(basepath, path)
                 i += 1
 
             urlsavepath = os.path.join(savepath, basepath)
 
+            if os.path.isfile(urlsavepath):
+                #compare sizes
+                local_size = os.path.getsize(urlsavepath)
+
+                if local_size > 0 and local_size == size:
+                    #skip
+                    continue
+
+            #make local folders if they dont exist
             try:
                 os.makedirs(os.path.split(urlsavepath)[0])
             except:
                 pass
 
-             #add it to the queue
-            queue.append((ftpurl, urlsavepath))
+            if re.match(".+\.sfv$", urlpath):
+                #download first
+                priority.append((ftpurl, urlsavepath, size))
+            else:
+                #add it to the queue
+                queue.append((ftpurl, urlsavepath, size))
+
+        queue = priority + queue
 
         # Pre-allocate a list of curl objects
         self.m.handles = []
@@ -128,7 +146,6 @@ class FTPMirror:
             self.m.handles.append(c)
 
         num_urls = len(queue)
-        num_conn = min(num_conn, num_urls)
 
         # Main loop
         freelist = self.m.handles[:]
@@ -136,19 +153,31 @@ class FTPMirror:
         while num_processed < num_urls:
             # If there is an url to process and a free curl object, add to multi stack
             while queue and freelist:
-                url, filename = queue.pop(0)
+                url, filename, remote_size = queue.pop(0)
                 c = freelist.pop()
 
+                short_filename = os.path.basename(filename)
+
                 if os.path.isfile(filename):
-                    #lets resume?
-                    f = open_file(filename, "ab")
-                    size = os.path.getsize(filename)
-                    if size == 0:
+                    #compare sizes
+                    local_size = os.path.getsize(filename)
+
+                    if local_size == 0:
+                        #try again
+                        dlitem.log(__name__, "Will download %s (%s bytes)" % (short_filename, remote_size))
+                        f = open_file(filename, "wb")
+
+                    if local_size > remote_size:
+                        dlitem.log(__name__, "Strange, local size was bigger then remote, re-downloading %s" % short_filename)
                         f = open_file(filename, "wb")
                     else:
-                        dlitem.log(__name__, "%s GOING TO TRY RESUME FROM %s" % (filename, size))
-                        c.setopt(pycurl.RESUME_FROM, os.path.getsize(filename))
+                        #lets resume
+                        dlitem.log(__name__, "Partial download %s (%s bytes), lets resume from %s bytes" % (short_filename, local_size, local_size))
+                        c.setopt(pycurl.RESUME_FROM, local_size)
+                        f = open_file(filename, "ab")
+
                 else:
+                    dlitem.log(__name__, "Will download %s (%s bytes)" % (short_filename, remote_size))
                     f = open_file(filename, "wb")
 
                 c.fp = f
@@ -156,6 +185,7 @@ class FTPMirror:
                 c.setopt(pycurl.URL, url)
                 c.setopt(pycurl.WRITEDATA, c.fp)
                 self.m.add_handle(c)
+
                 # store some info
                 c.filename = filename
                 c.url = url
@@ -174,7 +204,7 @@ class FTPMirror:
                     close_file(c.fp)
                     c.fp = None
                     self.m.remove_handle(c)
-                    msg = "Success:%s %s" % (c.filename, c.getinfo(pycurl.EFFECTIVE_URL))
+                    msg = "Success:%s" % (os.path.basename(c.filename))
                     dlitem.log(__name__, msg)
                     logger.debug(msg)
                     freelist.append(c)
@@ -182,7 +212,7 @@ class FTPMirror:
                     close_file(c.fp)
                     c.fp = None
                     self.m.remove_handle(c)
-                    msg = "Failed: %s %s %s" % (c.filename, errno, errmsg)
+                    msg = "Failed: %s %s %s" % (os.path.basename(c.filename), errno, errmsg)
                     dlitem.log(__name__, msg)
                     logger.debug(msg)
                     freelist.append(c)
@@ -203,13 +233,6 @@ class FTPMirror:
         self.m.close()
 
 
-#class Singleton(type):
-#    _instances = {}
-#    def __call__(cls, *args, **kwargs):
-#        if cls not in cls._instances:
-#           cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-#       return cls._instances[cls]
-
 class FTPManager:
     ftps = None
 
@@ -222,7 +245,7 @@ class FTPManager:
             self.connect()
 
 
-    def ftpwalk(self, top, topdown=True, onerror=None):
+    def ftpwalk(self, top, topdown=True, onerror=None, cur_depth=0, max_depth=9):
         """
         Generator that yields tuples of (root, dirs, nondirs).
         """
@@ -234,6 +257,8 @@ class FTPManager:
         # always suppressed the exception then, rather than blow up for a
         # minor reason when (say) a thousand readable directories are still
         # left to visit.  That logic is copied here.
+
+
         try:
             dirs, nondirs = self._ftp_listdir()
         except os.error, err:
@@ -242,12 +267,18 @@ class FTPManager:
                 onerror(err)
             return
 
+        if cur_depth >= max_depth:
+            yield top, dirs, nondirs
+            return
+
+        next_depth = cur_depth + 1
+
         if topdown:
             yield top, dirs, nondirs
         for entry in dirs:
             dname = entry[0]
             path = os.path.join(top, dname)
-            for x in self.ftpwalk(path, topdown, onerror):
+            for x in self.ftpwalk(path, topdown=topdown, onerror=onerror, cur_depth=next_depth, max_depth=max_depth):
                 yield x
 
         if not topdown:
@@ -298,15 +329,15 @@ class FTPManager:
 
         return dirs, nondirs
 
-    def get_files_for_download(self, folders):
+    def get_files_for_download(self, folder):
         found_files = []
         size = 0
 
-        for folder in folders:
-            for curfolder, dirs, files in self.ftpwalk(folder):
-                for file in files:
-                    found_files.append(str(os.path.join(curfolder, file[0])))
-                    size += file[1]
+        for curfolder, dirs, files in self.ftpwalk(folder):
+            for file in files:
+                file_found = [str(os.path.join(curfolder, file[0])), file[1]]
+                found_files.append(file_found)
+                size += file[1]
 
         return found_files, size
 
@@ -319,113 +350,134 @@ class FTPManager:
 
 
 
-    def get_required_folders_for_multi(self, title, folder, onlyget):
+    def get_required_folders_for_multi(self, folder, onlyget):
 
-        raise Exception("test")
+        onlyget_clean_seasons = []
+        onlyget_clean_eps = {}
 
-        folders = []
-        files = []
-
-        only_get_eps = {}
-        only_get_season = []
-
-        skipseason = []
-
-        for get_season, get_eps in onlyget.copy():
-            if get_season in skipseason:
+        #sanatise onlyget
+        for season, eps in onlyget.items():
+            if len(eps) == 0 or 0 in eps:
+                #get whole season
+                onlyget_clean_seasons.append(int(season))
                 continue
 
-            #Are we getting a full season
+            get_eps = []
 
+            for ep in eps:
+                try:
+                    if int(ep) in get_eps:
+                        #duplicate
+                        continue
+                    else:
+                        get_eps.append(int(ep))
+                except:
+                    pass
 
-        left_to_get = onlyget.copy()
+            if len(get_eps) > 0:
+                onlyget_clean_eps[int(season)] = get_eps
 
-        for curdir, dirs, files in self.ftpwalk(folder, onlyDir=True):
+        logger.debug(onlyget_clean_eps)
+        logger.debug(onlyget_clean_seasons)
+
+        skippath = []
+        size = 0
+        urls = []
+
+        #lets find them all
+        for curdir, dirs, files in self.ftpwalk(folder, max_depth=4):
+
+            print curdir
+
+            for path in skippath:
+                if path.startswith(curdir):
+                    continue
+
+            for file in files:
+                #first lets check if something we might be interested in
+                m = re.match(".+\.(mkv|avi|mp4)$", file[0])
+
+                if m:
+                    found_ep_season, found_ep = utils.get_ep_season_from_title(file[0])
+
+                    if found_ep_season in onlyget_clean_eps.keys():
+                        eps = onlyget_clean_eps[found_ep_season]
+
+                        if found_ep in eps:
+                            del onlyget_clean_eps[found_ep_season][ep]
+
+                            logger.debug("We found a match, we must download this! %s" % file[0])
+                            file_found = [str(os.path.join(curdir, file[0])), file[1]]
+                            size += found_size
+                            urls = urls + file_found
 
             #Lets check if required items are in folders
             for dir in dirs:
+                dir = dir[0]
+                full_dir = os.path.join(curdir, dir)
 
-                found_dir = os.path.join(curdir, found_dir)
+                #multi season pack
+                if utils.match_str_regex(settings.TVSHOW_SEASON_MULTI_PACK_REGEX, dir):
+                    logger.debug("Multi Season pack detected %s" % dir)
 
-                #is this an ep or full season
-                found_ep, found_ep_season = utils.get_ep_season_from_title(dir)
+                    seasons = utils.get_season_from_title(dir)
 
-                if found_ep[0] == 0:
-                    continue
+                    #first do we even want to bother
+                    process = False
 
-                #Ok lets check it
-                for get_season, get_eps in onlyget:
-                    if get_season == found_season:
+                    for season in seasons:
+                        if season in onlyget_clean_seasons or season in onlyget_clean_eps.keys():
+                            #we want to process this
+                            process = True
 
-                        if found_ep in get_eps:
-                            #We found a match
-                            logger.debug("Found a folder to download")
+                    if not process:
+                        skippath.append(full_dir)
+                        continue
+
+                elif utils.match_str_regex(settings.TVSHOW_SEASON_PACK_REGEX, dir):
+                    logger.debug("Season pack detected %s" % dir)
+
+                    seasons = utils.get_season_from_title(dir)
+
+                    for season in seasons:
+                        if season in onlyget_clean_seasons:
+                            del onlyget_clean_seasons[season]
+                            logger.debug("we must download this one! %s " % dir)
+                            skippath.append(full_dir)
+                            found_urls, found_size = self.get_files_for_download(full_dir)
+                            size += found_size
+                            urls = urls + found_urls
+
+                elif utils.match_str_regex(settings.TVSHOW_REGEX, dir):
+                    logger.debug("We found an ep %s" % dir)
+                    skippath.append(full_dir)
+
+                    #first lets check if something we might be interested in
+                    found_ep_season, found_ep  = utils.get_ep_season_from_title(dir)
+
+                    if found_ep_season in onlyget_clean_eps.keys():
+                        eps = onlyget_clean_eps[found_ep_season]
+
+                        print eps
+                        print found_ep
+
+                        if found_ep in eps:
+                            del onlyget_clean_eps[found_ep_season][ep]
+                            logger.debug("We found a match, we must download this! %s" % dir)
+                            skippath.append(full_dir)
+                            found_urls, found_size = self.get_files_for_download(full_dir)
+                            size += found_size
+                            urls = urls + found_urls
+
+        print len(onlyget_clean_eps)
+        print len(onlyget_clean_seasons)
+
+        return urls, size
 
 
 
 
 
-
-        if len(seasons) > 1:
-            #milti season
-            #ok lets troll through
-            logger.debug("Multi season download detected.")
-
-            for season in onlyget:
-                get_eps = onlyget[season]
-
-                logger.debug("Sorting out what parts to download for season %s" % season)
-
-                seasonFolder = self.getSeasonFolder(season, baseDirectoryListing)
-
-                #TODO make this into a def so we are not repeating code below
-                if not seasonFolder:
-                    raise Exception('Unable to find season %s folder in path %s' % (season, folder))
-
-                if 0 in get_eps:
-                    logger.debug("Looks like we want to download the entire season %s" % season)
-                    folders.append("%s/%s" % (folder, seasonFolder))
-                else:
-                    #lets get the invidiual eps
-                    epDirectoryListing = self.get_folders(folder + "/" + seasonFolder)
-
-                    for epNo in get_eps:
-                        #now find each folder
-                        epFolder = self.getEpFolder(season, epNo, epDirectoryListing)
-
-                        if epFolder and epFolder != '':
-                            folders.append('%s/%s/%s' % (str(folder), str(seasonFolder), str(epFolder)))
-                        else:
-                            error = 'Unable to find ep %s in path %s/%s' % (str(epNo), str(folder), str(seasonFolder))
-                            raise Exception(error)
-
-
-        else:
-            #single season
-            logger.debug("Single season detected")
-
-            for season in onlyget:
-                get_eps = onlyget[season]
-
-                if 0 in get_eps:
-                    logger.debug("Looks like we want to download the entire season %s" % season)
-                    folders.append(folder)
-                else:
-                    #TODO make this into a def so we are not repeating code below
-                    #lets get the invidiual eps
-                    epDirectoryListing = self.get_folders(folder)
-
-                    for epNo in get_eps:
-                        #now find each folder
-                        epFolder = self.getEpFolder(season, epNo, epDirectoryListing)
-
-                        if epFolder and epFolder != '':
-                            folders.append('%s/%s' % (str(folder), str(epFolder)))
-                        else:
-                            error = 'Unable to find ep %s in path %s' % (str(epNo), str(folder))
-                            raise Exception(error)
-
-        return folders
 
     def getEpFolder(self, season, ep, directoryListing):
 

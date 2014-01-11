@@ -23,9 +23,15 @@ class TVExtractor:
             download_item.log(__name__, "skipping sample folder %s" % download_item.title)
             return True
 
+        has_override = False
+        if download_item.epoverride > 0:
+            has_override = True
+
+
         if os.path.isdir(download_item.localpath):
 
-            if utils.match_str_regex(settings.TVSHOW_SEASON_MULTI_PACK_REGEX, download_item.title):
+            if utils.match_str_regex(settings.TVSHOW_SEASON_MULTI_PACK_REGEX, download_item.title) and not has_override:
+
                 download_item.log(__name__, "Multi Season pack detected")
 
                 #Lets build up the first folder
@@ -56,7 +62,7 @@ class TVExtractor:
                 if os.path.exists(download_item.localpath):
                     return True
 
-            elif utils.match_str_regex(settings.TVSHOW_SEASON_PACK_REGEX, download_item.title) and '.special.' not in download_item.title.lower():
+            elif utils.match_str_regex(settings.TVSHOW_SEASON_PACK_REGEX, download_item.title) and '.special.' not in download_item.title.lower() and not has_override:
                 download_item.log(__name__, "Season pack detected")
 
                 #Lets build up the first folder
@@ -113,7 +119,7 @@ class TVExtractor:
                     src_files = utils.get_video_files(download_item.localpath)
                 else:
                     download_item.log(__name__, 'failed extract err %s, lets check the sfv' % code)
-                    sfvck = utils.check_sfv(download_item)
+                    sfvck = utils.check_crc(download_item)
 
                     download_item.log(__name__, "SFV CHECK " + str(sfvck))
 
@@ -171,7 +177,11 @@ class TVExtractor:
                         title = re.sub('\.S[0-9][0-9]\.', '.S01E01.', title)
                         ep_faked = True
                     else:
-                        raise Exception("Cannot figure out which special this is on www.thetvdb.com, you need to do it manually")
+                        msg = "Cannot figure out which special this is on www.thetvdb.com, you need to do it manually"
+                        download_item.status = DownloadItem.ERROR
+                        download_item.message = msg
+                        download_item.save()
+                        raise Exception(msg)
 
             #We need to strip out nat geo etc from docos title
             if utils.match_str_regex(settings.DOCOS_REGEX, download_item.title):

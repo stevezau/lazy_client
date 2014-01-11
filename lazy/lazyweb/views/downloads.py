@@ -220,8 +220,9 @@ def delete(items):
             dlitem.delete()
             response.write("Deleted %s\n" % dlitem.title)
         except Exception as e:
+            logger.exception(e)
             status = 210
-            response.write("Unable to delete %s as " % (item, e.message))
+            response.write("Unable to delete %s as %s" % (item, e.message))
 
     response.status_code = status
     return response
@@ -242,6 +243,24 @@ def reset(items):
 
     response.status_code = status
     return response
+
+
+def force_reset(items):
+    status = 200
+    response = HttpResponse(content_type="text/plain")
+
+    for item in items:
+        try:
+            dlitem = DownloadItem.objects.get(pk=item)
+            dlitem.reset(force=True)
+            response.write("Reset %s\n" % dlitem.title)
+        except Exception as e:
+            status = 210
+            response.write("Unable to delete %s as %s" % (item, e.message))
+
+    response.status_code = status
+    return response
+
 
 
 def decreasepri(items):

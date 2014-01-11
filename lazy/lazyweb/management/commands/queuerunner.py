@@ -10,6 +10,7 @@ from django.conf import settings
 from celery.task.base import periodic_task, task
 from django.core.cache import cache
 from datetime import timedelta
+import ftplib
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +28,8 @@ class Command(BaseCommand):
                             default='default',
                             help='Option help message'),
                   )
+
+
     @periodic_task(bind=True, run_every=timedelta(seconds=60))
     def handle(self, *app_labels, **options):
         """
@@ -70,12 +73,13 @@ class Command(BaseCommand):
 
                 if None is task:
                     #No task assigned, it never reached MQ..
-                    msg = "%s had no task assigned for some strange reason.. "
-                    logger.info(msg)
-                    dlItem.retries += 1
-                    dlItem.message = msg
+                    msg = "no task assigned for some strange reason.. "
+                    logger.error(msg)
                     dlItem.status = DownloadItem.QUEUE
                     dlItem.dlstart = None
+                    dlItem.log(__name__, msg)
+                    dlItem.message = msg
+                    dlItem.retries += 1
                     dlItem.save()
 
                 elif task.state == "SUCCESS" or task.state == "FAILURE":
@@ -206,7 +210,6 @@ class Command(BaseCommand):
 
                         if dlItem.onlyget:
                             try:
-                                raise Exception("bahhh")
                                 #we dont want to get everything.. lets figure this out
                                 get_folders = ftp_manager.get_required_folders_for_multi(dlItem.title, dlItem.ftppath, dlItem.onlyget)
 
@@ -216,16 +219,25 @@ class Command(BaseCommand):
                                 remotesize == 0
                         else:
                             try:
-                                files, remotesize = ftp_manager.get_files_for_download([dlItem.ftppath])
+                                files, remotesize = ftp_manager.get_files_for_download(dlItem.ftppath)
+                            except ftplib.error_perm, e:
+                                if dlItem.requested == True:
+                                    pass
+                                else:
+                                    logger.error(e)
+                                    dlItem.message = e.message
+                                    dlItem.log(__name__, e.message)
+                                    dlItem.retries += 1
+                                    dlItem.save()
+                                    continue
                             except Exception as e:
-                                logger.exception(e)
                                 remotesize = 0
 
                         if remotesize > 0 and len(files) > 0:
                             dlItem.remotesize = remotesize
                         else:
                             if dlItem.requested == True:
-                                log.debug("Unable to get size and files for %s" % dlItem.ftppath)
+                                logger.debug("Unable to get size and files for %s" % dlItem.ftppath)
                                 dlItem.message = 'Waiting for item to appear on ftp'
                                 dlItem.save()
                             else:

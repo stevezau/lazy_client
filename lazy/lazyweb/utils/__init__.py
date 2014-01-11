@@ -153,7 +153,7 @@ def crc(fileName):
         store.close()
 
 
-def check_sfv(dlitem):
+def check_crc(dlitem):
     path = dlitem.localpath
     dlitem.log(__name__, "Checking SFV in path %s" % path)
 
@@ -190,9 +190,11 @@ def check_sfv(dlitem):
 
 
             if sfv_list[i].lstrip('0')==calc_sfv_value:
+                logger.debug("CRC Check True: %s" % names_list[i])
                 pass
             else:
                 dlitem.log(__name__, "there was a problem with file deleting it " + names_list[i])
+                logger.debug("CRC Check False!!!: %s" % names_list[i])
                 no_errors=False
                 try:
                     os.remove(names_list[i])
@@ -202,13 +204,33 @@ def check_sfv(dlitem):
             i=i+1
 
         if (no_errors):
-		    return True
+            return True
         else:
             return False
 
     if not foundSFV:
-        logger.debug("No SFV FOUND!")
-        return False
+        logger.debug("No SFV FOUND, lets check via unrar")
+
+        first_rar = None
+
+        #first lets find the name of the first rar file
+        for file in os.listdir(dlitem.localpath):
+            if re.match(".+\.rar$", file):
+                #this has to be it!
+                first_rar = os.path.join(dlitem.localpath, file)
+
+            if re.match(".+\.r00$", file):
+                #might be it
+                first_rar = os.path.join(dlitem.localpath, file)
+
+        if first_rar is None:
+            dlitem.log("Could not find the rar file!")
+
+        else:
+            #lets do the check
+            pass
+
+    return False
 
 
 def unrar(path):
