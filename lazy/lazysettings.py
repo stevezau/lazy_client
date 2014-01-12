@@ -4,7 +4,7 @@ import os
 # MYSQL Details
 
 MYSQL_USER = 'root'
-MYSQL_PASS = 'drift990'
+MYSQL_PASS = 'xxxx'
 MYSQL_IP = 'localhost'
 MYSQL_PORT = '3389'
 
@@ -12,11 +12,10 @@ MYSQL_PORT = '3389'
 TMPFOLDER = "/tmp"
 
 #Account ID on thetvdb.com
-TVDB_ACCOUNTID = "289F895955772DE3"
+TVDB_ACCOUNTID = "xxxxxxxxxx"
 
 
-
-MAX_SIM_DOWNLOAD_JOBS = 1
+MAX_SIM_DOWNLOAD_JOBS = 2
 LFTP_THREAD_PER_DOWNLOAD = 3
 
 # Where is your data path
@@ -37,8 +36,8 @@ XVID = os.path.join(DATA_PATH, "Movies")
 # FTP Details
 FTP_IP = "66.90.113.62"
 FTP_PORT = 32245
-FTP_USER = "steve"
-FTP_PASS = "site990"
+FTP_USER = "xxxx"
+FTP_PASS = "xxxx"
 
 LFTP_BIN = "/usr/local/bin/lftp"
 
