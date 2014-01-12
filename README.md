@@ -66,20 +66,21 @@ Setup storage folders
 
 Lazy Install
 =====
-1) Export the lazy folder from git to /home/media/lazy
+1) Export the lazy folder from git to /home/media/lazy-repo and create a symbolic link to /home/media/lazy
 
-	$ git clone https://github.com/rameezsadikot/Steve.git /home/media/lazy
+	$ git clone https://github.com/rameezsadikot/Steve.git /home/media/lazy-repo
+	$ ln -s /home/media/lazy-repo/lazy /home/media/lazy
 
 2) Setup requirements for lazy
 
-	$ sudo pip install -U -r /home/media/lazy/lazy/requirements.txt
+	$ sudo pip install -U -r /home/media/lazy/requirements.txt
 
-3) !!IMPORTANT!! Edit the settings in file /home/media/lazy/lazy/lazysettings.py
+3) !!IMPORTANT!! Edit the settings in file /home/media/lazy/lazysettings.py
 
 
 4) Initial setup of database
 
-	$ cd /home/media/lazy/lazy
+	$ cd /home/media/lazy
 	$ mkdir -p static/media
 	$ python manage.py syncdb
 	$ python manage.py createcachetable lazy_cache
@@ -89,7 +90,7 @@ Lazy Install
 
 5) Load menu data
 
-	$ python manage.py sitetreeload --mode=replace /home/media/lazy/lazy/lazyweb/fixtures/lazyweb_initialdata.json
+	$ python manage.py sitetreeload --mode=replace /home/media/lazy/lazyweb/fixtures/lazyweb_initialdata.json
 
 6) Collect static files
 
@@ -100,7 +101,7 @@ Lazy Install
 
 	$ sudo mkdir /var/log/celery
 	$ sudo chown media:media /var/log/celery
-	$ sudo ln -s /home/media/lazy/lazy/serverconf/lazy-supervisor.conf /etc/supervisor/conf.d/lazy.conf 
+	$ sudo ln -s /home/media/lazy/serverconf/lazy-supervisor.conf /etc/supervisor/conf.d/lazy.conf 
 	$ sudo service supervisor restart
 	
 
@@ -108,7 +109,7 @@ Lazy Install
 Setup Apache
 =====
 
-	$ sudo ln -s /home/media/lazy/lazy/serverconf/lazy-apache.conf /etc/apache2/sites-available/lazy.conf
+	$ sudo ln -s /home/media/lazy/serverconf/lazy-apache.conf /etc/apache2/sites-available/lazy.conf
 	$ sudo a2ensite lazy
 	$ sudo service apache2 restart
 
