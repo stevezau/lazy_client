@@ -151,9 +151,6 @@ if not os.path.isfile(FLEXGET_APPROVED):
     approved_file.write("    - history.channel\n")
     approved_file.close()
 
-if not os.path.isfile(LFTP_BIN):
-    raise Exception("Cannot find lftp in %s" % LFTP_BIN)
-
 if not os.path.exists(MEDIA_ROOT):
     #create it
     os.mkdir(MEDIA_ROOT)
