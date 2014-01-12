@@ -35,15 +35,21 @@ Flexget will watch the FTP site for new releases. It will tell lazy about any re
 	$ /home/media/.flexget/config.yml
 	$ /home/media/.flexget/config-xvid.yml
 
+
+
 	
 Install RabbitMQ for the Backgound processor queue 
 =====
 
-	$ /etc/apt/sources.list
-	$ deb http://www.rabbitmq.com/debian/ testing main
+	edit /etc/apt/sources.list and add following line to the bottom
+	
+	deb http://www.rabbitmq.com/debian/ testing main
+
+	Then type in..
+	
 	$ wget http://www.rabbitmq.com/rabbitmq-signing-key-public.asc
 	$ sudo apt-key add rabbitmq-signing-key-public.asc
-	$ sudo aot-get update
+	$ sudo apt-get update
 	$ sudo apt-get install rabbitmq-server
 
 	
