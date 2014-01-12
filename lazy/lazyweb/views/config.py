@@ -95,6 +95,7 @@ class ApprovedCreate(FormView):
 
             dst = os.path.join(settings.TVHD, new_tvdbcache.title)
             dst = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", dst)
+            logger.debug(dst)
             os.mkdir(dst)
 
             new_tvdbcache.localpath = dst
