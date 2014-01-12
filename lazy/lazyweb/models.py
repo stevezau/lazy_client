@@ -41,7 +41,7 @@ class DownloadLog(models.Model):
     def __unicode__(self):
         return self.title
 
-    download_id = models.ForeignKey('DownloadItem', on_delete=models.DO_NOTHING)
+    download_id = models.ForeignKey('DownloadItem')
     date = models.DateTimeField(auto_now_add=True)
     message = models.TextField(blank=True, null=True)
 

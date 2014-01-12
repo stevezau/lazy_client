@@ -55,6 +55,7 @@ class TVExtractor:
                         new_download_item.section = download_item.section
                         new_download_item.ftppath = download_item.ftppath.strip() + os.sep + os.path.basename(file_path)
                         new_download_item.tvdbid = download_item.tvdbid
+                        new_download_item.id = download_item.id
 
                         if self.extract(new_download_item, dest_folder):
                             shutil.rmtree(new_download_item.localpath)
@@ -87,6 +88,7 @@ class TVExtractor:
                         new_download_item.ftppath = download_item.ftppath.strip() + os.sep + os.path.basename(file_path)
                         new_download_item.section = download_item.section
                         new_download_item.tvdbid = download_item.tvdbid
+                        new_download_item.id = download_item.id
 
                         if self.extract(new_download_item, dest_folder):
                             shutil.rmtree(new_download_item.localpath)
@@ -103,6 +105,7 @@ class TVExtractor:
                             new_download_item.localpath = file_path
                             new_download_item.section = download_item.section
                             new_download_item.tvdbid = download_item.tvdbid
+                            new_download_item.id = download_item.id
 
                             self.extract(new_download_item, dest_folder)
 
@@ -166,16 +169,13 @@ class TVExtractor:
             #This is a normal tvshow..
             title = download_item.title
 
-            ep_faked = False
-
-            if '.special.' in download_item.title.lower():
+            if utils.match_str_regex(settings.TVSHOW_SPECIALS_REGEX, download_item.title) or utils.match_str_regex(settings.TVSHOW_SEASON_PACK_REGEX, download_item.title):
                 if re.match('(?i).+S[0-9][0-9]E[0-9][0-9].+', download_item.title):
                     pass
                 else:
                     if download_item.epoverride > 0 and download_item.seasonoverride >= 0:
                         #lets fake the ep
                         title = re.sub('\.S[0-9][0-9]\.', '.S01E01.', title)
-                        ep_faked = True
                     else:
                         msg = "Cannot figure out which special this is on www.thetvdb.com, you need to do it manually"
                         download_item.status = DownloadItem.ERROR

@@ -377,20 +377,22 @@ class FTPManager:
             if len(get_eps) > 0:
                 onlyget_clean_eps[int(season)] = get_eps
 
-        logger.debug(onlyget_clean_eps)
-        logger.debug(onlyget_clean_seasons)
-
         skippath = []
         size = 0
         urls = []
 
+        logger.debug("Eps: %s" % onlyget_clean_eps)
+        logger.debug("Seasons: %s" % onlyget_clean_seasons)
+
+
         #lets find them all
         for curdir, dirs, files in self.ftpwalk(folder, max_depth=4):
 
-            print curdir
+            if len(onlyget_clean_eps) == 0 and len(onlyget_clean_seasons) == 0:
+                break
 
             for path in skippath:
-                if path.startswith(curdir):
+                if path.startswith(curdir) or path == curdir:
                     continue
 
             for file in files:
@@ -404,12 +406,36 @@ class FTPManager:
                         eps = onlyget_clean_eps[found_ep_season]
 
                         if found_ep in eps:
-                            del onlyget_clean_eps[found_ep_season][ep]
+                            onlyget_clean_eps[found_ep_season].remove(ep)
 
-                            logger.debug("We found a match, we must download this! %s" % file[0])
-                            file_found = [str(os.path.join(curdir, file[0])), file[1]]
-                            size += found_size
-                            urls = urls + file_found
+                        if len(found_ep) > 1:
+                            #multi ep
+
+                            process = False
+
+                            for ep in found_ep:
+                                if ep in eps:
+                                    process = True
+
+                            if process:
+                                logger.debug("We found a multi ep match, we must download this! %s" % file[0])
+                                file_found = [(str(os.path.join(curdir, file[0])), file[1])]
+                                size += file[1]
+                                urls = urls + file_found
+
+                                for ep in found_ep:
+                                    try:
+                                        onlyget_clean_eps[found_ep_season].remove(ep)
+                                    except:
+                                        pass
+
+                        elif len(found_ep) == 1:
+                            if found_ep[0] in eps:
+                                logger.debug("We found a match, we must download this! %s" % file[0])
+                                file_found = [(str(os.path.join(curdir, file[0])), file[1])]
+                                size += file[1]
+                                urls = urls + file_found
+                                onlyget_clean_eps[found_ep_season].remove(found_ep[0])
 
             #Lets check if required items are in folders
             for dir in dirs:
@@ -441,7 +467,7 @@ class FTPManager:
 
                     for season in seasons:
                         if season in onlyget_clean_seasons:
-                            del onlyget_clean_seasons[season]
+                            onlyget_clean_seasons.remove(season)
                             logger.debug("we must download this one! %s " % dir)
                             skippath.append(full_dir)
                             found_urls, found_size = self.get_files_for_download(full_dir)
@@ -453,30 +479,53 @@ class FTPManager:
                     skippath.append(full_dir)
 
                     #first lets check if something we might be interested in
-                    found_ep_season, found_ep  = utils.get_ep_season_from_title(dir)
+                    found_ep_season, found_ep = utils.get_ep_season_from_title(dir)
 
                     if found_ep_season in onlyget_clean_eps.keys():
                         eps = onlyget_clean_eps[found_ep_season]
 
-                        print eps
-                        print found_ep
+                        if len(found_ep) > 1:
+                            #multi ep
 
-                        if found_ep in eps:
-                            del onlyget_clean_eps[found_ep_season][ep]
-                            logger.debug("We found a match, we must download this! %s" % dir)
-                            skippath.append(full_dir)
-                            found_urls, found_size = self.get_files_for_download(full_dir)
-                            size += found_size
-                            urls = urls + found_urls
+                            process = False
 
-        print len(onlyget_clean_eps)
-        print len(onlyget_clean_seasons)
+                            for ep in found_ep:
+                                if ep in eps:
+                                    process = True
+
+                            if process:
+                                logger.debug("We found a multi ep match, we must download this! %s" % dir)
+                                skippath.append(full_dir)
+                                found_urls, found_size = self.get_files_for_download(full_dir)
+                                size += found_size
+                                urls = urls + found_urls
+
+                                for ep in found_ep:
+                                    try:
+                                        onlyget_clean_eps[found_ep_season].remove(ep)
+                                    except:
+                                        pass
+
+                        elif len(found_ep) == 1:
+                            if found_ep[0] in eps:
+                                logger.debug("We found a match, we must download this! %s" % dir)
+                                skippath.append(full_dir)
+                                found_urls, found_size = self.get_files_for_download(full_dir)
+                                size += found_size
+                                urls = urls + found_urls
+                                eps.remove(found_ep[0])
+
+        for season, eps in onlyget_clean_eps.copy().iteritems():
+            if len(eps) == 0:
+                del onlyget_clean_eps[season]
+
+        logger.debug("Left Eps: %s" % onlyget_clean_eps)
+        logger.debug("Left Seasons: %s" % onlyget_clean_seasons)
+
+        if len(onlyget_clean_eps) > 0 or len(onlyget_clean_seasons) > 0:
+            raise Exception("Unable to find all the required ep's within season pack")
 
         return urls, size
-
-
-
-
 
 
     def getEpFolder(self, season, ep, directoryListing):

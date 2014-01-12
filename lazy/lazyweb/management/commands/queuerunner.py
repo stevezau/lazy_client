@@ -208,30 +208,27 @@ class Command(BaseCommand):
 
                         remotesize = False
 
-                        if dlItem.onlyget:
-                            try:
+                        try:
+                            if dlItem.onlyget:
                                 #we dont want to get everything.. lets figure this out
-                                get_folders = ftp_manager.get_required_folders_for_multi(dlItem.title, dlItem.ftppath, dlItem.onlyget)
-
-                                remotesize = ftp_manager.getRemoteSizeMulti(get_folders)
-                            except Exception as e:
-                                logger.exception(e)
-                                remotesize == 0
-                        else:
-                            try:
+                                files, remotesize = ftp_manager.get_required_folders_for_multi(dlItem.ftppath, dlItem.onlyget)
+                            else:
                                 files, remotesize = ftp_manager.get_files_for_download(dlItem.ftppath)
-                            except ftplib.error_perm, e:
-                                if dlItem.requested == True:
-                                    pass
-                                else:
-                                    logger.error(e)
-                                    dlItem.message = e.message
-                                    dlItem.log(__name__, e.message)
-                                    dlItem.retries += 1
-                                    dlItem.save()
-                                    continue
-                            except Exception as e:
-                                remotesize = 0
+
+                        except ftplib.error_perm, e:
+                            if dlItem.requested == True:
+                                pass
+                            else:
+                                logger.error(e)
+                                dlItem.message = e.message
+                                dlItem.log(__name__, e.message)
+                                dlItem.retries += 1
+                                dlItem.save()
+                                continue
+                        except Exception as e:
+                            logger.exception(e)
+                            remotesize = 0
+
 
                         if remotesize > 0 and len(files) > 0:
                             dlItem.remotesize = remotesize
@@ -248,15 +245,10 @@ class Command(BaseCommand):
                                 dlItem.save()
                             continue
 
-                        #Time to start a new one!.
-                        if dlItem.onlyget:
-                            task = ftp_manager.mirrorMulti.delay(dlItem.localpath, urls, dlItem.id)
-                            dlItem.taskid = task.task_id
-                        else:
-                            mirror = FTPMirror()
-                            task = mirror.mirror_ftp_folder.delay(files, dlItem.localpath, dlItem)
-                            dlItem.taskid = task.task_id
-
+                        #Time to start.
+                        mirror = FTPMirror()
+                        task = mirror.mirror_ftp_folder.delay(files, dlItem.localpath, dlItem)
+                        dlItem.taskid = task.task_id
                         dlItem.message = None
                         dlItem.dlstart = datetime.now()
                         dlItem.status = DownloadItem.DOWNLOADING
