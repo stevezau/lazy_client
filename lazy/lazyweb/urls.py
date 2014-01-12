@@ -17,7 +17,7 @@ urlpatterns = patterns('',
 
 
     #Config - Redirect
-    url(r'^config$', RedirectView.as_view(url='/lazy/config/tvmap/'), name='config.redirect'),
+    url(r'^config$', RedirectView.as_view(url=reverse_lazy('config.tvmap.index')), name='config.redirect'),
     url(r'^config/update/(?P<type>\w+)/$', config.update, name='config.update'),
 
     #Config - Approved Shows
