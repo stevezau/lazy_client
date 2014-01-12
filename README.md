@@ -104,6 +104,11 @@ Lazy Install
 	$ sudo ln -s /home/media/lazy/serverconf/lazy-supervisor.conf /etc/supervisor/conf.d/lazy.conf 
 	$ sudo service supervisor restart
 	
+8) Restarts service
+
+	$ sudo service supervisor stop
+	<wait 10 seconds>
+	$ sudo service supervisor start
 
 
 Setup Apache
