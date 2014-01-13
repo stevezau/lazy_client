@@ -1,20 +1,19 @@
-presets:
+templates:
   global:
     retry_failed:
       retry_time: 60 minutes
       retry_time_multiplier: 2 # Amount retry time will be multiplied by after each successive failure
-      max_retries: 20
+      max_retries: 20 
     lazy:
-      api: http://localhost:8000/api
-  NOTIFY:
-    prowl:
-      apikey: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+      api: http://localhost/lazy/api
+  NOTIFY: 
+    prowl: 
+      apikey: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
   TVHD:
     rss:
-      #url: /home/media/.flexget/test.xml
-      url: http://www.drifthost.com/ftprss/rss.php?cat=TVHD&days=2
-      username: XXXXXXX
-      password: XXXXXXX
+      url: http://www.drifthost.com/ftprss/rss.php?cat=TVHD&days=12
+      username: XXXXXX
+      password: XXXXXX
       other_fields: [imdb_url,section,path]
     require_field:
       - section
@@ -26,7 +25,7 @@ presets:
       - /data/Videos/TVShows/
   HD:
     rss:
-      url: http://www.drifthost.com/ftprss/rss.php?cat=HD&days=2
+      url: http://www.drifthost.com/ftprss/rss.php?cat=HD&days=12
       username: XXXXXX
       password: XXXXXX
       other_fields: [imdb_url,section,path]
@@ -41,9 +40,9 @@ presets:
 
   HD3D:
     rss:
-      url: http://www.drifthost.com/ftprss/rss.php?cat=HD3D&days=2
-      username: XXXXXXX
-      password: XXXXXXX
+      url: http://www.drifthost.com/ftprss/rss.php?cat=HD3D&days=12
+      username: XXXXXX
+      password: XXXXXX
       other_fields: [imdb_url,section,path]
     require_field:
       - section
@@ -58,19 +57,19 @@ presets:
     include: approve.yml
 
   ACCEPT_SERIES:
-    import_series:
+    configure_series:
       from:
         listdir:
           - /data/Videos/TVShows
         thetvdb_favorites:
-          account_id: XXXXXXXXXXXX
+          account_id: XXXXXXXXXXXXXX
   ACCEPT_SERIES_TVDB:
-    import_series:
+    configure_series:
       from:
         listdir:
           - /data/Videos/TVShows
         thetvdb_favorites:
-          account_id: XXXXXXXXXXXX
+          account_id: XXXXXXXXXXXXXX
       settings:
         timeframe: 1 hours
         target: 720p
@@ -82,7 +81,7 @@ tasks:
     priority: 1
     thetvdb_lookup: yes
     metainfo_series: true
-    preset:
+    template:
       - NOTIFY
       - TVHD
       - APPROVE
@@ -119,7 +118,7 @@ tasks:
       rest: reject
     lazy:
       pending: true
-    preset:
+    template:
       - IGNORETV
       - NOTIFY
       - TVHD
@@ -137,7 +136,7 @@ tasks:
     imdb:
       min_score: 7.5
       min_votes: 1300
-    preset:
+    template:
       - IGNORETV
       - NOTIFY
       - TVHD
@@ -149,7 +148,7 @@ tasks:
   HD3D:
     lazy:
       pending: true
-    preset:
+    template:
       - NOTIFY
       - HD3D
     accept_all: yes
@@ -164,20 +163,20 @@ tasks:
       min_year: 2011
       accept_languages:
         - english
-    preset:
+    template:
       - NOTIFY
       - HD
   1080pRecentRelease:
     priority: 1
     quality: 1080p
     imdb:
-      min_score: 6.5
+      min_score: 6.5 
       min_votes: 120
       min_year: 2000
       max_year: 2010
       accept_languages:
         - english
-    preset:
+    template:
       - NOTIFY
       - HD
 
@@ -185,3 +184,27 @@ tasks:
   720pLatestRelease:
     priority: 2
     delay: 24 hours
+    quality: 720p+
+    imdb:
+      min_score: 5.2
+      min_votes: 120
+      min_year: 2011
+      accept_languages:
+        - english
+    template:
+      - NOTIFY
+      - HD
+  720pRecentRelease:
+    priority: 2
+    delay: 24 hours
+    quality: 720p+
+    imdb:
+      min_score: 6.5
+      min_votes: 120
+      min_year: 2000
+      max_year: 2010
+      accept_languages:
+        - english
+    template:
+      - NOTIFY
+      - HD

@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import unicode_literals, division, absolute_import
+from flexget.event import event
 from urllib import quote
 from requests.exceptions import RequestException, HTTPError
 from logging import getLogger
 from flexget.utils import json, requests
-from flexget.plugin import register_plugin, PluginError
+from flexget import plugin
 from flexget import validator
+from flexget.config_schema import one_or_more
+
 import re
 log = getLogger('lazy')
 
@@ -41,17 +44,16 @@ class PluginLazy(object):
     DEFAULT_PENDING = False
     DEFAULT_HANDLE_NO_URL_AS_FAILURE = False
 
+    schema = {
+        'type': 'object',
+        'properties': {
+            'api': {'type': 'string'},
+            'pending': {'type': 'boolean'},
+        },
+    }
+
     def __init__(self):
         self.session = None
-
-    def validator(self):
-        """Return config validator"""
-        root = validator.factory()
-        root.accept('boolean')
-        advanced = root.accept('dict')
-        advanced.accept('text', key='api')
-        advanced.accept('boolean', key='pending')
-        return root
 
     def on_process_start(self, task, config):
         self.session = None
@@ -70,11 +72,11 @@ class PluginLazy(object):
         try:
             self.check_up(task, config)
         except IOError:
-            raise PluginError('lazy not reachable', log)
-        except PluginError:
+            raise plugin.PluginError('lazy not reachable', log)
+        except plugin.PluginError:
             raise
         except Exception as e:
-            raise PluginError('Unknown error: %s' % str(e), log)
+            raise plugin.PluginError('Unknown error: %s' % str(e), log)
 
         api_url = config.get('api', self.DEFAULT_API)
         pending = config.get('pending', self.DEFAULT_PENDING)
@@ -129,7 +131,7 @@ class PluginLazy(object):
         try:
             query_api(url, 'downloads')
         except HTTPError as e:
-            raise PluginError('HTTP Error %s' % e, log)
+            raise plugin.PluginError('HTTP Error %s' % e, log)
 
 def query_api(url, method, post=None):
     try:
@@ -142,10 +144,13 @@ def query_api(url, method, post=None):
     except RequestException as e:
         log.exception(e.response)
         if e.response.status_code == 500:
-            raise PluginError('Internal API Error: <%s> <%s> <%s> <%>' % (method, url, post, e), log)
+            msg = 'Internal API Error: %s %s %s %' % (method, url, post, e.message)
+            raise plugin.PluginError(msg, log)
         raise
 
-register_plugin(PluginLazy, 'lazy', api_ver=2)
+@event('plugin.register')
+def register_plugin():
+    plugin.register(PluginLazy, 'lazy', api_ver=2)
 
 def extract_id(url):
     """Return IMDb ID of the given URL. Return None if not valid or if URL is not a string."""
