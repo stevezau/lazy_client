@@ -52,18 +52,19 @@ class ApprovedListView(TemplateView):
         favs = []
 
         #now lets sort them all out
-        for tvdbfav in tvdbfavs:
-            try:
-                tvcache_obj = Tvdbcache.objects.get(id=int(tvdbfav))
-                favs.append(tvcache_obj)
+        if tvdbfavs and len(tvdbfavs) > 0:
+            for tvdbfav in tvdbfavs:
+                try:
+                    tvcache_obj = Tvdbcache.objects.get(id=int(tvdbfav))
+                    favs.append(tvcache_obj)
 
-            except ObjectDoesNotExist:
-                #not found, lets add it
-                new_tvcache = Tvdbcache()
-                new_tvcache.id = int(tvdbfav)
-                new_tvcache.update_from_tvdb()
-                new_tvcache.save()
-                favs.append(new_tvcache)
+                except ObjectDoesNotExist:
+                    #not found, lets add it
+                    new_tvcache = Tvdbcache()
+                    new_tvcache.id = int(tvdbfav)
+                    new_tvcache.update_from_tvdb()
+                    new_tvcache.save()
+                    favs.append(new_tvcache)
 
         context['favs'] = favs
         return context

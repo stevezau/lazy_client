@@ -565,7 +565,7 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
             new_tvdb_item.save()
 
     #If we have a imdbid do we need to add it to the db or does it exist
-    if instance.imdbid_id is not None:
+    if instance.imdbid_id is not None and instance.imdbid_id != "":
         try:
             if instance.imdbid:
                 #Do we need to update it
@@ -584,17 +584,18 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
 
             logger.debug("Getting IMDB data for release")
 
-            try:
-                #Get latest IMDB DATA
-                imdbobj = ImdbParser()
-                imdbobj.parse("tt" + str(instance.imdbid_id))
+            #Get latest IMDB DATA
+            imdbobj = ImdbParser()
+            imdbobj.parse("tt" + str(instance.imdbid_id))
 
-                if imdbobj.name:
-                    #insert into db
-                    new_imdb = Imdbcache()
-                    new_imdb.title = imdbobj.name
-                    new_imdb.id = int(imdbobj.imdb_id.lstrip("tt"))
-                    new_imdb.save()
+            if imdbobj.name:
+                #insert into db
+                new_imdb = Imdbcache()
+                new_imdb.title = imdbobj.name
+                new_imdb.id = int(imdbobj.imdb_id.lstrip("tt"))
+                new_imdb.save()
 
-            except Exception as e:
-                logger.exception("error gettig imdb information.. from website " + e.message)
+        except Exception as e:
+            instance.imdbid_id = None
+            logger.exception("error gettig imdb %s information.. from website %s" %  (instance.imdbid_id, e.message))
+
