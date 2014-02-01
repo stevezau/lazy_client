@@ -215,6 +215,8 @@ INSTALLED_APPS = (
 ##############
 BROKER_URL = "amqp://"
 CELERY_RESULT_BACKEND = "amqp://"
+CELERY_ACKS_LATE = True
+CELERY_TRACK_STARTED = True
 
 # Application definition
 

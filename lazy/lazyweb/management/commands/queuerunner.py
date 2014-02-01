@@ -68,9 +68,6 @@ class Command(BaseCommand):
 
                 task = dlItem.get_task()
 
-                if task is not None:
-                    logger.debug("%s status: %s   result: %s" % (dlItem.title, task.state, task.result))
-
                 if None is task:
                     #No task assigned, it never reached MQ..
                     msg = "no task assigned for some strange reason.. "
@@ -156,14 +153,10 @@ class Command(BaseCommand):
                                 #ignore collation lation truncate errors
                                 pass
                 else:
-                    #Lets make sure the job has not been running for over x hours
-                    curTime = datetime.now()
-                    diff = curTime - dlItem.dlstart.replace(tzinfo=None)
-                    hours = diff.seconds / 60 / 60
-                    if hours > 8:
-                        dlItem.log(__name__, "Job as has been running for over 8 hours, killing job and setting to retry: %s" % dlItem.ftppath)
-                        dlItem.retries += 1
-                        dlItem.reset()
+                    #lets make sure the job didnt crash
+                    if dlItem.still_alive() == False:
+                        dlItem.log(__name__, "Job aappears to of crashed for some reason.. lets reset it: %s" % dlItem.ftppath)
+                        dlItem.reset(force=True)
 
             #Figure out the number of jobs running after the above checks
             count = DownloadItem.objects.all().filter(status=DownloadItem.DOWNLOADING).count()

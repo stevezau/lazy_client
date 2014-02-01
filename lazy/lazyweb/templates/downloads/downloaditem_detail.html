@@ -16,7 +16,7 @@
     </div>
     <div class='right-col'>
         {% with percentComlpete=download.get_percent_complete %}
-            <div class="progressbar"><div class="progressbar_{{ download.id }}"></div>{{ percentComlpete|floatformat:2  }}% Complete</div>
+            <div class="progressbar"><div class="progressbar_{{ download.id }}"></div>{{ percentComlpete|floatformat:2  }}% Complete ({{ download.get_speed }})</div>
             <script>doProgressbar({{ download.id }}, {{ percentComlpete }})</script>
         {% endwith %}
 

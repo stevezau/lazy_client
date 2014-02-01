@@ -102,6 +102,39 @@ class DownloadItem(models.Model):
 
         self.downloadlog_set.create(download_id=self.id, message=logmsg)
 
+    def get_speed(self):
+
+        speed = 0
+
+        if self.still_alive():
+            task = self.get_task()
+
+            if task:
+                result = task.result
+                if 'speed' in result:
+                    speed = utils.bytes2human(result['speed'], "%(value).1f %(symbol)s/sec")
+
+
+        return speed
+
+    def still_alive(self):
+        task = self.get_task()
+
+        if task:
+            result = task.result
+
+            seconds_now = time.mktime(datetime.now().timetuple())
+
+            if 'updated' in result:
+                seconds_updated = result['updated']
+
+                seconds = seconds_now - seconds_updated
+
+                if seconds < 120:
+                    #we have received an update in the last 120 seconds, its still running
+                    return True
+
+        return False
 
     def get_task(self):
         if self.taskid == None or self.taskid == "":
@@ -586,16 +619,20 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
 
             #Get latest IMDB DATA
             imdbobj = ImdbParser()
-            imdbobj.parse("tt" + str(instance.imdbid_id))
+            try:
+                imdbobj.parse("tt" + str(instance.imdbid_id))
 
-            if imdbobj.name:
-                #insert into db
-                new_imdb = Imdbcache()
-                new_imdb.title = imdbobj.name
-                new_imdb.id = int(imdbobj.imdb_id.lstrip("tt"))
-                new_imdb.save()
+                if imdbobj.name:
+                    #insert into db
+                    new_imdb = Imdbcache()
+                    new_imdb.title = imdbobj.name
+                    new_imdb.id = int(imdbobj.imdb_id.lstrip("tt"))
+                    new_imdb.save()
+            except Exception as e:
+                logger.exception("error gettig imdb %s information.. from website %s" %  (instance.imdbid_id, e.message))
+                instance.imdbid_id = None
 
         except Exception as e:
-            instance.imdbid_id = None
             logger.exception("error gettig imdb %s information.. from website %s" %  (instance.imdbid_id, e.message))
+            instance.imdbid_id = None
 

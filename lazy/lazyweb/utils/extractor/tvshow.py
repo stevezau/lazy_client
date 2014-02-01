@@ -301,6 +301,8 @@ class TVExtractor:
                 else:
                     dest_folder = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", os.path.abspath(dest_folder_base + os.sep + seasonFolder))
 
+                dest_folder = dest_folder.strip()
+
                 utils.create_path(dest_folder)
 
                 ep_name = series_name + ' - ' + 'S' + str(series_season) + ep_id + ' - ' + series_ep_name

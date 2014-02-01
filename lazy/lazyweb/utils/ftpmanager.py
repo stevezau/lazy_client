@@ -58,8 +58,11 @@ class FTPMirror:
     @task(bind=True)
     def mirror_ftp_folder(self, urls, savepath, dlitem):
 
-        current_task.update_state(state='RUNNING', meta={'speed': 'Doing some task'})
+        current_task.update_state(state='RUNNING', meta={'updated': time.mktime(datetime.now().timetuple()), 'speed': 0})
+
         dlitem.log(__name__, "Starting Download")
+
+        last_status_update = datetime.now()
 
         #Find jobs running and if they are finished or not
         task = dlitem.get_task()
@@ -130,6 +133,7 @@ class FTPMirror:
 
         # Pre-allocate a list of curl objects
         self.m.handles = []
+
         for i in range(num_conn):
             c = pycurl.Curl()
             c.fp = None
@@ -147,12 +151,16 @@ class FTPMirror:
 
         num_urls = len(queue)
 
+        failed_list = {}
+
         # Main loop
         freelist = self.m.handles[:]
         num_processed = 0
         while num_processed < num_urls:
+
             # If there is an url to process and a free curl object, add to multi stack
             while queue and freelist:
+
                 url, filename, remote_size = queue.pop(0)
                 c = freelist.pop()
 
@@ -188,6 +196,7 @@ class FTPMirror:
 
                 # store some info
                 c.filename = filename
+                c.remote_size = remote_size
                 c.url = url
 
             # Run the internal curl state machine for the multi stack
@@ -209,16 +218,57 @@ class FTPMirror:
                     logger.debug(msg)
                     freelist.append(c)
                 for c, errno, errmsg in err_list:
+
                     close_file(c.fp)
                     c.fp = None
                     self.m.remove_handle(c)
-                    msg = "Failed: %s %s %s" % (os.path.basename(c.filename), errno, errmsg)
+
+                    #should we retry?
+                    if c.filename in failed_list:
+                        #what count are we at
+                        count = failed_list.get(c.filename)
+
+                        if count >= 3:
+                            msg = "Failed: %s %s %s" % (os.path.basename(c.filename), errno, errmsg)
+                        else:
+                            failed_list[c.filename] += 1
+                            #retry
+                            queue.append((c.url, c.filename, c.remote_size))
+                            msg = "Retrying: %s %s %s" % (os.path.basename(c.filename), errno, errmsg)
+
+                    else:
+                        #lets retry
+                        failed_list[c.filename] = 1
+                        queue.append((c.url, c.filename, c.remote_size))
+                        msg = "Retrying: %s %s %s" % (os.path.basename(c.filename), errno, errmsg)
+
                     dlitem.log(__name__, msg)
                     logger.debug(msg)
                     freelist.append(c)
+
                 num_processed = num_processed + len(ok_list) + len(err_list)
+
                 if num_q == 0:
                     break
+
+            #should we update?
+            now = datetime.now()
+            seconds = (now-last_status_update).total_seconds()
+
+            if seconds > 3:
+                last_status_update = now
+
+                #Lets get speed
+                speed = 0
+
+                for handle in self.m.handles:
+                    try:
+                        speed = speed + handle.getinfo(pycurl.SPEED_DOWNLOAD)
+                    except Exception as e:
+                        dlitem.log(__name__, "error getting speed %s" % e.message)
+
+                current_task.update_state(state='RUNNING', meta={'updated': time.mktime(now.timetuple()), 'speed': speed})
+
             # Currently no more I/O is pending, could do something in the meantime
             # (display a progress bar, etc.).
             # We just call select() to sleep until some more data is available.

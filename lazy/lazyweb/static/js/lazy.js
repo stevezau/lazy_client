@@ -9,7 +9,7 @@ $( document ).ready(function() {
 	//$( "#dialog" ).dialog();
 
     $("#id_tvdbid_display").autocomplete({
-        source: "/lazy/api/search_tvdb/",
+        source: "/api/search_tvdb/",
         minLength: 3,
         select: function(event,ui) {
             $("#id_tvdbid_id").val(ui.item.id)
@@ -23,7 +23,7 @@ $( document ).ready(function() {
         epselect.empty();
 
         $.ajax({
-            url:"/lazy/api/search_tvdb_season/" + showid + "/" + season,
+            url:"/api/search_tvdb_season/" + showid + "/" + season,
             type: 'GET',
             dataType: 'json', // or your choice of returned data
             success: function(eps){
