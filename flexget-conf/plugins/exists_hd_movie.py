@@ -1,13 +1,14 @@
 from __future__ import unicode_literals, division, absolute_import
 import os
 import logging
-from flexget.event import event
-from flexget import plugin
 
+from flexget import plugin
+from flexget.event import event
 from flexget.config_schema import one_or_more
 from flexget.utils.titles.movie import MovieParser
+from flexget.utils.tools import TimedDict
 
-log = logging.getLogger('exists_HD_movie')
+log = logging.getLogger('exists_hd_movie')
 
 
 class FilterExistsMovie(object):
@@ -25,16 +26,13 @@ class FilterExistsMovie(object):
     skip = ['cd1', 'cd2', 'subs', 'sample']
 
     def __init__(self):
-        self.cache = {}
+        self.cache = TimedDict(cache_time='1 hour')
 
     def build_config(self, config):
         # if only a single path is passed turn it into a 1 element list
         if isinstance(config, basestring):
             config = [config]
         return config
-
-    def on_process_start(self, task, config):
-        self.cache = {}
 
     @plugin.priority(-1)
     def on_task_filter(self, task, config):
@@ -43,7 +41,7 @@ class FilterExistsMovie(object):
             return
 
         config = self.build_config(config)
-        imdb_lookup = get_plugin_by_name('imdb_lookup').instance
+        imdb_lookup = plugin.get_plugin_by_name('imdb_lookup').instance
 
         incompatible_dirs = 0
         incompatible_entries = 0
@@ -75,7 +73,7 @@ class FilterExistsMovie(object):
             #logging.getLogger('imdb_lookup').setLevel(logging.WARNING)
 
             # scan through
-            for root, dirs, files in os.walk(path):
+            for root, dirs, files in os.walk(path, followlinks=True):
                 # convert filelists into utf-8 to avoid unicode problems
                 dirs = [x.decode('utf-8', 'ignore') for x in dirs]
                 # files = [x.decode('utf-8', 'ignore') for x in files]
