@@ -74,7 +74,7 @@ class Command(BaseCommand):
                     logger.error(msg)
                     dlItem.status = DownloadItem.QUEUE
                     dlItem.dlstart = None
-                    dlItem.log(__name__, msg)
+                    dlItem.log(msg)
                     dlItem.message = msg
                     dlItem.retries += 1
                     dlItem.save()
@@ -85,20 +85,20 @@ class Command(BaseCommand):
 
                     if task.state == "FAILURE":
                         msg = 'Job has failed, will check if we got everything anyway'
-                        dlItem.log(__name__, msg)
+                        dlItem.log(msg)
                         logger.info(msg)
                     else:
                         msg = 'Job has finished'
-                        dlItem.log(__name__, msg)
+                        dlItem.log(msg)
                         logger.info(msg)
 
                     localsize = -1
 
                     try:
                         localsize = ftp_manager.getLocalSize(dlItem.localpath)
-                        dlItem.log(__name__, 'Local size of folder is: %s' % localsize)
+                        dlItem.log('Local size of folder is: %s' % localsize)
                     except:
-                        dlItem.log(__name__, "error getting local size of folder: %s" % dlItem.ftppath)
+                        dlItem.log("error getting local size of folder: %s" % dlItem.ftppath)
 
                     localsize = localsize / 1024 / 1024
                     remotesize = dlItem.remotesize / 1024 / 1024
@@ -110,7 +110,7 @@ class Command(BaseCommand):
 
                     if percent > 99.3:
                         #Change status to extract
-                        dlItem.log(__name__, "Job actually finished, moving release to move status")
+                        dlItem.log("Job actually finished, moving release to move status")
                         dlItem.status = DownloadItem.MOVE
                         dlItem.retries = 0
                         dlItem.message = None
@@ -129,7 +129,7 @@ class Command(BaseCommand):
                             #Failed download
                             #TODO: Notify
                             msg = "didn't download properly after 3 retries cause %s" % errormsg
-                            dlItem.log(__name__, msg)
+                            dlItem.log(msg)
                             logger.debug(msg)
                             dlItem.message = str(msg)
                             dlItem.status = DownloadItem.ERROR
@@ -141,7 +141,7 @@ class Command(BaseCommand):
                         else:
                             #Didnt download properly, put it back in the queue and let others try download first.
                             msg = "didn't download properly, trying again cause: %s" % errormsg
-                            dlItem.log(__name__, msg)
+                            dlItem.log(msg)
                             logger.debug(msg)
                             dlItem.retries += 1
                             dlItem.message = str(msg)
@@ -155,7 +155,7 @@ class Command(BaseCommand):
                 else:
                     #lets make sure the job didnt crash
                     if dlItem.still_alive() == False:
-                        dlItem.log(__name__, "Job aappears to of crashed for some reason.. lets reset it: %s" % dlItem.ftppath)
+                        dlItem.log("Job aappears to of crashed for some reason.. lets reset it: %s" % dlItem.ftppath)
                         dlItem.reset(force=True)
 
             #Figure out the number of jobs running after the above checks
@@ -195,7 +195,7 @@ class Command(BaseCommand):
                         logger.info("Starting job: %s" % dlItem.ftppath)
 
                         if (dlItem.retries > 10):
-                            dlItem.log(__name__, "Job hit too many retires, setting to failed")
+                            dlItem.log("Job hit too many retires, setting to failed")
                             dlItem.status = DownloadItem.ERROR
                             dlItem.save()
 
@@ -214,7 +214,7 @@ class Command(BaseCommand):
                             else:
                                 logger.error(e)
                                 dlItem.message = e.message
-                                dlItem.log(__name__, e.message)
+                                dlItem.log(e.message)
                                 dlItem.retries += 1
                                 dlItem.save()
                                 continue
@@ -231,7 +231,7 @@ class Command(BaseCommand):
                                 dlItem.message = 'Waiting for item to appear on ftp'
                                 dlItem.save()
                             else:
-                                dlItem.log(__name__, "Unable to get size and files for %s" % dlItem.ftppath)
+                                dlItem.log("Unable to get size and files for %s" % dlItem.ftppath)
                                 logger.info("Unable to get size and files for %s" % dlItem.ftppath)
                                 dlItem.message = 'Unable to get size and files'
                                 dlItem.retries += 1

@@ -96,9 +96,14 @@ class DownloadItem(models.Model):
     seasonoverride = models.IntegerField(default=0, blank=True, null=True)
     onlyget = JSONField(blank=True, null=True)
 
-    def log(self, name, msg):
+    def log(self, msg):
+        frm = inspect.stack()[1]
+        mod = inspect.getmodule(frm[0])
+
+        caller = mod.__name__
         line = inspect.currentframe().f_back.f_lineno
-        logmsg = "%s(%s): %s" % (name, line, msg)
+
+        logmsg = "%s(%s): %s" % (caller, line, msg)
 
         self.downloadlog_set.create(download_id=self.id, message=logmsg)
 

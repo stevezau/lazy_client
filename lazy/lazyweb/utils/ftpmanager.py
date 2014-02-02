@@ -60,7 +60,7 @@ class FTPMirror:
 
         current_task.update_state(state='RUNNING', meta={'updated': time.mktime(datetime.now().timetuple()), 'speed': 0})
 
-        dlitem.log(__name__, "Starting Download")
+        dlitem.log("Starting Download")
 
         last_status_update = datetime.now()
 
@@ -72,7 +72,7 @@ class FTPMirror:
         elif task.state == "SUCCESS" or task.state == "FAILURE":
             pass
         else:
-            dlitem.log(__name__, "%s already being downloaded" % dlitem.ftppath)
+            dlitem.log("%s already being downloaded" % dlitem.ftppath)
             return
 
         self.m = pycurl.CurlMulti()
@@ -172,20 +172,20 @@ class FTPMirror:
 
                     if local_size == 0:
                         #try again
-                        dlitem.log(__name__, "Will download %s (%s bytes)" % (short_filename, remote_size))
+                        dlitem.log("Will download %s (%s bytes)" % (short_filename, remote_size))
                         f = open_file(filename, "wb")
 
                     if local_size > remote_size:
-                        dlitem.log(__name__, "Strange, local size was bigger then remote, re-downloading %s" % short_filename)
+                        dlitem.log("Strange, local size was bigger then remote, re-downloading %s" % short_filename)
                         f = open_file(filename, "wb")
                     else:
                         #lets resume
-                        dlitem.log(__name__, "Partial download %s (%s bytes), lets resume from %s bytes" % (short_filename, local_size, local_size))
+                        dlitem.log("Partial download %s (%s bytes), lets resume from %s bytes" % (short_filename, local_size, local_size))
                         c.setopt(pycurl.RESUME_FROM, local_size)
                         f = open_file(filename, "ab")
 
                 else:
-                    dlitem.log(__name__, "Will download %s (%s bytes)" % (short_filename, remote_size))
+                    dlitem.log("Will download %s (%s bytes)" % (short_filename, remote_size))
                     f = open_file(filename, "wb")
 
                 c.fp = f
@@ -214,7 +214,7 @@ class FTPMirror:
                     c.fp = None
                     self.m.remove_handle(c)
                     msg = "Success:%s" % (os.path.basename(c.filename))
-                    dlitem.log(__name__, msg)
+                    dlitem.log(msg)
                     logger.debug(msg)
                     freelist.append(c)
                 for c, errno, errmsg in err_list:
@@ -242,7 +242,7 @@ class FTPMirror:
                         queue.append((c.url, c.filename, c.remote_size))
                         msg = "Retrying: %s %s %s" % (os.path.basename(c.filename), errno, errmsg)
 
-                    dlitem.log(__name__, msg)
+                    dlitem.log(msg)
                     logger.debug(msg)
                     freelist.append(c)
 
@@ -265,7 +265,7 @@ class FTPMirror:
                     try:
                         speed = speed + handle.getinfo(pycurl.SPEED_DOWNLOAD)
                     except Exception as e:
-                        dlitem.log(__name__, "error getting speed %s" % e.message)
+                        dlitem.log("error getting speed %s" % e.message)
 
                 current_task.update_state(state='RUNNING', meta={'updated': time.mktime(now.timetuple()), 'speed': speed})
 

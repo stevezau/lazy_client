@@ -214,7 +214,7 @@ def crc(fileName):
 
 def check_crc(dlitem):
     path = dlitem.localpath
-    dlitem.log(__name__, "Checking SFV in path %s" % path)
+    dlitem.log("Checking SFV in path %s" % path)
 
     os.chdir(path)
 
@@ -226,7 +226,7 @@ def check_crc(dlitem):
         s = open(sfvFile)
 
         if os.path.getsize(sfvFile) == 0:
-            dlitem.log(__name__, 'empty sfv file')
+            dlitem.log('empty sfv file')
             return False
 
         names_list = []
@@ -252,7 +252,7 @@ def check_crc(dlitem):
                 logger.debug("CRC Check True: %s" % names_list[i])
                 pass
             else:
-                dlitem.log(__name__, "there was a problem with file deleting it " + names_list[i])
+                dlitem.log("there was a problem with file deleting it " + names_list[i])
                 logger.debug("CRC Check False!!!: %s" % names_list[i])
                 no_errors=False
                 try:

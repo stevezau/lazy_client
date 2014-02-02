@@ -71,7 +71,7 @@ class Command(BaseCommand):
                     extractor = DownloadItemExtractor(dlitem)
                     extractor.extract()
                 except Exception as e:
-                    dlitem.log(__name__, e.message)
+                    dlitem.log(e.message)
                     logger.exception("Error extracting %s" % e)
                     dlitem.retries += 1
                     dlitem.save()
