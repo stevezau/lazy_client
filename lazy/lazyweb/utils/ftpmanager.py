@@ -164,7 +164,12 @@ class FTPMirror:
                 url, filename, remote_size = queue.pop(0)
                 c = freelist.pop()
 
+                dlitem.log("Remote file %s size: %s" % (filename, remote_size))
+
                 short_filename = os.path.basename(filename)
+
+                local_size = 0
+                f = None
 
                 if os.path.isfile(filename):
                     #compare sizes
@@ -181,15 +186,14 @@ class FTPMirror:
                     else:
                         #lets resume
                         dlitem.log("Partial download %s (%s bytes), lets resume from %s bytes" % (short_filename, local_size, local_size))
-                        c.setopt(pycurl.RESUME_FROM, local_size)
                         f = open_file(filename, "ab")
 
                 else:
                     dlitem.log("Will download %s (%s bytes)" % (short_filename, remote_size))
                     f = open_file(filename, "wb")
 
+                c.setopt(pycurl.RESUME_FROM, local_size)
                 c.fp = f
-
                 c.setopt(pycurl.URL, url)
                 c.setopt(pycurl.WRITEDATA, c.fp)
                 self.m.add_handle(c)

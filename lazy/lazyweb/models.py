@@ -466,6 +466,8 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
     if instance.id is None:
         logger.debug("Adding a new download %s" % instance.ftppath)
 
+        instance.ftppath = instance.ftppath.strip()
+
         #Check if it exists already..
 
         count = DownloadItem.objects.all().filter(ftppath=instance.ftppath).count()
