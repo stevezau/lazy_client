@@ -87,6 +87,7 @@ class ApprovedCreate(FormView):
             dst = os.path.join(settings.TVHD, tvdbobj.title)
             dst = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", dst)
             dst = dst.strip()
+            dst = re.sub(" +", " ", dst)
             tvdbobj.localpath = dst
             tvdbobj.save()
             os.mkdir(dst)
@@ -95,9 +96,10 @@ class ApprovedCreate(FormView):
             new_tvdbcache.id = int(form.cleaned_data['tvdbid_id'])
             new_tvdbcache.update_from_tvdb()
 
-            dst = os.path.join(settings.TVHD, new_gittvdbcache.title)
+            dst = os.path.join(settings.TVHD, new_tvdbcache.title)
             dst = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", dst)
             dst = dst.strip()
+            dst = re.sub(" +", " ", dst)
             logger.debug(dst)
             os.mkdir(dst)
 

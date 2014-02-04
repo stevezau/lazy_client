@@ -12,7 +12,7 @@ Install Ubuntu Packages
 Execute the following on server
 
 
-	$ sudo apt-get install apache2 libapache2-mod-wsgi lftp git python-pip supervisor mysql-server phpmyadmin python-mysqldb 
+	$ sudo apt-get install apache2 libapache2-mod-wsgi lftp git python-pip supervisor mysql-server phpmyadmin python-mysqldb  python-dev libpython-dev
 
 Setup Mysql
 =====

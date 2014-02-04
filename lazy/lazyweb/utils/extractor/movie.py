@@ -157,6 +157,8 @@ class MovieExtractor():
 
             dest_folder = re.sub(settings.ILLEGAL_CHARS_REGEX, "", os.path.abspath(dest_folder + os.sep + movie_name + " (" + str(movie_year) + ")"))
 
+            dest_folder = re.sub(" +", " ", dest_folder)
+
             if os.path.exists(dest_folder):
                 if download_item.section == "XVID":
                     #Movie alraedy exists.. if this is an avi file and its an mkv then dont replace with a lower quality

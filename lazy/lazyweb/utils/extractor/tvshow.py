@@ -302,6 +302,7 @@ class TVExtractor:
                     dest_folder = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", os.path.abspath(dest_folder_base + os.sep + seasonFolder))
 
                 dest_folder = dest_folder.strip()
+                dest_folder = re.sub(" +", " ", dest_folder)
 
                 utils.create_path(dest_folder)
 
@@ -323,6 +324,7 @@ class TVExtractor:
                 raise Exception('Unable to figure out the type of doco')
 
             dest_folder = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", os.path.abspath(dest_folder + os.sep + doco_folder + ' Docos'))
+            dest_folder = re.sub(" +", " ", dest_folder)
 
             utils.create_path(dest_folder)
 
