@@ -398,14 +398,19 @@ def load_button_module(package, fn):
 
 
 def ignore_show(title):
+
+    logger.debug("Need to ignore %s" % title)
     ins = open(settings.FLEXGET_IGNORE, "r+")
+
 
     for line in ins:
         if title in line:
+            logger.debug("Show already ignored, not adding %s" % title)
             ins.close()
             return
 
     #if not lets add it
+    logger.debug("Adding to ignore file %s " % title)
     ins.write("    - ^%s.S%s" % (title, os.linesep))
     ins.close()
 

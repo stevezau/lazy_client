@@ -55,6 +55,14 @@ class FTPMirror:
     # We should ignore SIGPIPE when using pycurl.NOSIGNAL - see
     # the libcurl tutorial for more info.
 
+    retry_on_errors = [
+        13, #CURLE_FTP_WEIRD_PASV_REPLY (13) libcurl failed to get a sensible result back from the server as a response to either a PASV or a EPSV command. The server is flawed.
+        14, #CURLE_FTP_WEIRD_227_FORMAT
+        12, #CURLE_FTP_ACCEPT_TIMEOUT (12) During an active FTP session while waiting for the server to connect, the CURLOPT_ACCEPTTIMOUT_MS (or the internal default) timeout expired.
+        23, #CURLE_WRITE_ERROR (23) An error occurred when writing received data to a local file, or an error was returned to libcurl from a write callback.
+        28, #CURLE_OPERATION_TIMEDOUT (28) Operation timeout. The specified time-out period was reached according to the conditions.
+        ]
+
     @task(bind=True)
     def mirror_ftp_folder(self, urls, savepath, dlitem):
 
@@ -228,23 +236,27 @@ class FTPMirror:
                     self.m.remove_handle(c)
 
                     #should we retry?
-                    if c.filename in failed_list:
-                        #what count are we at
-                        count = failed_list.get(c.filename)
-
-                        if count >= 3:
-                            msg = "Failed: %s %s %s" % (os.path.basename(c.filename), errno, errmsg)
-                        else:
-                            failed_list[c.filename] += 1
-                            #retry
-                            queue.append((c.url, c.filename, c.remote_size))
-                            msg = "Retrying: %s %s %s" % (os.path.basename(c.filename), errno, errmsg)
+                    if errno in self.retry_on_errors:
+                        msg = "Continuing Retrying: %s %s %s" % (os.path.basename(c.filename), errno, errmsg)
 
                     else:
-                        #lets retry
-                        failed_list[c.filename] = 1
-                        queue.append((c.url, c.filename, c.remote_size))
-                        msg = "Retrying: %s %s %s" % (os.path.basename(c.filename), errno, errmsg)
+                        if c.filename in failed_list:
+                            #what count are we at
+                            count = failed_list.get(c.filename)
+
+                            if count >= 3:
+                                msg = "Failed: %s %s %s" % (os.path.basename(c.filename), errno, errmsg)
+                            else:
+                                failed_list[c.filename] += 1
+                                #retry
+                                queue.append((c.url, c.filename, c.remote_size))
+                                msg = "Retrying: %s %s %s" % (os.path.basename(c.filename), errno, errmsg)
+
+                        else:
+                                #lets retry
+                                failed_list[c.filename] = 1
+                                queue.append((c.url, c.filename, c.remote_size))
+                                msg = "Retrying: %s %s %s" % (os.path.basename(c.filename), errno, errmsg)
 
                     dlitem.log(msg)
                     logger.debug(msg)
