@@ -12,7 +12,7 @@ Install Ubuntu Packages
 Execute the following on server
 
 
-	$ sudo apt-get install apache2 libapache2-mod-wsgi lftp git python-pip supervisor mysql-server phpmyadmin python-mysqldb  python-dev libpython-dev
+	$ sudo apt-get install apache2 libapache2-mod-wsgi lftp git python-pip supervisor mysql-server phpmyadmin python-mysqldb  python-dev libpython-dev python-pycurl
 
 Setup Mysql
 =====
@@ -124,8 +124,8 @@ Conjob for Flexget
 
 Add the following cron jobs
 
-	$ */15 * * * * /usr/local/bin/flexget --cron -c /home/media/.flexget/config-xvid.yml
-	$ */15 * * * * /usr/local/bin/flexget --cron --disable-advancement
+	$ */15 * * * * /usr/local/bin/flexget -c /home/media/.flexget/config-xvid.yml  execute --cron
+	$ */15 * * * * /usr/local/bin/flexget execute --cron --disable-advancement
 
 
 
