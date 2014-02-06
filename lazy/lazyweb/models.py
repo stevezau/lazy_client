@@ -130,7 +130,7 @@ class DownloadItem(models.Model):
 
             seconds_now = time.mktime(datetime.now().timetuple())
 
-            if 'updated' in result:
+            if result and 'updated' in result:
                 seconds_updated = result['updated']
 
                 seconds = seconds_now - seconds_updated
