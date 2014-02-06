@@ -128,6 +128,8 @@ class DownloadItem(models.Model):
         if task:
             result = task.result
 
+            self.log("Task result :%s" % result)
+
             seconds_now = time.mktime(datetime.now().timetuple())
 
             if result and 'updated' in result:
