@@ -38,6 +38,8 @@ class TVExtractor:
 
         download_item.log("Found %s existing files" % len(existing_files))
 
+        b_file = None
+        
         if len(existing_files) > 0:
             #lets find the best one
             for f in existing_files:

@@ -98,6 +98,8 @@ class DownloadItem(models.Model):
 
     def log(self, msg):
 
+        logger.debug(msg)
+
         try:
             frm = inspect.stack()[1]
             mod = inspect.getmodule(frm[0])
