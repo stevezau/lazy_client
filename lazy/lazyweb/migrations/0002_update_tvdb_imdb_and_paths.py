@@ -16,17 +16,6 @@ logger = logging.getLogger(__name__)
 class Migration(DataMigration):
 
     def forwards(self, orm):
-        for tvdbcahe in orm.Tvdbcache.objects.all():
-
-            #First lets try find the path
-            dir = os.path.join(settings.TVHD, tvdbcahe.title)
-            dir = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", dir)
-
-            if os.path.exists(dir):
-                tvdbcahe.localpath = dir
-                tvdbcahe.save()
-
-        #Now lets try via each folder
 
         tvdbapi = Tvdb()
 

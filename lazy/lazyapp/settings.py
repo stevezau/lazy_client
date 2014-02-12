@@ -87,6 +87,11 @@ TVSHOW_SEASON_PACK_REGEX = (
     "(?i).+\.S[0-9]+\..+",
 )
 
+TVSHOW_SEASON_REGEX = (
+    "(?i)Season[^0-9]+([0-9]+)",
+    "(?i)Season([0-9]+)",
+)
+
 MOVIE_PACKS_REGEX = (
     "(?i).+\.(TRiLOGY|PACK|Duology|Pentalogy)\..+",
 )
@@ -125,7 +130,7 @@ TVSHOW_AUTOFIX_REPLACEMENTS = {
     "!": "",
 }
 
-ILLEGAL_CHARS_REGEX = '[():\"*?<>|]+'
+ILLEGAL_CHARS_REGEX = '[:\"*?<>|]+'
 
 #########################
 ### CHECK LAZY PATHTS ###

@@ -13,6 +13,62 @@ class TVExtractor:
 
     #TODO: Need to refactor this code to make it cleaner
 
+    def move_file(self, download_item, file):
+
+        dst = file['dst']
+        src = file['src']
+        __, ext = os.path.splitext(src)
+
+        ep = None
+        season = None
+
+        if 'ep' in file:
+            ep = file['ep']
+
+        if 'season' in file:
+            season = file['season']
+
+        if ep and season:
+            #Does it already exist?
+            logger.debug("Checking if season/ep already exist within %s" % os.path.dirname(dst))
+            existing_files = utils.find_ep_season(os.path.dirname(dst), season, ep)
+        else:
+            logger.debug("Checking if files already exist within %s" % os.path.dirname(dst))
+            existing_files = utils.find_exist_quality(dst)
+
+        download_item.log("Found %s existing files" % len(existing_files))
+
+        if len(existing_files) > 0:
+            #lets find the best one
+            for f in existing_files:
+                if b_file:
+                    b_file = utils.compare_best_vid_file(b_file, f)
+                else:
+                    b_file = f
+        else:
+            b_file = src
+
+        download_item.log("Best existing (quality) is %s" % b_file)
+
+        #now lets figure out if this release is a better quality
+        logger.debug(src)
+        logger.debug(b_file)
+        logger.debug(utils.compare_best_vid_file(src, b_file))
+
+        if src == utils.compare_best_vid_file(src, b_file):
+            #This is the best quality, lets remove the others
+            for delfile in existing_files:
+                os.remove(delfile)
+
+            #now lets do the move
+            utils.create_path(os.path.abspath(os.path.join(dst, '..')))
+            shutil.move(src, dst)
+            download_item.log('Moving file: ' + os.path.basename(src) + ' to: ' + dst)
+        else:
+            #better quality exists..
+            download_item.log('NOT MOVING FILE AS BETTER QUALITY EXISTS file: ' + os.path.basename(src) + ' to: ' + dst)
+
+
     def extract(self, download_item, dest_folder):
 
         name = os.path.basename(download_item.localpath)
@@ -157,15 +213,19 @@ class TVExtractor:
         elif os.path.isfile(download_item.localpath):
             __, ext = os.path.splitext(download_item.localpath)
             if re.match('(?i)\.(mkv|avi|m4v|mpg|mp4)', ext):
-                src_files = [{'src': download_item.localpath, 'dst': None}]
+                src_files = [{'src': download_item.localpath}]
             else:
                 raise Exception('Is not a media file')
 
         if not src_files:
             raise Exception('No media files found')
 
+        if len(src_files) > 1:
+            raise Exception('Multiple video files found within release %s' % src_files)
 
-        if utils.match_str_regex(settings.TVSHOW_REGEX, download_item.title):
+        show_vid_file = src_files[0]
+
+        if utils.match_str_regex(settings.TVSHOW_REGEX, download_item.title) or download_item.tvdbid is not None:
             #This is a normal tvshow..
             title = download_item.title
 
@@ -191,7 +251,9 @@ class TVExtractor:
                 parser = utils.get_series_info(title)
 
             if parser:
-                series_name = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", parser.name)
+                series_name = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", parser.name).strip()
+                series_name = re.sub(" +", " ", series_name).strip()
+
                 series_season = str(parser.season).zfill(2)
                 series_ep = str(parser.episode).zfill(2)
             else:
@@ -205,13 +267,13 @@ class TVExtractor:
                 #none found
                 pass
 
-            if download_item.epoverride > 0 and download_item.seasonoverride >= 0:
-                series_season = download_item.seasonoverride
-                series_ep = download_item.epoverride
-
             #Do we have a linked tvdbid?
             if download_item.tvdbid:
                 series_name = download_item.tvdbid.title
+
+                series_name = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", series_name).strip()
+                series_name = re.sub(" +", " ", series_name).strip()
+
             else:
                 #lets try find it
                 show_obj = self.tvdbapi[series_name]
@@ -236,21 +298,27 @@ class TVExtractor:
                 else:
                     raise Exception("Could not find show: %s via thetvdb.com" % series_name)
 
-            #Lets try convert via thexem
-            xem_season, xem_ep = self.tvdbapi.get_xem_show_convert(download_item.tvdbid_id, (series_season), int(series_ep))
+            if download_item.epoverride > 0 or download_item.seasonoverride >= 0:
+                if download_item.epoverride > 0:
+                    series_ep = download_item.epoverride
 
-            if xem_season is not None and xem_ep is not None:
-                download_item.log("Found entry on thexem, converted the season and ep to %s x %s" % (xem_season, xem_ep))
+                if download_item.seasonoverride >= 0:
+                    series_season = download_item.seasonoverride
 
-                series_season = str(xem_season)
-                series_ep = str(xem_ep)
+            else:
+                #Lets try convert via thexem
+                xem_season, xem_ep = self.tvdbapi.get_xem_show_convert(download_item.tvdbid_id, (series_season), int(series_ep))
+
+                if xem_season is not None and xem_ep is not None:
+                    download_item.log("Found entry on thexem, converted the season and ep to %s x %s" % (xem_season, xem_ep))
+
+                    series_season = str(xem_season)
+                    series_ep = str(xem_ep)
+
+            logger.debug("Season %s Ep %s" % (series_season, series_ep))
 
             #Now lets do the move
             if download_item.tvdbid_id:
-
-                if download_item.epoverride > 0:
-                    series_season = 0
-                    series_ep = download_item.epoverride
 
                 series_ep_name = None
 
@@ -260,7 +328,10 @@ class TVExtractor:
 
                     if show_obj_season:
                         try:
-                            series_ep_name = show_obj_season[int(series_ep)]['episodename']
+                            series_ep_name = utils.remove_unicode(show_obj_season[int(series_ep)]['episodename'])
+                            series_ep_name = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", series_ep_name).strip()
+                            series_ep_name = series_ep_name.replace("/", ".")
+                            series_ep_name = series_ep_name.replace("\\", ".")
                         except:
                             download_item.log("Found the season but not the ep.. will fake the ep name")
                             series_ep_name = 'Episode %s' % series_ep
@@ -268,8 +339,6 @@ class TVExtractor:
                     raise Exception('Could not find tvshow (TVDB) %s x %s' % (series_season, series_ep))
 
                 # Now lets move the file
-                series_ep_name = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", series_ep_name)
-
                 download_item.log("Found episode %s title: %s" % (series_ep, series_ep_name))
 
                 #IS this a multiep
@@ -287,30 +356,39 @@ class TVExtractor:
                         if ep_num != '':
                             ep_id += "E" + ep_num
 
-                seasonFolder = "Season" + str(series_season).lstrip("0")
+                season_folder = utils.find_season_folder(dest_folder, int(series_season))
+
+                if not season_folder:
+                    season_folder = "Season" + str(series_season).lstrip("0")
 
                 if download_item.tvdbid.localpath:
                     dest_folder_base = download_item.tvdbid.localpath
                 else:
-                    dest_folder_base = os.path.abspath(dest_folder + os.sep + series_name.strip())
+                    series_folder_name = utils.remove_unicode(series_name).strip()
+
+                    dest_folder_base = os.path.abspath(dest_folder + os.sep + series_folder_name)
                     download_item.tvdbid.localpath = dest_folder_base
                     download_item.tvdbid.save()
 
                 if int(series_season) == 0:
-                    dest_folder = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", os.path.abspath(dest_folder_base + os.sep + "Specials"))
+                    dest_folder = os.path.abspath(dest_folder_base + os.sep + "Specials")
                 else:
-                    dest_folder = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", os.path.abspath(dest_folder_base + os.sep + seasonFolder))
+                    dest_folder = os.path.abspath(dest_folder_base + os.sep + season_folder)
 
                 dest_folder = dest_folder.strip()
-                dest_folder = re.sub(" +", " ", dest_folder)
 
                 utils.create_path(dest_folder)
 
                 ep_name = series_name + ' - ' + 'S' + str(series_season) + ep_id + ' - ' + series_ep_name
 
-                src_files = utils.setup_dest_files(src_files, dest_folder, ep_name)
+                __, ext = os.path.splitext(show_vid_file['src'])
+                show_vid_file['dst'] = os.path.abspath(dest_folder + "/" + ep_name + ext)
+                show_vid_file['season'] = int(series_season)
+                show_vid_file['ep'] = int(series_ep)
 
-                utils.move_files(src_files, check_existing=True)
+                download_item.log(show_vid_file)
+
+                self.move_file(download_item, show_vid_file)
 
                 return True
 
@@ -332,9 +410,10 @@ class TVExtractor:
 
             download_item.log('Found ' + doco_folder + ' Doco: ' + series_name)
 
-            airdate = time.strftime('%Y-%m-%d', time.localtime(os.path.getmtime(src_files[0]['src'])))
+            airdate = time.strftime('%Y-%m-%d', time.localtime(os.path.getmtime(show_vid_file['src'])))
 
-            src_files = utils.setup_dest_files(src_files, dest_folder, series_name + ' S00E01')
+            __, ext = os.path.splitext(show_vid_file['src'])
+            show_vid_file['dst'] = os.path.abspath(dest_folder + "/" + series_name + ' S00E01' + ext)
 
             nfo_file = os.path.abspath(dest_folder + os.sep + series_name + " S00E01.nfo")
 
@@ -352,7 +431,7 @@ class TVExtractor:
             nfof.close()
             download_item.log('Wrote NFO file ' + nfo_file)
 
-            utils.move_files(src_files, check_existing=True)
+            self.move_file(download_item, show_vid_file)
 
             return True
 

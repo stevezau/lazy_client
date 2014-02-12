@@ -97,13 +97,18 @@ class DownloadItem(models.Model):
     onlyget = JSONField(blank=True, null=True)
 
     def log(self, msg):
-        frm = inspect.stack()[1]
-        mod = inspect.getmodule(frm[0])
 
-        caller = mod.__name__
-        line = inspect.currentframe().f_back.f_lineno
+        try:
+            frm = inspect.stack()[1]
+            mod = inspect.getmodule(frm[0])
 
-        logmsg = "%s(%s): %s" % (caller, line, msg)
+            caller = mod.__name__
+            line = inspect.currentframe().f_back.f_lineno
+
+            logmsg = "%s(%s): %s" % (caller, line, msg)
+
+        except:
+            logmsg = msg
 
         self.downloadlog_set.create(download_id=self.id, message=logmsg)
 
@@ -128,7 +133,7 @@ class DownloadItem(models.Model):
         if task:
             result = task.result
 
-            self.log("Task result :%s" % result)
+            logger.debug("Task result :%s" % result)
 
             seconds_now = time.mktime(datetime.now().timetuple())
 
@@ -284,11 +289,11 @@ class Imdbcache(models.Model):
     posterimg = models.ImageField(upload_to=".", blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     updated = models.DateTimeField(blank=True, null=True)
+    localpath = models.CharField(max_length=255, blank=True, null=True)
 
     def update_from_imdb(self):
-        import unicodedata
-
         imdbtt = "tt" + str(self.id).zfill(7)
+
         logger.info("Updating %s %s" % (imdbtt, self.title))
 
         try:
@@ -296,20 +301,18 @@ class Imdbcache(models.Model):
             imdbobj.parse(imdbtt)
 
             self.score = imdbobj.score
-            self.title = imdbobj.name
+            self.title = utils.remove_unicode(imdbobj.name)
             self.year = imdbobj.year
             self.votes = imdbobj.votes
-            self.updated = datetime.now()
-
 
             if imdbobj.plot_outline:
-                self.description = imdbobj.plot_outline.encode('utf-8').strip()
+                self.description = utils.remove_unicode(imdbobj.plot_outline)
 
             sGenres = ''
 
             if imdbobj.genres:
                 for genre in imdbobj.genres:
-                    sGenres += '|' + unicodedata.normalize('NFKD', genre).encode('ascii','ignore').title()
+                    sGenres += '|' + utils.remove_unicode(genre)
 
             self.genres = sGenres.replace('|', '', 1)
 
@@ -320,6 +323,8 @@ class Imdbcache(models.Model):
 
                 self.posterimg.save(str(self.id) + '-imdb.jpg', File(img_temp))
 
+            self.save()
+            self.updated = datetime.now()
             self.save()
         except Exception as e:
             logger.error("Error updating entry %s" % e)
@@ -380,7 +385,7 @@ class Tvdbcache(models.Model):
 
             if 'overview' in tvdb_obj.data:
                 if tvdb_obj['overview'] is not None:
-                    self.description = tvdb_obj['overview'].encode('utf-8').strip()
+                    self.description = utils.remove_unicode(tvdb_obj['overview'])
 
             if 'imdb_id' in tvdb_obj.data:
                 if tvdb_obj['imdb_id'] is not None:

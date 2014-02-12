@@ -10,8 +10,14 @@ from rest_framework.response import Response
 from easy_extract.archive_finder import ArchiveFinder
 from lazyweb.utils.rar import RarArchive
 import difflib
+from os import listdir
+from os.path import isfile, join, isdir
 
 logger = logging.getLogger(__name__)
+
+
+def strip_illegal_chars(s):
+    return re.sub(settings.ILLEGAL_CHARS_REGEX, " ", s)
 
 # see: http://goo.gl/kTQMs
 SYMBOLS = {
@@ -211,6 +217,59 @@ def crc(fileName):
         return "%x"%(prev & 0xFFFFFFFF)
         store.close()
 
+def get_file_quality(ext):
+    ext = ext.lower()
+
+    if ext == "mkv":
+        return 20
+
+    if ext == "avi":
+        return 10
+
+    if ext == "mp4":
+        return 10
+
+    return 10
+
+
+def compare_best_vid_file(f1, f2):
+
+    if f1 == f2:
+        return f1
+
+    f1_size = os.path.getsize(f1)
+    __, f1_ext = os.path.splitext(f1)
+    f1_ext = f1_ext.lower()
+    f1_quality = get_file_quality(f1_ext)
+
+
+    f2_size = os.path.getsize(f2)
+    __, f2_ext = os.path.splitext(f2)
+    f2_ext = f2_ext.lower()
+    f2_quality = get_file_quality(f2_ext)
+
+    if f1_quality > f2_quality:
+        return f1
+
+    if f2_quality > f1_quality:
+        return f2
+
+    #if the same format, whats bigger?
+    if f1_quality == f2_quality:
+        if f1_size > f2_size:
+            return f1
+
+        if f2_size > f1_size:
+            return f2
+
+    #last resort, return the bigger file
+    if f1_size > f2_size:
+        return f1
+
+    if f2_size > f1_size:
+        return f2
+
+    return f1
 
 def check_crc(dlitem):
     path = dlitem.localpath
@@ -260,7 +319,7 @@ def check_crc(dlitem):
                 except:
                     pass
 
-            i=i+1
+            i = i+1
 
         if (no_errors):
             return True
@@ -303,11 +362,13 @@ def unrar(path):
     logger.debug("Extract return code was %s" % str(errCode))
     return errCode
 
+
 def get_regex(string, regex, group):
     search = re.search(regex, string, re.IGNORECASE)
 
     if search:
         return search.group(group)
+
 
 def get_cd_number(file_name):
 
@@ -325,16 +386,69 @@ def get_cd_number(file_name):
         return
 
 
+def find_season_folder(path, seasonn):
+
+    folders = [f for f in listdir(path) if isdir(join(path, f))]
+
+    for folder in folders:
+        folder_name = os.path.basename(folder)
+
+        for regex in settings.TVSHOW_SEASON_REGEX:
+            match = re.search(regex, folder_name, re.IGNORECASE)
+
+            if match:
+                found_season = int(match.group(1))
+
+                if found_season == seasonn:
+                    return join(path, folder)
+
+
+def find_exist_quality(dst):
+
+    file, ext = os.path.splitext(dst)
+
+    found = []
+
+    if os.path.exists(file + ".mkv"):
+        found.append(file + ".mkv")
+
+    if os.path.exists(file + ".avi"):
+        found.append(file + ".avi")
+
+    if os.path.exists(file + ".mp4"):
+        found.append(file + ".mp4")
+
+    return found
+
+
+def find_ep_season(folder, season, ep):
+
+    files = [f for f in listdir(folder) if isfile(join(folder, f))]
+
+    found = []
+
+    for f in files:
+        name = os.path.basename(f)
+        f_season, f_eps = get_ep_season_from_title(name)
+
+        if f_season == season:
+            if ep in f_eps:
+                #We found one
+                found.append(join(folder, f))
+
+    return found
+
+
 def setup_dest_files(src_files, dst_folder, title):
     # Setup file dest
     if src_files.__len__() > 1:
-        for file in src_files:
+        for f in src_files:
 
-            cd = get_cd_number(file['src'])
+            cd = get_cd_number(f['src'])
 
             if cd:
-                __, ext = os.path.splitext(file['src'])
-                file['dst'] = os.path.abspath(dst_folder + "/" + title + " CD" + str(cd) + ext)
+                __, ext = os.path.splitext(f['src'])
+                f['dst'] = os.path.abspath(dst_folder + "/" + title + " CD" + str(cd) + ext)
             else:
                 raise Exception('Multiple files but could not locate CD numbering')
     elif src_files.__len__() == 1:
@@ -368,7 +482,7 @@ def get_video_files(path):
                 if re.match('(?i)sample', folder):
                     continue
 
-                file = {'src': path, 'dst': None}
+                file = {'src': path}
                 src_files.append(file)
 
     return src_files
@@ -384,6 +498,11 @@ def custom_exception_handler(exc):
                         status=status.HTTP_202_ACCEPTED)
 
     return response
+
+
+def remove_unicode(unicode_string):
+    re_pattern = re.compile(u'[^\u0000-\uD7FF\uE000-\uFFFF]', re.UNICODE)
+    return str(re_pattern.sub(u'\uFFFD', unicode_string))
 
 
 def load_button_module(package, fn):
@@ -423,11 +542,13 @@ def get_series_info(title):
 
     return parser
 
+
 def delete(file):
     if os.path.isdir(file):
         shutil.rmtree(file)
     else:
         os.remove(file)
+
 
 def get_movie_info(title):
     from flexget.utils.titles import MovieParser
@@ -446,6 +567,7 @@ def get_movie_info(title):
     logger.debug('smart_match name=%s year=%s' % (name, str(year)))
 
     return name, year
+
 
 def get_special_name(name):
 
@@ -482,6 +604,7 @@ def match_str_regex(regex_list, string):
 
     return matched
 
+
 def create_path(path):
 
     paths_to_create = []
@@ -498,6 +621,7 @@ def create_path(path):
 
     for path in paths_to_create:
         os.mkdir(path)
+
 
 def move_files(src_files, check_existing=False):
 

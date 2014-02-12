@@ -70,6 +70,7 @@ class DownloadItemExtractor():
             passed = extractor_type.extract(self.download_item, dest_folder)
 
             if passed:
+                self.download_item.log("Extraction passed")
                 if os.path.isdir(self.download_item.localpath):
                     shutil.rmtree(self.download_item.localpath)
                 self.download_item.status = DownloadItem.COMPLETE
@@ -77,6 +78,7 @@ class DownloadItemExtractor():
                 self.download_item.save()
 
         except Exception as e:
+            self.download_item.log("Exception during extraction: %s" % e.message)
             self.download_item.retries += 1
             self.download_item.message = e.message
             self.download_item.save()

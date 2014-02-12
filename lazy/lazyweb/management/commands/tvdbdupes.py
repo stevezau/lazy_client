@@ -1,7 +1,7 @@
 from __future__ import division
 from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
-from lazyweb.models import DownloadItem
+from lazyweb.models import DownloadItem, Tvdbcache
 import logging, os
 from lazyweb.utils.ftpmanager import FTPManager
 from decimal import Decimal
@@ -9,6 +9,7 @@ from datetime import datetime
 import ftplib
 from django.conf import settings
 from django.db.models import Q
+from lazyweb.utils.tvdb_api import Tvdb
 from django.core.exceptions import ObjectDoesNotExist
 
 logger = logging.getLogger(__name__)
@@ -40,21 +41,31 @@ class Command(BaseCommand):
         #raise CommandError('Only the default is supported')
 
         #Find jobs running and if they are finished or not
-        logger.info('Performing imdb tvdb update')
+        logger.info('Finding duplicate shows')
 
-        ftp_manager = FTPManager()
+        tvdbapi = Tvdb()
 
-        for dlItem in DownloadItem.objects.all().filter(Q(status=DownloadItem.QUEUE) | Q(status=DownloadItem.PENDING)):
+
+        for dir in os.listdir(settings.TVHD):
+            path = os.path.join(settings.TVHD, dir)
+
+            #lets see if it already belongs to a tvshow
             try:
-                if dlItem.tvdbid:
-                    logger.info("Updating tvdb %s" % dlItem.title)
-                    dlItem.tvdbid.update_from_tvdb()
-            except:
-                pass
+                tvobj = Tvdbcache.objects.get(localpath=path)
+                continue
+            except ObjectDoesNotExist:
+                try:
+                    showobj = tvdbapi[dir]
 
-            try:
-                if dlItem.imdbid:
-                    logger.info("Updating imdb %s" % dlItem.title)
-                    dlItem.imdbid.update_from_imdb()
-            except:
-                pass
+                    tvdbid = int(showobj['id'])
+
+                    tvdbobj = Tvdbcache.objects.get(id=int(showobj['id']))
+
+                    if tvdbobj:
+                        logger.error("%s: Found a duplicate entry %s:%s" % (dir, tvdbobj.title, tvdbobj.id))
+                        continue
+
+                        logger.info("%s was not found on tvdb.com" % dir)
+
+                except Exception as e:
+                    logger.error("DIR: %s Failed while searching via tvdb.com %s" % (path, e.message))
