@@ -247,7 +247,7 @@ class TVExtractor:
 
             #We need to strip out nat geo etc from docos title
             if utils.match_str_regex(settings.DOCOS_REGEX, download_item.title):
-                title = utils.replace_regex(settings.DOCOS_REGEX, download_item.title)
+                title = utils.replace_regex(settings.DOCOS_REGEX, download_item.title, "")
                 parser = utils.get_series_info(title)
             else:
                 parser = utils.get_series_info(title)
@@ -300,7 +300,7 @@ class TVExtractor:
                 else:
                     raise Exception("Could not find show: %s via thetvdb.com" % series_name)
 
-            if download_item.epoverride > 0 or download_item.seasonoverride >= 0:
+            if download_item.epoverride > 0:
                 if download_item.epoverride > 0:
                     series_ep = download_item.epoverride
 
@@ -313,7 +313,7 @@ class TVExtractor:
 
                 if xem_season is not None and xem_ep is not None:
                     download_item.log("Found entry on thexem, converted the season and ep to %s x %s" % (xem_season, xem_ep))
-
+                    logger.debug(series_season)
                     series_season = str(xem_season)
                     series_ep = str(xem_ep)
 
@@ -341,7 +341,7 @@ class TVExtractor:
                     raise Exception('Could not find tvshow (TVDB) %s x %s' % (series_season, series_ep))
 
                 # Now lets move the file
-                download_item.log("Found episode %s title: %s" % (series_ep, series_ep_name))
+                download_item.log("Found season %s episode %s title: %s" % (series_season, series_ep, series_ep_name))
 
                 #IS this a multiep
                 multi = re.search("(?i)S([0-9]+)(E[0-9]+[E0-9]+).+", download_item.title)
@@ -398,7 +398,7 @@ class TVExtractor:
             #We have a doco, we treat the title as a movie
             series_name, __ = utils.get_movie_info(download_item.title)
 
-            doco_folder = utils.get_regex(series_name, '(?i)(National Geographic|Discovery Channel|History Channel)', 1)
+            doco_folder = utils.get_regex(series_name, '(?i)(National Geographic Wild|National Geographic|Discovery Channel|History Channel)', 1)
 
             if not doco_folder:
                 raise Exception('Unable to figure out the type of doco')

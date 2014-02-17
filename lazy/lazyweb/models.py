@@ -132,21 +132,24 @@ class DownloadItem(models.Model):
     def still_alive(self):
         task = self.get_task()
 
-        if task:
-            result = task.result
+        try:
+            if task:
+                result = task.result
 
-            logger.debug("Task result :%s" % result)
+                logger.debug("Task result :%s" % result)
 
-            seconds_now = time.mktime(datetime.now().timetuple())
+                seconds_now = time.mktime(datetime.now().timetuple())
 
-            if result and 'updated' in result:
-                seconds_updated = result['updated']
+                if result and 'updated' in result:
+                    seconds_updated = result['updated']
 
-                seconds = seconds_now - seconds_updated
+                    seconds = seconds_now - seconds_updated
 
-                if seconds < 120:
-                    #we have received an update in the last 120 seconds, its still running
-                    return True
+                    if seconds < 120:
+                        #we have received an update in the last 120 seconds, its still running
+                        return True
+        except:
+            pass
 
         return False
 
