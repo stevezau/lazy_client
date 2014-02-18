@@ -148,7 +148,7 @@ class IgnoredCreate(FormView):
         # This method is called when valid form data has been POSTed.
         # It should return an HttpResponse.
         if not form.cleaned_data['show_name'] == "":
-            utils.ignore_show(form.cleaned_data['show_name'])
+            utils.ignore_show(form.cleaned_data['show_name'].replace(" ", "."))
         return super(IgnoredCreate, self).form_valid(form)
 
 

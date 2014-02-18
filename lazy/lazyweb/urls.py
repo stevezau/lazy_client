@@ -4,6 +4,12 @@ from django.views.generic import RedirectView
 from django.core.urlresolvers import reverse_lazy
 
 urlpatterns = patterns('',
+
+    #Login
+    (r'^login/$', 'django.contrib.auth.views.login', {'template_name': 'login.html'}),
+    (r'^logout/$', 'django.contrib.auth.views.logout_then_login'),
+
+
     #Home - Default Index
     url(r'^$', home.IndexView.as_view(), name='home'),
 

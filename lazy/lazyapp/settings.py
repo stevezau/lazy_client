@@ -64,7 +64,6 @@ FLEXGET_IGNORE = lazysettings.FLEXGET_IGNORE
 #### !!!!DO NOT CHANGE ANYTHING BELOW!!!! ###
 #############################################
 
-
 TVSHOW_REGEX = (
     '(?i).+\.S[0-9]+E[0-9]+.+',
     '(?i).+\.S[0-9]+\..+',
@@ -297,7 +296,14 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django_mobile.middleware.MobileDetectionMiddleware',
     'django_mobile.middleware.SetFlavourMiddleware',
+    'lazyapp.middleware.LoginRequiredMiddleware',
 )
+
+LOGIN_URL = '/login/'
+
+LOGIN_EXEMPT_URLS = (
+)
+
 
 ROOT_URLCONF = 'lazyapp.urls'
 

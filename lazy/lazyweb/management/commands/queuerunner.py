@@ -155,8 +155,14 @@ class Command(BaseCommand):
                 else:
                     #lets make sure the job didnt crash
                     if dlItem.still_alive() == False:
-                        dlItem.log("Job aappears to of crashed for some reason.. lets reset it: %s" % dlItem.ftppath)
-                        dlItem.reset(force=True)
+                        if dlItem.dlstart:
+                            curTime = datetime.now()
+                            diff = curTime - dlItem.dlstart.replace(tzinfo=None)
+                            minutes = diff.seconds / 60
+
+                            if minutes > 6:
+                                dlItem.log("Job aappears to of crashed for some reason.. lets reset it: %s" % dlItem.ftppath)
+                                dlItem.reset(force=True)
 
             #Figure out the number of jobs running after the above checks
             count = DownloadItem.objects.all().filter(status=DownloadItem.DOWNLOADING).count()
@@ -188,11 +194,12 @@ class Command(BaseCommand):
                             diff = curTime - dlItem.dlstart.replace(tzinfo=None)
                             minutes = diff.seconds / 60
 
-                            if minutes < 0:
+                            if minutes > 15:
                                 logger.info("skipping job as it was just retired: %s" % dlItem.title)
                                 continue
 
                         logger.info("Starting job: %s" % dlItem.ftppath)
+                        dlItem.dlstart = datetime.now()
 
                         if (dlItem.retries > 10):
                             dlItem.log("Job hit too many retires, setting to failed")
@@ -208,9 +215,14 @@ class Command(BaseCommand):
                             else:
                                 files, remotesize = ftp_manager.get_files_for_download(dlItem.ftppath)
 
-                        except ftplib.error_perm, e:
-                            if dlItem.requested == True:
-                                pass
+                        except ftplib.error_perm as e:
+                            #It does not exist?
+                            if "FileNotFound" in e.message:
+                                if dlItem.requested == True:
+                                    logger.debug("Unable to get size and files for %s" % dlItem.ftppath)
+                                    dlItem.message = 'Waiting for item to appear on ftp'
+                                    dlItem.save()
+                                    continue
                             else:
                                 logger.error(e)
                                 dlItem.message = e.message
@@ -219,6 +231,7 @@ class Command(BaseCommand):
                                 dlItem.save()
                                 continue
                         except Exception as e:
+                            dlItem.log(e.message)
                             logger.exception(e)
                             remotesize = 0
 
@@ -243,7 +256,6 @@ class Command(BaseCommand):
                         task = mirror.mirror_ftp_folder.delay(files, dlItem.localpath, dlItem)
                         dlItem.taskid = task.task_id
                         dlItem.message = None
-                        dlItem.dlstart = datetime.now()
                         dlItem.status = DownloadItem.DOWNLOADING
 
                         dlItem.save()

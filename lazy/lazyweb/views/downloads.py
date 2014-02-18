@@ -161,13 +161,20 @@ def ignore(items):
     for item in items:
         try:
             dlitem = DownloadItem.objects.get(pk=item)
-            ignoretitle = re.sub("(?i)\.S[0-9][0-9]E[0-9][0-9].+", "", dlitem.title)
-            utils.ignore_show(ignoretitle)
-            dlitem.delete()
-            response.write("Deleted and ignored %s\n" % ignoretitle)
+            series_data = utils.get_series_info(dlitem.title)
+
+            if series_data:
+                ignoretitle = series_data.name.replace(" ", ".")
+                utils.ignore_show(ignoretitle)
+                dlitem.delete()
+                response.write("Deleted and ignored %s\n" % ignoretitle)
+            else:
+                dlitem.delete()
+                response.write("Unable to figure out the series name, DELETED BUT NOT IGNORED (DO IT MANUALLY)\n")
+
         except ObjectDoesNotExist:
             status = 210
-            response.write("Unable to ignore %s as it was not found") % item
+            response.write("Unable to ignore %s as it was not found\n") % item
 
     response.status_code = status
     return response

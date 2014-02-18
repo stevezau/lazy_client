@@ -78,6 +78,9 @@ class FTPMirror:
 
         if None is task:
             pass
+        elif task.state == "REVOKED":
+            logger.info("%s was revoked. ignore" % dlitem.ftppath)
+            return
         elif task.state == "SUCCESS" or task.state == "FAILURE":
             pass
         else:
@@ -238,7 +241,8 @@ class FTPMirror:
 
                     #should we retry?
                     if errno in retry_on_errors:
-                        msg = "Continuing Retrying: %s %s %s" % (os.path.basename(c.filename), errno, errmsg)
+                        msg = "Unlimited retrying: %s %s %s" % (os.path.basename(c.filename), errno, errmsg)
+                        queue.append((c.url, c.filename, c.remote_size))
 
                     else:
                         if c.filename in failed_list:

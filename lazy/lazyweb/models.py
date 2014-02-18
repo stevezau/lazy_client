@@ -145,8 +145,8 @@ class DownloadItem(models.Model):
 
                     seconds = seconds_now - seconds_updated
 
-                    if seconds < 120:
-                        #we have received an update in the last 120 seconds, its still running
+                    if seconds < 240:
+                        #we have received an update in the last 240 seconds, its still running
                         return True
         except:
             pass

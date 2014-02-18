@@ -9,7 +9,7 @@
     <h1>Manual log</h1>
 
     {% for log in logs %}
-        {{ log.message }}<br><br>
+        <b>{{ log.date }}</b>   {{ log.message }}<br><br>
     {% endfor %}
 
 {% endblock %}

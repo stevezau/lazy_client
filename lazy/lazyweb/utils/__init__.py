@@ -530,7 +530,7 @@ def ignore_show(title):
 
     #if not lets add it
     logger.debug("Adding to ignore file %s " % title)
-    ins.write("    - ^%s.S%s" % (title, os.linesep))
+    ins.write("    - ^%s%s" % (title, os.linesep))
     ins.close()
 
 
