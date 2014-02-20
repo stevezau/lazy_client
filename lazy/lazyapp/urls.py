@@ -12,6 +12,7 @@ urlpatterns = patterns('',
 
     url(r'^admin/', include(admin.site.urls)),
     url(r'^api/', include('lazyapi.urls')),
+    url(r'^lazy/api/', include('lazyapi.urls')),
     url(r'', include('lazyweb.urls')),
 
 )

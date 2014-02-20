@@ -75,7 +75,7 @@ class DownloadsManuallyFixItem(UpdateView):
 
             return HttpResponseRedirect(reverse('downloads.manualfix'))
 
-        return super(DownloadsManuallyFix, self).post(request, *args, **kwargs)
+        return super(DownloadsManuallyFixItem, self).post(request, *args, **kwargs)
 
 
     def get_object(self, queryset=None):

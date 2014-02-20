@@ -9,7 +9,7 @@ $( document ).ready(function() {
 	//$( "#dialog" ).dialog();
 
     $("#id_tvdbid_display").autocomplete({
-        source: "/api/search_tvdb/",
+        source: "/lazy/api/search_tvdb/",
         minLength: 3,
         change: function(event, ui) {
             console.log(this.value);
@@ -300,8 +300,10 @@ function update_season() {
     $('#id_epoverride').empty();
     $('#id_seasonoverride').empty();
 
+    $('#id_seasonoverride').append("<option value='Select Season'>Select Season</option>");
+
     $.ajax({
-        url:"/api/get_tvdb_season/" + showid,
+        url:"/lazy/api/get_tvdb_season/" + showid,
         type: 'GET',
         dataType: 'json', // or your choice of returned data
         success: function(seasons){
@@ -319,7 +321,7 @@ function update_ep() {
     epselect.empty();
 
     $.ajax({
-        url:"/api/get_tvdb_eps/" + showid + "/" + season,
+        url:"/lazy/api/get_tvdb_eps/" + showid + "/" + season,
         type: 'GET',
         dataType: 'json', // or your choice of returned data
         success: function(eps){
