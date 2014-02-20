@@ -299,7 +299,7 @@ MIDDLEWARE_CLASSES = (
     'lazyapp.middleware.LoginRequiredMiddleware',
 )
 
-LOGIN_URL = '/login/'
+LOGIN_URL = 'lazy/login/'
 
 LOGIN_EXEMPT_URLS = (
 )
