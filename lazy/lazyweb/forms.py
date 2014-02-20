@@ -6,6 +6,11 @@ from lazyweb.models import DownloadItem
 
 logger = logging.getLogger(__name__)
 
+class DynamicChoiceField(forms.ChoiceField):
+    def clean(self, value):
+        return value
+
+
 class AddTVMapForm(forms.ModelForm):
     title = forms.CharField(label="TVShow Title")
     tvdbid_display = forms.CharField(label="Search TheTVDB.com")
@@ -24,8 +29,8 @@ class DownloadItemManualFixForm(forms.ModelForm):
 
     tvdbid_display = forms.CharField(label="Showname (TVDB.com)")
     tvdbid_id = forms.IntegerField(widget=forms.HiddenInput)
-    seasonoverride = forms.IntegerField(widget=forms.Select, label="Season")
-    epoverride = forms.IntegerField(widget=forms.Select, label="Ep")
+    seasonoverride = DynamicChoiceField(widget=forms.Select, label="Season")
+    epoverride = DynamicChoiceField(widget=forms.Select, label="Ep")
 
     def __init__(self, *args, **kwargs):
         super(DownloadItemManualFixForm, self).__init__(*args, **kwargs)
@@ -37,10 +42,12 @@ class DownloadItemManualFixForm(forms.ModelForm):
             self.fields['tvdbid_display'].initial = self.instance.tvdbid.title
 
             #set the seasons
-            tvdb_seasons = self.instance.tvdbid.get_seasons()
+            try:
+                tvdb_seasons = self.instance.tvdbid.get_seasons()
+            except:
+                return
 
             if len(tvdb_seasons) > 0:
-
                 seasons = []
                 seasons.append(('Select Season', 'Select Season'))
 
@@ -48,6 +55,23 @@ class DownloadItemManualFixForm(forms.ModelForm):
                     seasons.append((str(season), str(season)))
 
                 self.fields['seasonoverride'].choices = seasons
+
+                if self.instance.seasonoverride >= 0:
+                    self.fields['seasonoverride'].initial = [self.instance.seasonoverride]
+
+                    if self.instance.epoverride > 0:
+                        #lets set the eps as well
+                        tvdb_eps = self.instance.tvdbid.get_eps(int(self.instance.seasonoverride))
+
+                        if len(tvdb_eps) > 0:
+                            eps = []
+                            eps.append(('Select Ep', 'Select Ep'))
+
+                            for ep in tvdb_eps:
+                                eps.append((str(ep), str(ep)))
+
+                            self.fields['epoverride'].choices = eps
+                            self.fields['epoverride'].initial = [self.instance.epoverride]
 
 
 

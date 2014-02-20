@@ -371,6 +371,11 @@ class Tvdbcache(models.Model):
         tvdb_obj = tvdbapi[self.id]
         return tvdb_obj.keys()
 
+    def get_eps(self, season):
+        tvdbapi = Tvdb()
+        tvdb_obj = tvdbapi[self.id][season]
+        return tvdb_obj.keys()
+
     def update_from_tvdb(self):
         logger.info("Updating %s %s" % (str(self.id), self.title))
 

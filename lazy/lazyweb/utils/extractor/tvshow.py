@@ -258,8 +258,6 @@ class TVExtractor:
 
                 series_season = str(parser.season).zfill(2)
                 series_ep = str(parser.episode).zfill(2)
-            else:
-                raise Exception("Unable to get series info")
 
             try:
                 showmap = TVShowMappings.objects.get(title=series_name.lower())
@@ -277,6 +275,9 @@ class TVExtractor:
                 series_name = re.sub(" +", " ", series_name).strip()
 
             else:
+                if None is series_name:
+                    raise Exception("Unable to get series info")
+
                 #lets try find it
                 show_obj = self.tvdbapi[series_name]
 

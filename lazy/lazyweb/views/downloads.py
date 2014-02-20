@@ -36,24 +36,47 @@ class DownloadsManuallyFix(TemplateView):
 
         if items:
             request.session["fixitems"] = items
+            self.request.session.modified = True
             return HttpResponseRedirect(reverse('downloads.manualfixitem', kwargs={'pk': items[0]}))
 
-    def get_context_data(self, **kwargs):
-        context = super(DownloadsManuallyFix, self).get_context_data(**kwargs)
+        return super(DownloadsManuallyFix, self).post(request, *args, **kwargs)
 
+    def get(self, request, *args, **kwargs):
         #Lets get current item
         items = self.request.session["fixitems"]
 
         if len(items) > 0:
             return HttpResponseRedirect(reverse('downloads.manualfixitem', kwargs={'pk': items[0]}))
 
-        return context
+        return super(DownloadsManuallyFix, self).get(request, *args, **kwargs)
+
 
 class DownloadsManuallyFixItem(UpdateView):
     form_class = DownloadItemManualFixForm
     success_url = reverse_lazy('downloads.manualfix')
     model = DownloadItem
     template_name = "downloads/manualfixitem.html"
+
+    def post(self, request, *args, **kwargs):
+
+        if 'skip' in request.POST:
+            #lets skip
+
+            #remove from the session
+            try:
+                for idx, val in enumerate(self.request.session["fixitems"]):
+                    if val == self.kwargs['pk']:
+                        del self.request.session["fixitems"][idx]
+                        self.request.session.modified = True
+                        break
+
+            except Exception as e:
+                logger.exception(e)
+
+            return HttpResponseRedirect(reverse('downloads.manualfix'))
+
+        return super(DownloadsManuallyFix, self).post(request, *args, **kwargs)
+
 
     def get_object(self, queryset=None):
         obj = DownloadItem.objects.get(id=self.kwargs['pk'])
@@ -79,6 +102,20 @@ class DownloadsManuallyFixItem(UpdateView):
             )
 
         form.instance.tvdbid = tvdbobj
+
+        #remove from the session
+        try:
+            for idx, val in enumerate(self.request.session["fixitems"]):
+                if val == self.kwargs['pk']:
+                    del self.request.session["fixitems"][idx]
+                    self.request.session.modified = True
+                    break
+
+        except Exception as e:
+            logger.exception(e)
+
+        form.instance.status = DownloadItem.MOVE
+        form.instance.retries = 0
 
         return super(DownloadsManuallyFixItem, self).form_valid(form)
 
