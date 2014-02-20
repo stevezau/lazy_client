@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load sitetree %}
+
+{% block title %}{{ type }}{% endblock %}
+{% block submenu %}
+    {% sitetree_menu from "lazymenu" include "downloads" template "headersubmenu.html" %}
+{% endblock %}
+
+{% block content %}
+    <h1>Manual Override</h1>
+    {% if object %}
+        <form id="formID" action="" method="post">
+        {% csrf_token %}
+
+            <div class='download-item'>
+                <div class='left'>{{ object.title }}</div>
+                <div class='right'>{{ form }}</div>
+            </div>
+
+        <div class="middle"><input type="submit" value="Save"></div>
+
+        </form>
+    {% else %}
+        <h3>Unable to find object. Back to <a href="{% url "downloads.index" "error" %}">errors</a></h3>
+    {% endif %}
+
+{% endblock %}

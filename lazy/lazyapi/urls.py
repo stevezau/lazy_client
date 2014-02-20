@@ -13,7 +13,9 @@ urlpatterns = patterns('',
 
     #Search TVShow via thetvdb.com
     url(r'^search_tvdb/$', 'lazyapi.views.search_tvdb', name='search_tvdb'),
-    url(r'^search_tvdb_season/(?P<showid>[0-9]+)/(?P<season>[0-9]+)/$', 'lazyapi.views.search_tvdb_season', name='search_tvdb_season'),
+    url(r'^get_tvdb_season/(?P<showid>[0-9]+)/$', 'lazyapi.views.get_tvdb_season', name='get_tvdb_season'),
+    url(r'^get_tvdb_eps/(?P<showid>[0-9]+)/(?P<season>[0-9]+)/$', 'lazyapi.views.get_tvdb_eps', name='get_tvdb_eps'),
+
 )
 
 

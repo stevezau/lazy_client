@@ -78,7 +78,7 @@ class DownloadItemExtractor():
                 self.download_item.save()
 
         except Exception as e:
-            self.download_item.log("Exception during extraction: %s" % e.message)
+            self.download_item.log("Exception during extraction: %s" % e)
             self.download_item.retries += 1
             self.download_item.message = e.message
             self.download_item.save()

@@ -8,7 +8,6 @@ django-jquery-ui
 django-celery
 django-mobile
 easy_extract
-django-jsonfield
 django-celery-transactions
 pillow
 flower

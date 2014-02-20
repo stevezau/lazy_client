@@ -49,7 +49,7 @@ class TvdbDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Tvdbcache.objects.all()
     serializer_class = TvdbItemSerializer
 
-def search_tvdb_season(request, showid, season):
+def get_tvdb_eps(request, showid, season):
     if request.is_ajax():
         tvdb = Tvdb()
         eps = tvdb[int(showid)][int(season)]
@@ -61,6 +61,24 @@ def search_tvdb_season(request, showid, season):
             tvshow_json = {}
             tvshow_json['label'] = "%s: %s" % (ep_obj['episodenumber'], ep_obj['episodename'])
             tvshow_json['value'] = ep_obj['episodenumber']
+            results.append(tvshow_json)
+
+        data = json.dumps(results)
+    else:
+        data = 'fail'
+    mimetype = 'application/json'
+    return HttpResponse(data, mimetype)
+
+def get_tvdb_season(request, showid):
+    if request.is_ajax():
+        tvdb = Tvdb()
+        show = tvdb[int(showid)]
+        results = []
+
+        for season in show.keys():
+            tvshow_json = {}
+            tvshow_json['label'] = season
+            tvshow_json['value'] = season
             results.append(tvshow_json)
 
         data = json.dumps(results)

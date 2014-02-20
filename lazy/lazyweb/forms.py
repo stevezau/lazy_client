@@ -1,7 +1,10 @@
 from django import forms
 from lazyweb.models import TVShowMappings
 from django.conf import settings
-import os
+import os, logging
+from lazyweb.models import DownloadItem
+
+logger = logging.getLogger(__name__)
 
 class AddTVMapForm(forms.ModelForm):
     title = forms.CharField(label="TVShow Title")
@@ -12,6 +15,40 @@ class AddTVMapForm(forms.ModelForm):
     class Meta:
         model = TVShowMappings
         fields = ('title', 'tvdbid_display', 'tvdbid_id')
+
+
+class DownloadItemManualFixForm(forms.ModelForm):
+    class Meta:
+        model = DownloadItem
+        fields = ('tvdbid_display', 'tvdbid_id', 'seasonoverride', 'epoverride')
+
+    tvdbid_display = forms.CharField(label="Showname (TVDB.com)")
+    tvdbid_id = forms.IntegerField(widget=forms.HiddenInput)
+    seasonoverride = forms.IntegerField(widget=forms.Select, label="Season")
+    epoverride = forms.IntegerField(widget=forms.Select, label="Ep")
+
+    def __init__(self, *args, **kwargs):
+        super(DownloadItemManualFixForm, self).__init__(*args, **kwargs)
+
+        #First lets see if we can find the TVDBID
+
+        if self.instance.tvdbid:
+            self.fields['tvdbid_id'].initial = self.instance.tvdbid.id
+            self.fields['tvdbid_display'].initial = self.instance.tvdbid.title
+
+            #set the seasons
+            tvdb_seasons = self.instance.tvdbid.get_seasons()
+
+            if len(tvdb_seasons) > 0:
+
+                seasons = []
+                seasons.append(('Select Season', 'Select Season'))
+
+                for season in tvdb_seasons:
+                    seasons.append((str(season), str(season)))
+
+                self.fields['seasonoverride'].choices = seasons
+
 
 
 class AddApprovedShow(forms.Form):

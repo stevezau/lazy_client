@@ -544,6 +544,10 @@ class TVShowScanner:
 
             ftp_rls_name = os.path.basename(ftp_rls)
 
+            if utils.match_str_regex(settings.TVSHOW_SPECIALS_REGEX, ftp_rls_name):
+                continue
+
+
             highest_match = 0
 
             for name in self.search_names:
@@ -574,6 +578,9 @@ class TVShowScanner:
 
             #there are no seasons in /TVHD
             if ftp_rls.startswith("/TVHD"):
+                continue
+
+            if utils.match_str_regex(settings.TVSHOW_SPECIALS_REGEX, ftp_rls_name):
                 continue
 
             #Check if this is a season pack
@@ -780,6 +787,10 @@ class TVShowScanner:
     def _exists_db_season_check(self, season, existing_seasons_in_db):
         #lets check if its on the db already
         for entry in existing_seasons_in_db:
+
+            if utils.match_str_regex(settings.TVSHOW_SPECIALS_REGEX, entry.title):
+                continue
+
             existing_seasons = utils.get_season_from_title(entry.title)
 
             for existing_season in existing_seasons:

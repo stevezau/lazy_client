@@ -20,7 +20,7 @@ import pprint
 from celery.result import AsyncResult
 from django.db import models
 import time
-from jsonfield import JSONField
+from lazyweb.utils.jsonfield import JSONField
 from django.core.cache import cache
 from celery.task.control import revoke
 

@@ -1,12 +1,18 @@
+from django.utils.translation import ugettext as _
 from django.http import HttpResponse, HttpResponseRedirect
-from lazyweb.models import DownloadItem
-from django.views.generic import TemplateView, ListView, FormView, DetailView
+from lazyweb.models import DownloadItem, Tvdbcache
+from django.views.generic import TemplateView, ListView, DetailView, UpdateView
+from django.views.generic.edit import FormView
 from django.core.exceptions import ObjectDoesNotExist
 from lazyweb import utils
+from django.forms import ValidationError
 import logging
 from django.core.urlresolvers import reverse
 from lazyweb.utils.tvdb_api import Tvdb
-
+from lazyweb.forms import DownloadItemManualFixForm
+from django.core.urlresolvers import reverse_lazy
+from django.shortcuts import render_to_response
+from django.template import RequestContext
 
 logger = logging.getLogger(__name__)
 
@@ -21,8 +27,7 @@ class DownloadLog(DetailView):
         context['logs'] = logs
         return context
 
-
-class DownloadsManuallyFix(ListView):
+class DownloadsManuallyFix(TemplateView):
     model = DownloadItem
     template_name = "downloads/manualfix.html"
 
@@ -31,42 +36,52 @@ class DownloadsManuallyFix(ListView):
 
         if items:
             request.session["fixitems"] = items
-            return HttpResponseRedirect(reverse('downloads.manualfix'))
+            return HttpResponseRedirect(reverse('downloads.manualfixitem', kwargs={'pk': items[0]}))
 
-        for objid in request.POST:
-            if utils.match_str_regex(["[0-9]+"], objid):
-                values = request.POST.getlist(objid)
+    def get_context_data(self, **kwargs):
+        context = super(DownloadsManuallyFix, self).get_context_data(**kwargs)
 
-                ep_override = None
-                season_override = None
-
-                for value in values:
-                    if value.startswith("ses~"):
-                        season_override = value.replace("ses~", "")
-
-                    if value.startswith("ep~"):
-                        ep_override = value.replace("ep~", "")
-
-                if ep_override is None or season_override is None:
-                    continue
-
-                ep_override = int(ep_override)
-                season_override = int(season_override)
-
-                dlitem = DownloadItem.objects.get(id=int(objid))
-                dlitem.seasonoverride = season_override
-                dlitem.epoverride = ep_override
-                dlitem.status = DownloadItem.MOVE
-                dlitem.retries = 0
-                dlitem.save()
-
-        return HttpResponseRedirect(reverse('downloads.index', kwargs={'type':"error"}))
-
-
-    def get_queryset(self):
+        #Lets get current item
         items = self.request.session["fixitems"]
-        items = map(int, items)
-        return DownloadItem.objects.filter(pk__in=items)
+
+        if len(items) > 0:
+            return HttpResponseRedirect(reverse('downloads.manualfixitem', kwargs={'pk': items[0]}))
+
+        return context
+
+class DownloadsManuallyFixItem(UpdateView):
+    form_class = DownloadItemManualFixForm
+    success_url = reverse_lazy('downloads.manualfix')
+    model = DownloadItem
+    template_name = "downloads/manualfixitem.html"
+
+    def get_object(self, queryset=None):
+        obj = DownloadItem.objects.get(id=self.kwargs['pk'])
+        return obj
+
+    def form_valid(self, form):
+        #Find tvdb instance
+        tvdbobj = None
+
+        try:
+            tvdbobj = Tvdbcache.objects.get(id=int(form.cleaned_data['tvdbid_id']))
+        except ObjectDoesNotExist:
+            tvdbobj = Tvdbcache()
+            tvdbobj.id = int(form.cleaned_data['tvdbid_id'])
+            tvdbobj.update_from_tvdb()
+            tvdbobj.save()
+
+        if None is tvdbobj:
+            raise ValidationError(
+                _('Unable to find tvdb object: %(value)s'),
+                code='invalid',
+                params={'value':  form.cleaned_data['tvdbid_display']},
+            )
+
+        form.instance.tvdbid = tvdbobj
+
+        return super(DownloadsManuallyFixItem, self).form_valid(form)
+
 
 
 class DownloadsIndexView(TemplateView):
@@ -198,6 +213,7 @@ def retry(items):
             if percent_complete > 99:
                 dlitem.status = DownloadItem.MOVE
                 dlitem.message = "Retrying extraction"
+                dlitem.dlstart = None
                 dlitem.retries = 2
                 dlitem.save()
                 response.write("Moved to extraction %s\n" % dlitem.title)
@@ -205,6 +221,7 @@ def retry(items):
                 dlitem.status = DownloadItem.QUEUE
                 dlitem.message = "Retrying download"
                 dlitem.retries = 2
+                dlitem.dlstart = None
                 dlitem.save()
                 response.write("Moved to queue for downloading %s\n" % dlitem.title)
 

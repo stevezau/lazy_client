@@ -54,6 +54,7 @@ retry_on_errors = [
     13, #CURLE_FTP_WEIRD_PASV_REPLY (13) libcurl failed to get a sensible result back from the server as a response to either a PASV or a EPSV command. The server is flawed.
     14, #CURLE_FTP_WEIRD_227_FORMAT
     35,
+    7, #Connection refused
     12, #CURLE_FTP_ACCEPT_TIMEOUT (12) During an active FTP session while waiting for the server to connect, the CURLOPT_ACCEPTTIMOUT_MS (or the internal default) timeout expired.
     23, #CURLE_WRITE_ERROR (23) An error occurred when writing received data to a local file, or an error was returned to libcurl from a write callback.
     28, #CURLE_OPERATION_TIMEDOUT (28) Operation timeout. The specified time-out period was reached according to the conditions.
@@ -136,10 +137,10 @@ class FTPMirror:
 
             if re.match(".+\.sfv$", urlpath):
                 #download first
-                priority.append((ftpurl, urlsavepath, size))
+                priority.append((ftpurl, urlsavepath, size, 0))
             else:
                 #add it to the queue
-                queue.append((ftpurl, urlsavepath, size))
+                queue.append((ftpurl, urlsavepath, size, 0))
 
         queue = priority + queue
 
@@ -168,12 +169,34 @@ class FTPMirror:
         # Main loop
         freelist = self.m.handles[:]
         num_processed = 0
+
         while num_processed < num_urls:
 
             # If there is an url to process and a free curl object, add to multi stack
             while queue and freelist:
 
-                url, filename, remote_size = queue.pop(0)
+                #lets find the next one we want to process
+                pop_key = None
+
+                now = datetime.now()
+                for idx, queue_item in enumerate(queue):
+                    if queue_item[3] == 0:
+                        pop_key = idx
+                        break
+                    else:
+                        seconds = (now-queue_item[3]).total_seconds()
+
+                        if seconds > 120:
+                            #lets use this one
+                            pop_key = idx
+                            break
+
+                if None is pop_key:
+                    #didn't find any to process.. lets wait
+                    time.sleep(1)
+                    break
+
+                url, filename, remote_size, ___ = queue.pop(0)
                 c = freelist.pop()
 
                 dlitem.log("Remote file %s size: %s" % (filename, remote_size))
@@ -226,13 +249,23 @@ class FTPMirror:
                 num_q, ok_list, err_list = self.m.info_read()
                 for c in ok_list:
                     logger.debug("Closing file %s" % c.fp)
+
                     close_file(c.fp)
+
+                    #Did we download the file properly???
+                    local_size = os.path.getsize(c.filename)
+                    if c.remote_size != local_size:
+                        dlitem.log("Failure: %s as it Didnt download properly, the local size does not match the remote size, lets retry" % os.path.basename(c.filename))
+                        failed_list[c.filename] = 1
+                        queue.append((c.url, c.filename, c.remote_size, datetime.now()))
+                        num_processed -= 1
+                    else:
+                        dlitem.log("Success:%s" % (os.path.basename(c.filename)))
+
                     c.fp = None
-                    self.m.remove_handle(c)
-                    msg = "Success:%s" % (os.path.basename(c.filename))
-                    dlitem.log(msg)
-                    logger.debug(msg)
                     freelist.append(c)
+                    self.m.remove_handle(c)
+
                 for c, errno, errmsg in err_list:
 
                     close_file(c.fp)
@@ -242,7 +275,8 @@ class FTPMirror:
                     #should we retry?
                     if errno in retry_on_errors:
                         msg = "Unlimited retrying: %s %s %s" % (os.path.basename(c.filename), errno, errmsg)
-                        queue.append((c.url, c.filename, c.remote_size))
+                        queue.append((c.url, c.filename, c.remote_size, datetime.now()))
+                        num_processed -= 1
 
                     else:
                         if c.filename in failed_list:
@@ -254,17 +288,18 @@ class FTPMirror:
                             else:
                                 failed_list[c.filename] += 1
                                 #retry
-                                queue.append((c.url, c.filename, c.remote_size))
+                                queue.append((c.url, c.filename, c.remote_size, datetime.now()))
                                 msg = "Retrying: %s %s %s" % (os.path.basename(c.filename), errno, errmsg)
+                                num_processed -= 1
 
                         else:
-                                #lets retry
-                                failed_list[c.filename] = 1
-                                queue.append((c.url, c.filename, c.remote_size))
-                                msg = "Retrying: %s %s %s" % (os.path.basename(c.filename), errno, errmsg)
+                            #lets retry
+                            failed_list[c.filename] = 1
+                            queue.append((c.url, c.filename, c.remote_size, datetime.now()))
+                            msg = "Retrying: %s %s %s" % (os.path.basename(c.filename), errno, errmsg)
+                            num_processed -= 1
 
                     dlitem.log(msg)
-                    logger.debug(msg)
                     freelist.append(c)
 
                 num_processed = num_processed + len(ok_list) + len(err_list)
@@ -294,6 +329,11 @@ class FTPMirror:
             # (display a progress bar, etc.).
             # We just call select() to sleep until some more data is available.
             self.m.select(1.0)
+
+        dlitem.log("Queue")
+        dlitem.log(queue)
+        dlitem.log("Failed list")
+        dlitem.log(failed_list)
 
         # Cleanup
         for c in self.m.handles:
@@ -815,6 +855,9 @@ class FTPManager:
 
                     if ratio >= 0.93:
                         #its for this show..
+
+                        if utils.match_str_regex(settings.TVSHOW_SPECIALS_REGEX, torrent):
+                            continue
 
                         try:
 

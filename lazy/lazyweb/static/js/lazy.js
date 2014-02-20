@@ -9,30 +9,25 @@ $( document ).ready(function() {
 	//$( "#dialog" ).dialog();
 
     $("#id_tvdbid_display").autocomplete({
-        source: "/lazy/api/search_tvdb/",
+        source: "/api/search_tvdb/",
         minLength: 3,
-        select: function(event,ui) {
-            $("#id_tvdbid_id").val(ui.item.id)
-        }
+        change: function(event, ui) {
+            console.log(this.value);
+            if (ui.item == null) {
+                $("#id_tvdbid_id").val(null)
+                $("#id_epoverride").empty()
+                $("#id_seasonoverride").empty()
+            } else {
+                $("#id_tvdbid_id").val(ui.item.id)
+                update_season()
+            }
+    }
     });
 
-    $('.season-select').change(function(){
-        season = $(this).val().replace("ses~", "")
-        showid = $(this).prop("id");
-        epselect = $(this).parent('.right').find(".ep-select");
-        epselect.empty();
 
-        $.ajax({
-            url:"/lazy/api/search_tvdb_season/" + showid + "/" + season,
-            type: 'GET',
-            dataType: 'json', // or your choice of returned data
-            success: function(eps){
-                 $.each(eps, function(i, stt){
-                     epselect.append('<option value="ep~'+stt.value+'">'+stt.label+'</option>');
-                 });
-            }
-        });
-       });
+    $('#id_seasonoverride').change(function() {
+        update_ep();
+    });
 
     /////////////////////////
     /// AJAX DJANGO SEND ////
@@ -299,6 +294,41 @@ $( document ).ready(function() {
 	
 
 });
+
+function update_season() {
+    showid = $('#id_tvdbid_id').val()
+    $('#id_epoverride').empty();
+    $('#id_seasonoverride').empty();
+
+    $.ajax({
+        url:"/api/get_tvdb_season/" + showid,
+        type: 'GET',
+        dataType: 'json', // or your choice of returned data
+        success: function(seasons){
+             $.each(seasons, function(i, stt){
+                 $('#id_seasonoverride').append('<option value="'+stt.value+'">'+stt.label+'</option>');
+             });
+        }
+    });
+}
+
+function update_ep() {
+    season = $('#id_seasonoverride').val();
+    showid = $('#id_tvdbid_id').val()
+    epselect = $('#id_epoverride');
+    epselect.empty();
+
+    $.ajax({
+        url:"/api/get_tvdb_eps/" + showid + "/" + season,
+        type: 'GET',
+        dataType: 'json', // or your choice of returned data
+        success: function(eps){
+             $.each(eps, function(i, stt){
+                 epselect.append('<option value="'+stt.value+'">'+stt.label+'</option>');
+             });
+        }
+    });
+}
 
 function calc_shows() {
      $("#report_count").text($(".show:visible").length)

@@ -19,8 +19,8 @@ urlpatterns = patterns('',
     url(r'^downloads/log/(?P<pk>\w+)/$', downloads.DownloadLog.as_view(), name='downloads.log'),
     url(r'^downloads/update/(?P<type>\w+)/$', downloads.update, name='downloads.update'),
     url(r'^downloads/manualfix/$', downloads.DownloadsManuallyFix.as_view(), name='downloads.manualfix'),
+    url(r'^downloads/manualfix/(?P<pk>\w+)/$', downloads.DownloadsManuallyFixItem.as_view(), name='downloads.manualfixitem'),
     url(r'^downloads/(?P<type>\w+)/$', downloads.DownloadsIndexView.as_view(), name='downloads.index'),
-
 
     #Config - Redirect
     url(r'^config$', RedirectView.as_view(url=reverse_lazy('config.tvmap.index')), name='config.redirect'),

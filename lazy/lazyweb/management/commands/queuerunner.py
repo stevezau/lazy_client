@@ -194,8 +194,8 @@ class Command(BaseCommand):
                             diff = curTime - dlItem.dlstart.replace(tzinfo=None)
                             minutes = diff.seconds / 60
 
-                            if minutes > 15:
-                                logger.info("skipping job as it was just retired: %s" % dlItem.title)
+                            if minutes < 15:
+                                logger.info("skipping job as it was just retired: %s (%s)" % (dlItem.title, minutes))
                                 continue
 
                         logger.info("Starting job: %s" % dlItem.ftppath)
