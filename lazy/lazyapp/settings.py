@@ -300,6 +300,9 @@ MIDDLEWARE_CLASSES = (
 )
 
 LOGIN_URL = '/lazy/login/'
+LOGIN_EXEMPT_URLS = (
+    'login/',
+)
 
 LOGIN_EXEMPT_URLS = (
 )
