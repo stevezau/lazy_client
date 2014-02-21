@@ -380,8 +380,8 @@ class Tvdb:
         global lastTimeout
 
         # if we're given a lastTimeout that is less than 1 min just give up
-        if not forceConnect and lastTimeout != None and datetime.datetime.now() - lastTimeout < datetime.timedelta(minutes=1):
-            raise tvdb_error("We recently timed out, so giving up early this time")
+        #if not forceConnect and lastTimeout != None and datetime.datetime.now() - lastTimeout < datetime.timedelta(minutes=1):
+        #    raise tvdb_error("We recently timed out, so giving up early this time")
 
         self.shows = ShowContainer() # Holds all Show classes
         self.corrections = {} # Holds show-name to show_id mapping
