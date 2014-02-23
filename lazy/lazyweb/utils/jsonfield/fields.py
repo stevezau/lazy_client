@@ -14,7 +14,7 @@ import datetime
 from lazyweb.utils.jsonfield.utils import default
 from lazyweb.utils.jsonfield.widgets import JSONWidget
 from lazyweb.utils.jsonfield.forms import JSONFormField
-from jsonfield import __version__
+from lazyweb.utils.jsonfield import __version__
 
 DB_TYPE_CACHE_KEY = (
     'django-jsonfield:db-type:%s' % __version__ +

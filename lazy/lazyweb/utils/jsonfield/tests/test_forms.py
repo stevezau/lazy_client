@@ -2,8 +2,8 @@ from django.test import TestCase as DjangoTestCase
 from django.utils import unittest
 from django.forms import ValidationError
 
-from jsonfield.forms import JSONFormField
-from jsonfield.tests.jsonfield_test_app.forms import JSONTestForm, JSONTestModelForm
+from lazyweb.utils.jsonfield.forms import JSONFormField
+from lazyweb.utils.jsonfield.tests.jsonfield_test_app.forms import JSONTestForm, JSONTestModelForm
 
 class JSONFormFieldTest(DjangoTestCase):
     def test_form_field_clean_empty_object(self):

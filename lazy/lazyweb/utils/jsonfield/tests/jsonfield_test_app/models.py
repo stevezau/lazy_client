@@ -1,5 +1,5 @@
 from django.db import models
-from jsonfield.fields import JSONField
+from lazyweb.utils.jsonfield.fields import JSONField
 
 class JSONFieldTestModel(models.Model):
     json = JSONField("test", null=True, blank=True)

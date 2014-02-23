@@ -4,8 +4,8 @@ from django.utils import unittest
 from django.utils.encoding import force_text
 from django import forms
 
-from jsonfield.tests.jsonfield_test_app.models import *
-from jsonfield.fields import JSONField
+from lazyweb.utils.jsonfield.tests.jsonfield_test_app.models import *
+from lazyweb.utils.jsonfield.fields import JSONField
 
 class JSONFieldTest(DjangoTestCase):
     def test_json_field(self):
@@ -40,8 +40,8 @@ class JSONFieldTest(DjangoTestCase):
         self.assertEquals('{"spam": "eggs"}', field.get_db_prep_save({"spam": "eggs"}, connection=None))
 
     def test_formfield(self):
-        from jsonfield.forms import JSONFormField
-        from jsonfield.widgets import JSONWidget
+        from lazyweb.utils.jsonfield.forms import JSONFormField
+        from lazyweb.utils.jsonfield.widgets import JSONWidget
         field = JSONField("test")
         field.set_attributes_from_name("json")
         formfield = field.formfield()
