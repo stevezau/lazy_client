@@ -37,7 +37,7 @@ class Migration(SchemaMigration):
             ('tvdbid', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['lazyweb.Tvdbcache'], null=True, on_delete=models.DO_NOTHING, blank=True)),
             ('epoverride', self.gf('django.db.models.fields.IntegerField')(default=0, null=True, blank=True)),
             ('seasonoverride', self.gf('django.db.models.fields.IntegerField')(default=0, null=True, blank=True)),
-            ('onlyget', self.gf('jsonfield.fields.JSONField')(null=True, blank=True)),
+            ('onlyget', self.gf('lazyweb.utils.jsonfield.fields.JSONField')(null=True, blank=True)),
         ))
         db.send_create_signal(u'lazyweb', ['DownloadItem'])
 
@@ -63,7 +63,7 @@ class Migration(SchemaMigration):
             ('startdate', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, null=True, blank=True)),
             ('finishdate', self.gf('django.db.models.fields.DateTimeField')(null=True, blank=True)),
             ('title', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
-            ('report', self.gf('jsonfield.fields.JSONField')(null=True, blank=True)),
+            ('report', self.gf('lazyweb.utils.jsonfield.fields.JSONField')(null=True, blank=True)),
         ))
         db.send_create_signal(u'lazyweb', ['Job'])
 
@@ -111,7 +111,7 @@ class Migration(SchemaMigration):
             'localpath': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'localsize': ('django.db.models.fields.IntegerField', [], {'default': '0', 'null': 'True'}),
             'message': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
-            'onlyget': ('jsonfield.fields.JSONField', [], {'null': 'True', 'blank': 'True'}),
+            'onlyget': ('lazyweb.utils.jsonfield.fields.JSONField', [], {'null': 'True', 'blank': 'True'}),
             'pid': ('django.db.models.fields.IntegerField', [], {'default': '0', 'null': 'True'}),
             'priority': ('django.db.models.fields.IntegerField', [], {'default': '10', 'null': 'True'}),
             'remotesize': ('django.db.models.fields.IntegerField', [], {'default': '0', 'null': 'True'}),
@@ -139,7 +139,7 @@ class Migration(SchemaMigration):
             'Meta': {'object_name': 'Job', 'db_table': "'jobs'"},
             'finishdate': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'report': ('jsonfield.fields.JSONField', [], {'null': 'True', 'blank': 'True'}),
+            'report': ('lazyweb.utils.jsonfield.fields.JSONField', [], {'null': 'True', 'blank': 'True'}),
             'startdate': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'null': 'True', 'blank': 'True'}),
             'status': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
             'title': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
