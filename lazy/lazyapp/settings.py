@@ -303,6 +303,8 @@ LOGIN_URL = '/lazy/login/'
 
 LOGIN_EXEMPT_URLS = (
     'login/',
+    'lazy/api',
+    'api'
 )
 
 ROOT_URLCONF = 'lazyapp.urls'
