@@ -144,7 +144,7 @@ def get_season_from_title(title):
 
         return seasons
     else:
-        match = re.search('(?i)S([0-9][0-9])', title)
+        match = re.search('(?i)S[0-9]+', title)
 
         seasons = []
         if match:

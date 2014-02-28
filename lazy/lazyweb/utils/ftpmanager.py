@@ -821,11 +821,18 @@ class FTPManager:
             m = re.search('(?i)200- Finished grabbing Torrent file. Now starting the torrent, when completed the files will show up under (.+)', line)
             if m:
                 logger.info("Downloaded torrent on the ftp as %s" % m.group(1))
+
+                if m.group(1).strip() == "":
+                    return False
+
                 return m.group(1)
 
             m = re.search('(?i)ERROR: Torrent already downloaded here: (.+)', line)
             if m:
                 logger.info("Downloaded torrent on the ftp as %s" % m.group(1))
+                if m.group(1).strip() == "":
+                    return False
+
                 return m.group(1)
 
         return False
