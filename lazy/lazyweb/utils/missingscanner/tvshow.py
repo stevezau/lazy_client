@@ -274,7 +274,7 @@ class TVShowScanner:
 
         for season in missing_whole_seasons:
             if self._exists_db_season_check(season, existing_seasons_in_db):
-                logger("Season %s already being downloaded, making sure it will download season %s" % (season, season))
+                logger.info("Season %s already being downloaded, making sure it will download season %s" % (season, season))
                 self._delete_season_from_dict(season)
                 self.missing_eps[season] = {}
                 self.missing_eps[season]['status'] = self.ALREADY_IN_QUEUE

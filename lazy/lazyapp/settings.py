@@ -126,6 +126,7 @@ TVSHOW_AUTOFIX_REPLACEMENTS = {
     "'": "",
     "(": "",
     ")": "",
+    "-": "",
     "!": "",
 }
 

@@ -11,7 +11,7 @@ from datetime import datetime
 from lazyweb import utils
 from urllib import urlretrieve
 from flexget.utils.imdb import ImdbSearch, ImdbParser
-from lazyweb.exceptions import AlradyExists_Updated
+from lazyweb.exceptions import AlradyExists_Updated, AlradyExists
 from django.core.files import File
 from django.core.files.temp import NamedTemporaryFile
 import urllib2
@@ -532,12 +532,16 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
         instance.ftppath = instance.ftppath.strip()
 
         #Check if it exists already..
+        existing_objs = DownloadItem.objects.all().filter(ftppath=instance.ftppath)
 
-        count = DownloadItem.objects.all().filter(ftppath=instance.ftppath).count()
-
-        if count >= 1:
-            existing_obj = DownloadItem.objects.get(ftppath=instance.ftppath)
+        if len(existing_objs) > 0:
             logger.info("Found existing record %s" % instance.ftppath)
+
+            if len(existing_objs) > 1:
+                #return already exists
+                raise AlradyExists()
+
+            existing_obj = existing_objs[0]
 
             if existing_obj.status == DownloadItem.COMPLETE:
                 #its complete... maybe delete it so we can re-add
@@ -562,8 +566,12 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
         #Get section and title
         if instance.section is None:
             split = instance.ftppath.split("/")
-            section = split[1]
-            title = split[-1]
+
+            try:
+                section = split[1]
+                title = split[-1]
+            except:
+                raise Exception("Unable to determine section from path %s" % instance.ftppath)
 
             if section:
                 instance.section = section

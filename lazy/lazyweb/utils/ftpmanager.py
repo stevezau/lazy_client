@@ -985,6 +985,7 @@ class FTPManager:
 
         #first attempt
         try:
+            logger.debug("Sending command to ftp %s" % cmd)
             return self.ftps.sendcmd(cmd)
         except Exception as e:
             print "retrying sending command as : %s" % e
