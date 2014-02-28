@@ -376,6 +376,52 @@ class Tvdbcache(models.Model):
         tvdb_obj = tvdbapi[self.id][season]
         return tvdb_obj.keys()
 
+    def names(self):
+        alt_names = []
+
+        #Now lets figure out what title we should search for on sites
+        fixed_name = self.title
+
+        for search, replace in settings.TVSHOW_AUTOFIX_REPLACEMENTS.items():
+            fixed_name = fixed_name.replace(search, replace)
+
+        alt_names.append(fixed_name)
+
+        #if self.title not in alt_names:
+        #    alt_names.append(self.title)
+
+        #list of alt names on tvdb.com
+        try:
+            tvdbapi = Tvdb()
+            #tvdb_obj = tvdbapi[self.id]
+
+
+
+        except:
+            pass
+
+        #show mappings
+        try:
+            mappings = TVShowMappings.objects.all().filter(tvdbid_id=self.id)
+
+            print mappings
+
+            if mappings:
+                for map in mappings:
+                    map_name = map.title
+
+                    for search, replace in settings.TVSHOW_AUTOFIX_REPLACEMENTS.items():
+                        map_name = map_name.replace(search, replace)
+
+                    if map_name not in mappings:
+                        alt_names.append(map_name)
+
+        except Exception as e:
+            logger.exception(e)
+            pass
+
+        return alt_names
+
     def update_from_tvdb(self):
         logger.info("Updating %s %s" % (str(self.id), self.title))
 
@@ -510,7 +556,6 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
                     logger.debug("download already exists.. ignore this")
                     raise AlradyExists_Updated(existing_obj)
 
-        #Get section
         if instance.status is None:
             instance.status = 1
 
@@ -609,7 +654,12 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
                     hours = diff.seconds / 60 / 60
 
                 if hours > 24:
-                    instance.tvdbid.update_from_tvdb()
+                    try:
+                        instance.tvdbid.update_from_tvdb()
+                    except Exception as e:
+                        logger.exception("Error updating TVDB info %s" % e.message)
+
+
         except ObjectDoesNotExist as e:
             logger.debug("Getting tvdb data for release")
 
@@ -629,13 +679,16 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
                 curTime = datetime.now()
                 imdb_date = instance.imdbid.updated
 
-                if imdb_date:
-                    diff = curTime - instance.imdbid.updated.replace(tzinfo=None)
-                    hours = diff.seconds / 60 / 60
-                    if hours > 24:
+                try:
+                    if imdb_date:
+                        diff = curTime - instance.imdbid.updated.replace(tzinfo=None)
+                        hours = diff.seconds / 60 / 60
+                        if hours > 24:
+                            instance.imdbid.update_from_imdb()
+                    else:
                         instance.imdbid.update_from_imdb()
-                else:
-                    instance.imdbid.update_from_imdb()
+                except Exception as e:
+                        logger.exception("Error updating IMDB info %s" % e.message)
 
         except ObjectDoesNotExist as e:
 

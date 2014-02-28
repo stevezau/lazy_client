@@ -221,6 +221,7 @@ BROKER_URL = "amqp://"
 CELERY_RESULT_BACKEND = "amqp://"
 CELERY_ACKS_LATE = True
 CELERY_TRACK_STARTED = True
+CELERYD_PREFETCH_MULTIPLIER = 1
 
 # Application definition
 

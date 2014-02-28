@@ -81,18 +81,8 @@ class TVShowScanner:
         except:
             raise Exception("Unable to get latest season")
 
-        #Now lets figure out what title we should search for on sites
-        new_name = self.tvshow_name
 
-        for search, replace in settings.TVSHOW_AUTOFIX_REPLACEMENTS.items():
-            new_name = new_name.replace(search, replace)
-
-        if new_name != self.tvshow_name:
-            self.search_names = [self.tvshow_name, new_name]
-            logger.debug("We will use the following names to search the sites %s and %s" % (new_name, self.tvshow_name))
-        else:
-            self.search_names = [self.tvshow_name]
-
+        self.search_names = self.tvdbcache_obj.names()
 
     def get_latest_ep(self, season):
         now = datetime.now() - timedelta(days=2)

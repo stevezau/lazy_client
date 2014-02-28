@@ -71,18 +71,21 @@ class DownloadItemExtractor():
 
             if passed:
                 self.download_item.log("Extraction passed")
-                if os.path.isdir(self.download_item.localpath):
-                    shutil.rmtree(self.download_item.localpath)
                 self.download_item.status = DownloadItem.COMPLETE
                 self.download_item.msg = None
                 self.download_item.save()
 
+                if os.path.isdir(self.download_item.localpath):
+                    shutil.rmtree(self.download_item.localpath)
+
+
         except Exception as e:
+            logger.exception("error moving %s due to %s" % (self.download_item.localpath, e.message))
             self.download_item.log("Exception during extraction: %s" % e)
             self.download_item.retries += 1
             self.download_item.message = e.message
             self.download_item.save()
-            logger.exception("error moving %s due to %s" % (self.download_item.localpath, e.message))
+
 
 
 

@@ -21,6 +21,7 @@ class TVExtractor:
 
         ep = None
         season = None
+        season = None
 
         if 'ep' in file:
             ep = file['ep']

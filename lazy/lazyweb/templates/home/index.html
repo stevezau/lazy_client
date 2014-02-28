@@ -3,7 +3,19 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
-    <h3>Media Server Status</h3>
+    <h3>Media Server Status ({{ status }})</h3>
+
+    <div class="middle">
+        <form id="form">
+        {% if status == "Running" %}
+            <input type="hidden" name="action" value="stop">
+            <input type="submit" value="Stop Queue">
+        {% else %}
+            <input type="hidden" name="action" value="start">
+            <input type="submit" value="Start Queue">
+        {% endif %}
+        </form>
+    </div>
 
     <div class='stats'>
         <div class='left'>

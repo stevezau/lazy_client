@@ -11,6 +11,7 @@ from celery.task.base import periodic_task, task
 from django.core.cache import cache
 from datetime import timedelta
 import ftplib
+from lazyweb import utils
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +44,11 @@ class Command(BaseCommand):
         #    return 'Success!'
 
         #raise CommandError('Only the default is supported')
+
+        if not utils.queue_running():
+            logger.debug("Queue is stopped, exiting")
+            return
+
 
         #Find jobs running and if they are finished or not
         lock_id = "%s-lock" % (self.name)

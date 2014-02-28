@@ -7,6 +7,7 @@ from lazyweb.utils.extractor import DownloadItemExtractor
 from celery.task.base import periodic_task
 from django.core.cache import cache
 from datetime import timedelta
+from lazyweb import utils
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,11 @@ class Command(BaseCommand):
         #    return 'Success!'
 
         #raise CommandError('Only the default is supported')
+
+        if not utils.queue_running():
+            logger.debug("Queue is stopped, exiting")
+            return
+
 
         lock_id = "%s-lock" % (self.name)
 

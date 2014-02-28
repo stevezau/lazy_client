@@ -68,6 +68,11 @@ class FTPMirror:
     @task(bind=True)
     def mirror_ftp_folder(self, urls, savepath, dlitem):
 
+        if not utils.queue_running():
+            logger.debug("Queue is stopped, exiting")
+            return
+
+
         current_task.update_state(state='RUNNING', meta={'updated': time.mktime(datetime.now().timetuple()), 'speed': 0})
 
         dlitem.log("Starting Download")
@@ -342,6 +347,10 @@ class FTPMirror:
                 c.fp = None
             c.close()
         self.m.close()
+
+        from lazyweb.management.commands.queuerunner import Command
+        cmd = Command()
+        cmd.handle.delay(seconds=5)
 
 
 class FTPManager:

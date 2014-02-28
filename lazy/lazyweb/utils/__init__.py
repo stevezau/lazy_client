@@ -12,6 +12,7 @@ from lazyweb.utils.rar import RarArchive
 import difflib
 from os import listdir
 from os.path import isfile, join, isdir
+from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,41 @@ SYMBOLS = {
     'iec_ext'       : ('byte', 'kibi', 'mebi', 'gibi', 'tebi', 'pebi', 'exbi',
                        'zebi', 'yobi'),
 }
+
+def start_queue():
+    from lazyweb.management.commands.queuerunner import Command
+    cache.delete("stop_queue")
+    cmd = Command()
+    cmd.handle.delay()
+
+
+def stop_queue():
+    cache.set("stop_queue", "true", None)
+    from lazyweb.models import DownloadItem
+    from djcelery.app import current_app
+    from celery.app.control import Control
+
+    #reset all downloading
+    dlitems = DownloadItem.objects.all().filter(status=DownloadItem.DOWNLOADING)
+
+    for dlitem in dlitems:
+        dlitem.reset(force=True)
+
+    #now purge the queue
+    control = Control(app=current_app)
+    control.discard_all()
+
+def queue_running():
+    queue_stopped = cache.get('stop_queue')
+
+    if None is queue_stopped:
+        return True
+
+    if queue_stopped == 'true':
+        return False
+
+    return False
+
 
 def bytes2human(n, format='%(value).1f %(symbol)s', symbols='customary'):
     """

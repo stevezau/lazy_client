@@ -5,7 +5,6 @@ String.prototype.startsWith = function (str)
 };
 
 $( document ).ready(function() {
-
 	//$( "#dialog" ).dialog();
 
     $("#id_tvdbid_display").autocomplete({
@@ -294,6 +293,7 @@ $( document ).ready(function() {
 	
 
 });
+
 
 function update_season() {
     showid = $('#id_tvdbid_id').val()
