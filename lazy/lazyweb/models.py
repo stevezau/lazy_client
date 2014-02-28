@@ -620,9 +620,9 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
                         instance.imdbid_id = int(match['imdb_id'].lstrip("tt"))
 
                 except Exception as e:
-                    raise Exception("Error finding : %s via thetvdb.com due to  %s" % (seriesName, e.message))
+                    logger.exception("Error finding : %s via thetvdb.com due to  %s" % (seriesName, e.message))
             else:
-                raise Exception("Unable to parse series info")
+                logger.exception("Unable to parse series info")
 
     #must be a movie!
     else:

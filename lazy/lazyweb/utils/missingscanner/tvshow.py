@@ -775,7 +775,7 @@ class TVShowScanner:
 
 
     def _exists_db_season_check(self, season, existing_seasons_in_db):
-        #lets check if its on the db already
+        #lets check if its in the db already
         for entry in existing_seasons_in_db:
 
             if utils.match_str_regex(settings.TVSHOW_SPECIALS_REGEX, entry.title):
