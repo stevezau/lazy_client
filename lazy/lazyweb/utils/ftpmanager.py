@@ -785,6 +785,7 @@ class FTPManager:
                     ratio = utils.compare_torrent_2_show(show_name, torrent)
 
                     if ratio >= 0.93:
+                        logger.debug("Adding torrent to prescan %s" % torrent)
                         torrents[site].append(torrent)
 
         return torrents
