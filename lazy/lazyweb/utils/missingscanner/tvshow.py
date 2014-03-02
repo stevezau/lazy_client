@@ -341,7 +341,7 @@ class TVShowScanner:
                 sites = ['scc', 'tl', 'revtt']
 
                 do_continue = False
-                do_break = False
+
 
                 for site in sites:
                     try:
@@ -352,6 +352,8 @@ class TVShowScanner:
                             logger.debug("finished doing a prescan for eps")
 
                         if self.ep_pre_scan is not None:
+                            do_break = False
+
                             for pre_scan_site, torrents in self.ep_pre_scan.iteritems():
                                 for torrent in torrents:
                                     #check season and ep number
@@ -371,9 +373,8 @@ class TVShowScanner:
 
                                     except:
                                         pass
-
-                        if do_break:
-                            break
+                            if do_break:
+                                break
 
                         torrentEps, foundEps = self.ftp_manager.getTVTorrents(site, self.search_names, cur_season_no, ep_no)
 
