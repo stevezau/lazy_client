@@ -101,7 +101,7 @@ class Command(BaseCommand):
                     localsize = -1
 
                     try:
-                        localsize = ftp_manager.getLocalSize(dlItem.localpath)
+                        localsize = ftp_manager.get_size(dlItem.localpath)
                         dlItem.log('Local size of folder is: %s' % localsize)
                     except:
                         dlItem.log("error getting local size of folder: %s" % dlItem.ftppath)

@@ -11,8 +11,12 @@
         <div id="middle-inner">
                 <div style="cursor:pointer" class="button">
                         <span class="button_post" url="clear">Clear Log</span>
-
                 </div>
+                <a href="{% url 'admin:lazyweb_downloaditem_change' object.id %}">
+                    <div style="cursor:pointer" class="button">
+                            <span class="button_page">Edit</span>
+                    </div>
+                </a>
         </div>
     </div>
 

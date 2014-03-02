@@ -14,6 +14,10 @@ import os
 ###################
 import lazysettings
 
+# XBMC Details
+
+XBMC_API = "http://192.168.0.190:8080"
+
 # MYSQL Details
 
 MYSQL_USER = lazysettings.MYSQL_USER
@@ -63,6 +67,12 @@ FLEXGET_IGNORE = lazysettings.FLEXGET_IGNORE
 #############################################
 #### !!!!DO NOT CHANGE ANYTHING BELOW!!!! ###
 #############################################
+
+VIDEO_FILE_EXTS = (
+    '.mkv',
+    '.avi',
+    '.mp4',
+)
 
 TVSHOW_REGEX = (
     '(?i).+\.S[0-9]+E[0-9]+.+',
@@ -274,8 +284,8 @@ LOGGING = {
             'handlers': ['console', 'logfile'],
             'level': 'DEBUG',
         },
-        #'lazyapi': {
-        #    'handlers': ['console', 'logfile'],
+        #'lazyweb': {
+        #    'handlers': ['console'],
         #    'level': 'DEBUG',
         #},
     }
@@ -374,4 +384,4 @@ REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'lazyweb.utils.custom_exception_handler'
 }
 
-
+__VERSION__ = "0.1"

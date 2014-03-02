@@ -140,25 +140,13 @@ class TVShowScanner:
                 for season_dir_file in os.listdir(season_path):
                     ep_file = os.path.join(season_path, season_dir_file)
 
-                    m = re.search("(?i).+?- (S[0-9]+E[0-9]+.+) -.+\.(mkv|avi|mp4)$", ep_file)
+                    if utils.is_video_file(ep_file):
+                        season, eps = utils.get_ep_season_from_title(ep_file)
 
-                    if m:
-                        multi = re.search("(?i)S[0-9]+(E[0-9]+E.+)", m.group(1))
+                        if season == cur_season:
+                            for ep in eps:
+                                downloaded_eps.append(ep)
 
-                        if multi:
-                            #we have a multi ep
-                            ep_list = re.split("(?i)E", multi.group(1))
-
-                            for ep_num in ep_list:
-                                if ep_num != '':
-                                    downloaded_eps.append(int(ep_num))
-                        else:
-                            normal = re.search("(?i)S[0-9]+E([0-9]+)", m.group(1))
-
-                            if normal:
-                                #we have a normal ep
-                                ep_num = int(normal.group(1))
-                                downloaded_eps.append(ep_num)
 
             missing_eps = []
 

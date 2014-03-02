@@ -311,7 +311,7 @@ class TVExtractor:
 
             else:
                 #Lets try convert via thexem
-                xem_season, xem_ep = self.tvdbapi.get_xem_show_convert(download_item.tvdbid_id, (series_season), int(series_ep))
+                xem_season, xem_ep = self.tvdbapi.get_xem_show_convert(download_item.tvdbid_id, int(series_season), int(series_ep))
 
                 if xem_season is not None and xem_ep is not None:
                     download_item.log("Found entry on thexem, converted the season and ep to %s x %s" % (xem_season, xem_ep))
@@ -346,7 +346,7 @@ class TVExtractor:
                 download_item.log("Found season %s episode %s title: %s" % (series_season, series_ep, series_ep_name))
 
                 #IS this a multiep
-                multi = re.search("(?i)S([0-9]+)(E[0-9]+[E0-9]+).+", download_item.title)
+                multi = re.search("(?i)S([0-9]+)(E[0-9]+E[0-9]+).+", download_item.title)
 
                 ep_id = 'E' + str(series_ep)
 

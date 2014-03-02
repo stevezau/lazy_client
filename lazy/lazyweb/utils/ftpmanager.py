@@ -21,6 +21,7 @@ import pycurl, time
 from datetime import datetime
 import pprint
 from celery import current_task
+import ftplib
 
 logger = logging.getLogger(__name__)
 
@@ -116,15 +117,23 @@ class FTPMirror:
 
             ftpurl = "ftp://%s:%s@%s:%s/%s" % (settings.FTP_USER, settings.FTP_PASS, settings.FTP_IP, settings.FTP_PORT, urlpath.lstrip("/"))
 
+            ftpurl = ftpurl.encode("UTF-8")
+
             basepath = ""
 
             i = 0
-            for path in urlpath.split(os.sep):
-                if i > 2:
-                    basepath = os.path.join(basepath, path)
-                i += 1
 
-            urlsavepath = os.path.join(savepath, basepath)
+            urlpath_split = urlpath.split(os.sep)
+
+            if len(urlpath_split) == 3:
+                pass
+            else:
+                for path in urlpath_split:
+                    if i > 2:
+                        basepath = os.path.join(basepath, path)
+                    i += 1
+
+            urlsavepath = os.path.join(savepath, basepath).rstrip("/")
 
             if os.path.isfile(urlsavepath):
                 #compare sizes
@@ -148,6 +157,8 @@ class FTPMirror:
                 queue.append((ftpurl, urlsavepath, size, 0))
 
         queue = priority + queue
+
+        logger.debug(queue)
 
         # Pre-allocate a list of curl objects
         self.m.handles = []
@@ -234,6 +245,7 @@ class FTPMirror:
 
                 c.setopt(pycurl.RESUME_FROM, local_size)
                 c.fp = f
+
                 c.setopt(pycurl.URL, url)
                 c.setopt(pycurl.WRITEDATA, c.fp)
                 self.m.add_handle(c)
@@ -258,14 +270,23 @@ class FTPMirror:
                     close_file(c.fp)
 
                     #Did we download the file properly???
-                    local_size = os.path.getsize(c.filename)
-                    if c.remote_size != local_size:
-                        dlitem.log("Failure: %s as it Didnt download properly, the local size does not match the remote size, lets retry" % os.path.basename(c.filename))
+                    success = False
+
+                    for x in range(0, 4):
+                        local_size = os.path.getsize(c.filename)
+
+                        if local_size == remote_size:
+                            success = True
+                            break
+                        time.sleep(3)
+
+                    if success:
+                        dlitem.log("Success:%s" % (os.path.basename(c.filename)))
+                    else:
                         failed_list[c.filename] = 1
                         queue.append((c.url, c.filename, c.remote_size, datetime.now()))
                         num_processed -= 1
-                    else:
-                        dlitem.log("Success:%s" % (os.path.basename(c.filename)))
+                        dlitem.log("Failure: %s as it Didnt download properly, the local (%s) size does not match the remote size (%s), lets retry" % (os.path.basename(c.filename), local_size, remote_size))
 
                     c.fp = None
                     freelist.append(c)
@@ -453,11 +474,18 @@ class FTPManager:
         found_files = []
         size = 0
 
-        for curfolder, dirs, files in self.ftpwalk(folder):
-            for file in files:
-                file_found = [str(os.path.join(curfolder, file[0])), file[1]]
-                found_files.append(file_found)
-                size += file[1]
+        if utils.is_video_file(folder):
+            #we have a file
+            size = self.getRemoteSize(folder)
+            file_found = [folder, size]
+            found_files.append(file_found)
+        else:
+            #we have a folder
+            for curfolder, dirs, files in self.ftpwalk(folder):
+                for file in files:
+                    file_found = [str(os.path.join(curfolder, file[0])), file[1]]
+                    found_files.append(file_found)
+                    size += file[1]
 
         return found_files, size
 
@@ -517,9 +545,8 @@ class FTPManager:
 
             for file in files:
                 #first lets check if something we might be interested in
-                m = re.match(".+\.(mkv|avi|mp4)$", file[0])
 
-                if m:
+                if utils.is_video_file(file[0]):
                     found_ep_season, found_ep = utils.get_ep_season_from_title(file[0])
 
                     if found_ep_season in onlyget_clean_eps.keys():
@@ -690,7 +717,7 @@ class FTPManager:
         return size
 
 
-    def getLocalSize(self, local):
+    def get_size(self, local):
         local = local.strip()
         """Get size of a directory tree or a file in bytes."""
         logger.debug("Getting local size of folder: %s" % local)
@@ -894,99 +921,6 @@ class FTPManager:
 
         return torrents
 
-
-    def removeScript(self, jobid):
-        path = os.path.join(settings.TMPFOLDER, jobid)
-        path2 = os.path.join(settings.TMPFOLDER, jobid + ".log")
-
-        if os.path.exists(path):
-            try:
-                os.remove(path)
-                os.remove(path2)
-            except:
-                print logger, 'Error removing lftp script at %s' % path
-                return False
-        else:
-            print 'The lftp script for %s was not found when tidying up'
-            return False
-        return True
-
-
-    @task(bind=True)
-    def mirrorMulti(self, localBase, remoteFolders, jobid=0):
-
-        jobid = 'ftp-%s' % jobid
-
-        scriptCMDs = []
-
-        dlitemid = jobid
-        raise Exception("NOT IMPLEMENTED YET")
-        for remoteFolder in remoteFolders:
-            splitRemote = remoteFolder.split("/")
-
-            del splitRemote[0]
-            del splitRemote[0]
-            del splitRemote[0]
-
-            local = localBase
-
-            for dir in splitRemote:
-                local = local + "/" + dir
-
-            logger.info("Starting mirroring of %s to %s" % (remoteFolder, local))
-
-            local, remoteFolder = os.path.normpath(local), os.path.normpath(remoteFolder)
-
-            m = re.match(".*\.(mkv|avi|mp4)$", remoteFolder)
-
-            if m:
-                #we have a file
-                #make sure the folder is created
-                #Build the lftp script for the job
-                print os.path.realpath(local)
-                os.makedirs(localBase)
-
-                cmd = 'get -c "%s" -o "%s"' % (remoteFolder, local.strip())
-                scriptCMDs.append(cmd)
-
-            else:
-                cmd = 'mirror -vvv -c --parallel=%s "%s" "%s"' % (settings.LFTP_THREAD_PER_DOWNLOAD, remoteFolder, local.strip())
-                scriptCMDs.append(cmd)
-
-        tmpFile = "%s/%s" % (settings.TMPFOLDER, jobid)
-        script = open(tmpFile, 'w')
-
-        scriptCMDs.append("exit")
-        scriptCMDs.append('set xfer:log-file "/tmp/%s.log"' % jobid)
-        scriptCMDs.append('set xfer:log true')
-        openCmd = 'open -u "%s,%s" ftp://%s:%s\n' % (settings.FTP_USER, settings.FTP_PASS, settings.FTP_IP, settings.FTP_PORT)
-        script.write(openCmd)
-        script.write(os.linesep.join(scriptCMDs))
-        script.close()
-
-        # mirror
-        cmd = [settings.LFTP_BIN, '-d', '-f', script.name]
-        sync = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-        logger.info('starting lftp with script %s' % script.name)
-        logger.info('lftp started under PID: {0}'.format(sync.pid))
-        #TODO DOES LFTP CRASH IF WE remove the script
-        try:
-            dlitem = DownloadItem.objects.get(id=dlitemid)
-            dlitem.pid = sync.pid
-            dlitem.save()
-        except Exception as e:
-            pass
-        sync.wait()
-
-        if jobid == 0:
-            self.removeScript(0)
-
-    def stopJob(self, pid):
-        try:
-            os.kill(int(pid), signal.SIGTERM)
-        except OSError:
-            print logger, "error killing the process"
 
     def sendcmd(self, cmd):
 

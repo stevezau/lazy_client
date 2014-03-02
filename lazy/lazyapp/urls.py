@@ -14,8 +14,6 @@ urlpatterns = patterns('',
     url(r'^api/', include('lazyapi.urls')),
     url(r'^lazy/api/', include('lazyapi.urls')),
     url(r'', include('lazyweb.urls')),
-    url(r'lazy/', include('lazyweb.urls')),
-
 )
 
 urlpatterns += patterns("",

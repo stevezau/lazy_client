@@ -551,6 +551,17 @@ def load_button_module(package, fn):
         logger.exception(e)
         raise Exception(e)
 
+def get_size(local):
+    local = local.strip()
+    path_size = 0
+    for path, directories, files in os.walk(local):
+        for filename in files:
+            path_size += os.lstat(os.path.join(path, filename)).st_size
+        for directory in directories:
+            path_size += os.lstat(os.path.join(path, directory)).st_size
+    path_size += os.path.getsize(local)
+    return path_size
+
 
 def ignore_show(title):
 
@@ -600,8 +611,6 @@ def get_movie_info(title):
         logger.error('Failed to parse name from %s' % title)
         return None
 
-    logger.debug('smart_match name=%s year=%s' % (name, str(year)))
-
     return name, year
 
 
@@ -627,6 +636,12 @@ def replace_regex(regex_list, string, replacement):
         string = re.sub(regex, replacement, string)
 
     return string
+
+def is_video_file(file):
+    for ext in settings.VIDEO_FILE_EXTS:
+        if file.endswith(ext):
+            return True
+    return False
 
 
 def match_str_regex(regex_list, string):
