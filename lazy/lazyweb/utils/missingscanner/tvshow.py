@@ -355,7 +355,7 @@ class TVShowScanner:
                                 for torrent in torrents:
                                     #check season and ep number
                                     try:
-                                        pre_scan_season, pre_scan_eps = utils.get_ep_season_from_title()
+                                        pre_scan_season, pre_scan_eps = utils.get_ep_season_from_title(torrent)
 
                                         if pre_scan_season == cur_season_no:
                                             for pre_scan_ep in pre_scan_eps:
