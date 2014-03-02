@@ -341,6 +341,7 @@ class TVShowScanner:
                 sites = ['scc', 'tl', 'revtt']
 
                 do_continue = False
+                do_break = False
 
                 for site in sites:
                     try:
@@ -362,15 +363,17 @@ class TVShowScanner:
                                                 if int(pre_scan_ep) == ep_no:
                                                     logger.info("found match in the pre scan %s %s" % (season,ep_no))
                                                     do_continue = True
+                                                    do_break = True
                                                     found_ep = {'status': self.FOUND_EP_TORRENT, 'tor_site': pre_scan_site, 'torrent': torrent, 'ep_no': int(ep_no)}
                                                     found.append(found_ep)
                                                     self._delete_ep_from_dict(cur_season_no, ep_no)
-                                                    do_continue = True
                                                     break
 
                                     except:
                                         pass
 
+                        if do_break:
+                            break
 
                         torrentEps, foundEps = self.ftp_manager.getTVTorrents(site, self.search_names, cur_season_no, ep_no)
 
