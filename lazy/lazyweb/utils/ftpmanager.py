@@ -774,15 +774,20 @@ class FTPManager:
 
             for line in iter(out.splitlines()):
                 line = line.lower()
+                logger.debug(line)
 
                 #do fuzzy match
                 match = re.search("(?i)200- (.+s([0-9][0-9])e([0-9][0-9]).+)\ [0-9]", line.strip())
+
+                logger.debug(match)
 
                 if match:
                     #found a torrent..
                     torrent = match.group(1).strip()
 
                     ratio = utils.compare_torrent_2_show(show_name, torrent)
+
+                    logger.debug(ratio)
 
                     if ratio >= 0.93:
                         logger.debug("Adding torrent to prescan %s" % torrent)
