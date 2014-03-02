@@ -66,7 +66,7 @@ class Command(BaseCommand):
                 if imdb_date:
                         diff = curTime - imdb_obj.updated.replace(tzinfo=None)
                         hours = diff.seconds / 60 / 60
-                        if hours > 888:
+                        if hours > 48:
                             pass
                             #imdb_obj.update_from_imdb()
                 else:
