@@ -61,6 +61,10 @@ retry_on_errors = [
     28, #CURLE_OPERATION_TIMEDOUT (28) Operation timeout. The specified time-out period was reached according to the conditions.
     ]
 
+def signal_term_handler(signal, frame):
+    for key, value in frame.f_locals.items():
+        print "key: %s | val %s" % (key, value)
+
 class FTPMirror:
 
     # We should ignore SIGPIPE when using pycurl.NOSIGNAL - see
@@ -99,7 +103,11 @@ class FTPMirror:
         try:
             import signal
             from signal import SIGPIPE, SIG_IGN
+            SIGUSR1 = 10
+
+            signal.signal(SIGUSR1, signal_term_handler)
             signal.signal(signal.SIGPIPE, signal.SIG_IGN)
+
         except ImportError:
             pass
 
