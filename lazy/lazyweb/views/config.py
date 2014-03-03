@@ -49,11 +49,16 @@ class ApprovedListView(TemplateView):
         tvdbapi = Tvdb()
         tvdbfavs = tvdbapi.get_favs()
 
+        logger.debug("Found favs %s" % tvdbfavs)
+
         favs = []
 
         #now lets sort them all out
         if tvdbfavs and len(tvdbfavs) > 0:
             for tvdbfav in tvdbfavs:
+                if None is tvdbfavs:
+                    continue
+
                 try:
                     tvcache_obj = Tvdbcache.objects.get(id=int(tvdbfav))
                     favs.append(tvcache_obj)

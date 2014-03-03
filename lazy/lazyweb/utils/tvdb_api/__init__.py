@@ -971,6 +971,7 @@ class Tvdb:
 
         favs = []
         for favorites in favs_et:
+            log().debug("Found fav id: %s %s" % (favorites, favorites.text))
             favs.append(favorites.text)
 
 
