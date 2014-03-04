@@ -253,6 +253,8 @@ class TVExtractor:
             else:
                 parser = utils.get_series_info(title)
 
+            series_name = None
+
             if parser:
                 series_name = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", parser.name).strip()
                 series_name = re.sub(" +", " ", series_name).strip()
