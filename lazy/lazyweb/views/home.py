@@ -7,7 +7,7 @@ from django.conf import settings
 from django.shortcuts import render_to_response
 import os
 import logging
-
+import sys
 
 from lazyweb import utils
 
@@ -18,6 +18,7 @@ class IndexView(TemplateView):
     model = DownloadItem
 
     def get(self, request, *args, **kwargs):
+
         action = request.GET.get('action')
 
         if action == "stop":

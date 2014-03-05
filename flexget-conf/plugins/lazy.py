@@ -81,17 +81,9 @@ class PluginLazy(object):
         api_url = config.get('api', self.DEFAULT_API)
         pending = config.get('pending', self.DEFAULT_PENDING)
 
-        f = open('/tmp/lazy.log','a')
-
-        import datetime
-
         for entry in task.accepted:
 
             log.debug("Add %s to lazy" % entry['path'])
-
-            curtime = datetime.date.today().strftime("%B %d, %Y")
-
-            f.write("\n\n adding release date: %s  path: %s \n" % (str(curtime), entry['path']))
 
             imdb_id = None
             tvdb_id = None
@@ -114,8 +106,6 @@ class PluginLazy(object):
                         'status': status,
                     }
 
-                f.write("\n\n %s \n\n" % str(post))
-
                 query_api(api_url, "downloads", post)
                 log.info('added entry to lazy %s' % entry['path'])
 
@@ -123,7 +113,6 @@ class PluginLazy(object):
                 log.exception(e)
                 entry.fail(str(e))
 
-        f.close()
 
     def check_up(self, task, config):
         url = config.get('api', self.DEFAULT_API).rstrip("/") + "/"

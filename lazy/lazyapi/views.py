@@ -17,13 +17,27 @@ class DownloadItemList(generics.ListCreateAPIView):
     queryset = DownloadItem.objects.all()[1:10]
     serializer_class = DownloadItemSerializer
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.DATA, files=request.FILES)
+
+        if serializer.is_valid():
+            serializer.object.ftppath = request.DATA['ftppath']
+            serializer.data['ftppath'] = request.DATA['ftppath']
+            self.pre_save(serializer.object)
+            self.object = serializer.save(force_insert=True)
+            self.post_save(self.object, created=True)
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED,
+                            headers=headers)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     def post(self, request, *args, **kwargs):
         try:
             return super(DownloadItemList, self).post(request, *args, **kwargs)
         except AlradyExists_Updated as e:
             serializer = DownloadItemSerializer(e.existingitem)
             headers = self.get_success_headers(serializer.data)
-
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 

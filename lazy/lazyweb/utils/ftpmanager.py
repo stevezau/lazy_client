@@ -394,12 +394,10 @@ class FTPManager:
             self.connect()
 
 
-    def ftpwalk(self, top, topdown=True, onerror=None, cur_depth=0, max_depth=9):
+    def ftpwalk(self, top, topdown=True, onerror=None, cur_depth=0, max_depth=9, inc_top=False):
         """
         Generator that yields tuples of (root, dirs, nondirs).
         """
-        # Make the FTP object's current directory to the top dir.
-        self.ftps.cwd(top)
 
         # We may not have read permission for top, in which case we can't
         # get a list of the files the directory contains.  os.path.walk
@@ -407,6 +405,13 @@ class FTPManager:
         # minor reason when (say) a thousand readable directories are still
         # left to visit.  That logic is copied here.
 
+        if cur_depth == 0 and inc_top:
+            cur_depth += 1
+            size = self.getRemoteSize(top)
+            yield os.path.dirname(top), [[os.path.basename(top), size]], []
+
+        # Make the FTP object's current directory to the top dir.
+        self.ftps.cwd(top)
 
         try:
             dirs, nondirs = self._ftp_listdir()
@@ -542,10 +547,11 @@ class FTPManager:
 
 
         #lets find them all
-        for curdir, dirs, files in self.ftpwalk(folder, max_depth=4):
+        for curdir, dirs, files in self.ftpwalk(folder, max_depth=4, inc_top=True):
 
             if len(onlyget_clean_eps) == 0 and len(onlyget_clean_seasons) == 0:
                 break
+
 
             for path in skippath:
                 if path.startswith(curdir) or path == curdir:
@@ -553,6 +559,9 @@ class FTPManager:
 
             for file in files:
                 #first lets check if something we might be interested in
+                if len(onlyget_clean_eps) == 0 and len(onlyget_clean_seasons) == 0:
+                    break
+
 
                 if utils.is_video_file(file[0]):
                     found_ep_season, found_ep = utils.get_ep_season_from_title(file[0])
@@ -594,8 +603,14 @@ class FTPManager:
 
             #Lets check if required items are in folders
             for dir in dirs:
+                if len(onlyget_clean_eps) == 0 and len(onlyget_clean_seasons) == 0:
+                    break
+
                 dir = dir[0]
                 full_dir = os.path.join(curdir, dir)
+
+                print full_dir
+                print dir
 
                 #multi season pack
                 if utils.match_str_regex(settings.TVSHOW_SEASON_MULTI_PACK_REGEX, dir):

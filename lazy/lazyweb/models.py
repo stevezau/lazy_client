@@ -26,6 +26,11 @@ from celery.task.control import revoke
 
 logger = logging.getLogger(__name__)
 
+from south.modelsinspector import add_introspection_rules
+
+add_introspection_rules([], ["^lazyweb\.utils\.jsonfield\.fields\.JSONField"])
+
+
 class TVShowMappings(models.Model):
     class Meta:
         """ Meta """
@@ -39,7 +44,10 @@ class TVShowMappings(models.Model):
 class DownloadLog(models.Model):
 
     def __unicode__(self):
-        return self.title
+        try:
+            return self.title
+        except:
+            return "TITLE NOT FOUND"
 
     download_id = models.ForeignKey('DownloadItem')
     date = models.DateTimeField(auto_now_add=True)
@@ -77,7 +85,7 @@ class DownloadItem(models.Model):
 
     title = models.CharField(max_length=150, db_index=True, blank=True, null=True)
     section = models.CharField(max_length=10, db_index=True, blank=True, null=True)
-    ftppath = models.CharField(max_length=255, db_index=True)
+    ftppath = models.CharField(max_length=255, db_index=True, unique=True)
     localpath = models.CharField(max_length=255, blank=True, null=True)
     status = models.IntegerField(choices=STATUS_CHOICES, blank=True, null=True)
     pid = models.IntegerField(default=0, null=True)
@@ -532,20 +540,27 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
         instance.ftppath = instance.ftppath.strip()
 
         #Check if it exists already..
-        existing_objs = DownloadItem.objects.all().filter(ftppath=instance.ftppath)
+        try:
+            existing_obj = DownloadItem.objects.get(ftppath=instance.ftppath)
 
-        if len(existing_objs) > 0:
-            logger.info("Found existing record %s" % instance.ftppath)
-
-            if len(existing_objs) > 1:
-                #return already exists
-                raise AlradyExists()
-
-            existing_obj = existing_objs[0]
+            if existing_obj:
+                logger.info("Found existing record %s" % instance.ftppath)
 
             if existing_obj.status == DownloadItem.COMPLETE:
-                #its complete... maybe delete it so we can re-add
-                existing_obj.delete()
+                #its complete... maybe delete it so we can re-add if its older then 2 weeks?
+                curTime = datetime.now()
+                hours = 0
+
+                if existing_obj.dateadded is None:
+                    hours = 300
+                else:
+                    diff = curTime - existing_obj.dateadded.replace(tzinfo=None)
+                    hours = diff.seconds / 60 / 60
+
+                if hours > 288:
+                    existing_obj.delete()
+                else:
+                    raise AlradyExists()
             else:
                 #lets update it with the new downloaded eps
                 if instance.onlyget is not None:
@@ -558,7 +573,9 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
                     raise AlradyExists_Updated(existing_obj)
                 else:
                     logger.debug("download already exists.. ignore this")
-                    raise AlradyExists_Updated(existing_obj)
+                raise AlradyExists_Updated(existing_obj)
+        except ObjectDoesNotExist:
+            pass
 
         if instance.status is None:
             instance.status = 1
