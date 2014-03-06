@@ -91,3 +91,5 @@ class Command(BaseCommand):
 
                 except Exception as e:
                     logger.error("DIR: %s Failed while searching via tvdb.com %s" % (path, e.message))
+
+                tvdbapi = Tvdb()

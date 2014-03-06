@@ -50,10 +50,13 @@ class Command(BaseCommand):
             path = os.path.join(settings.TVHD, dir)
 
             #lets see if it already belongs to a tvshow
-            try:
-                tvobj = Tvdbcache.objects.get(localpath=path)
-                continue
-            except ObjectDoesNotExist:
+
+            tvobjs = Tvdbcache.objects.all().filter(localpath=path)
+
+            if len(tvobjs) > 1:
+                logger.info("Duplicate tvdb shows found in db %s" % dir)
+            elif len(tvobjs) == 0:
+
                 try:
                     showobj = tvdbapi[dir]
 

@@ -62,6 +62,16 @@ retry_on_errors = [
     ]
 
 def signal_term_handler(signal, frame):
+
+    import inspect
+
+    mod = inspect.getmodule(frame)
+
+    caller = mod.__name__
+    line = inspect.currentframe().f_back.f_lineno
+
+    print "Working on line numner %s %s" % (caller, line)
+
     for key, value in frame.f_locals.items():
         print "key: %s | val %s" % (key, value)
 
