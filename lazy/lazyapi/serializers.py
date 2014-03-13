@@ -1,6 +1,6 @@
 from django.forms import widgets
 from rest_framework import serializers
-from lazyweb.models import DownloadItem, Tvdbcache, Imdbcache
+from lazycore.models import DownloadItem, Tvdbcache, Imdbcache
 import logging
 import rest_framework.relations
 logger = logging.getLogger(__name__)

@@ -1,5 +1,0 @@
-./manage.py syncdb
-./manage.py migrate sitetree
-python manage.py sitetreeload --mode=replace lazyweb/fixtures/lazyweb_initialdata.json
-./manage.py migrate lazyweb 0001 --fake
-./manage.py migrate lazyweb

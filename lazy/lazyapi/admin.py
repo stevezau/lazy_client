@@ -1,2 +1,2 @@
 from django.contrib import admin
-from lazyweb.models import DownloadItem, Job
+from lazycore.models import DownloadItem, Job

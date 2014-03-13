@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load sitetree %}
+
+{% block submenu %}
+    {% sitetree_menu from "lazymenu" include "downloads" template "headersubmenu.html" %}
+{% endblock %}
+
+{% block content %}
+    <h1>Manual log</h1>
+    <div id="middle-outer">
+        <div id="middle-inner">
+                <div style="cursor:pointer" class="button">
+                        <span class="button_post" url="clear">Clear Log</span>
+                </div>
+                <a href="{% url 'admin:lazycore_downloaditem_change' object.id %}">
+                    <div style="cursor:pointer" class="button">
+                            <span class="button_page">Edit</span>
+                    </div>
+                </a>
+        </div>
+    </div>
+
+    {% for log in logs %}
+        <b>{{ log.date }}</b>   {{ log.message }}<br><br>
+    {% endfor %}
+
+{% endblock %}

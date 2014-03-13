@@ -1,11 +1,11 @@
-from lazyweb.models import DownloadItem, Imdbcache, Tvdbcache
+from lazycore.models import DownloadItem, Imdbcache, Tvdbcache
 from lazyapi.serializers import DownloadItemSerializer, ImdbItemSerializer, TvdbItemSerializer
 from rest_framework import mixins
 from rest_framework import generics
 import json
 from django.http import HttpResponse
-from lazyweb.utils.tvdb_api import Tvdb
-from lazyweb.exceptions import AlradyExists_Updated
+from lazycore.utils.tvdb_api import Tvdb
+from lazycore.exceptions import AlradyExists_Updated
 from rest_framework.response import Response
 from rest_framework import status
 import logging

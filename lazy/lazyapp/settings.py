@@ -30,7 +30,7 @@ TMPFOLDER = lazysettings.TMPFOLDER
 TVDB_ACCOUNTID = lazysettings.TVDB_ACCOUNTID
 
 MAX_SIM_DOWNLOAD_JOBS = lazysettings.MAX_SIM_DOWNLOAD_JOBS
-LFTP_THREAD_PER_DOWNLOAD = lazysettings.LFTP_THREAD_PER_DOWNLOAD
+THREADS_PER_DOWNLOAD = lazysettings.LFTP_THREAD_PER_DOWNLOAD
 
 # Where is your data path
 DATA_PATH = lazysettings.DATA_PATH
@@ -53,8 +53,6 @@ FTP_PORT = lazysettings.FTP_PORT
 FTP_USER = lazysettings.FTP_USER
 FTP_PASS = lazysettings.FTP_PASS
 
-LFTP_BIN = lazysettings.LFTP_BIN
-
 
 # Shouldnt need to change these
 MEDIA_ROOT = lazysettings.MEDIA_ROOT
@@ -63,10 +61,29 @@ MEDIA_URL = lazysettings.MEDIA_URL
 FLEXGET_APPROVED = lazysettings.FLEXGET_APPROVED
 FLEXGET_IGNORE = lazysettings.FLEXGET_IGNORE
 
+try:
+    XBMC_API_URLS = lazysettings.XBMC_API_URLS
+except:
+    pass
+
 
 #############################################
 #### !!!!DO NOT CHANGE ANYTHING BELOW!!!! ###
 #############################################
+
+FTP_TIMEOUT_RETRY_COUNT = 2
+FTP_TIMEOUT_RETRY_DELAY = 10  #Seconds
+FTP_TIMEOUT_WAIT = 90  #Seconds
+
+DOWNLOAD_RETRY_COUNT = 3
+DOWNLOAD_RETRY_DELAY = 15 #minutes
+
+FTP_IGNORE_FILES = (
+    '.*-MISSING',
+    '^\.$',
+    '^\.\.$',
+    '.+% Complete.+',
+)
 
 VIDEO_FILE_EXTS = (
     '.mkv',
@@ -221,8 +238,9 @@ INSTALLED_APPS = (
     'djcelery',
     'jquery_ui',
     'django_mobile',
-    'lazyweb',
+    'lazycore',
     'lazyapi',
+    'lazyui',
 )
 
 ##############
@@ -230,7 +248,7 @@ INSTALLED_APPS = (
 ##############
 BROKER_URL = "amqp://"
 CELERY_RESULT_BACKEND = "amqp://"
-CELERY_ACKS_LATE = True
+CELERY_ACKS_LATE = False
 CELERY_TRACK_STARTED = True
 CELERYD_PREFETCH_MULTIPLIER = 1
 
@@ -284,7 +302,7 @@ LOGGING = {
             'handlers': ['console', 'logfile'],
             'level': 'DEBUG',
         },
-        #'lazyweb': {
+        #'lazycore': {
         #    'handlers': ['console'],
         #    'level': 'DEBUG',
         #},
@@ -308,7 +326,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django_mobile.middleware.MobileDetectionMiddleware',
     'django_mobile.middleware.SetFlavourMiddleware',
-    'lazyapp.middleware.LoginRequiredMiddleware',
+    'lazyui.middleware.LoginRequiredMiddleware',
 )
 
 LOGIN_URL = '/lazy/login/'
@@ -381,7 +399,7 @@ TEMPLATE_LOADERS = (
 
 
 REST_FRAMEWORK = {
-    'EXCEPTION_HANDLER': 'lazyweb.utils.custom_exception_handler'
+    'EXCEPTION_HANDLER': 'lazycore.utils.custom_exception_handler'
 }
 
 __VERSION__ = "0.1"

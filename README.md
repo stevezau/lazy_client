@@ -90,7 +90,7 @@ Lazy Install
 
 5) Load menu data
 
-	$ python manage.py sitetreeload --mode=replace /home/media/lazy/lazyweb/fixtures/lazyweb_initialdata.json
+	$ python manage.py sitetreeload --mode=replace /home/media/lazy/lazyui/fixtures/lazyweb_initialdata.json
 
 6) Collect static files
 

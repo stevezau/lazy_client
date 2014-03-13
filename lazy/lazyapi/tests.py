@@ -9,7 +9,7 @@ from rest_framework.test import APITestCase
 from django.conf import settings
 from lazyapi.serializers import *
 
-from lazyweb.models import DownloadItem
+from lazycore.models import DownloadItem
 
 class APITestsDownloadItemTestCase(TestCase):
 
