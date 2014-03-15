@@ -1,0 +1,25 @@
+-http://fabric.readthedocs.org/ upgrade script
+
+-Handle TVShows with 2014.02.03 naming
+
+-mobile ui
+
+
+
+CLEANUP SECTION
+--delete via watcehd flag
+--show a list with the number of missing eps next to it
+--show never watched tvshows
+
+---update and Remove duplicate movies
+---update and Remove duplicate tv shows
+---Cleanup empty tvshow folders
+---cleanup empty movie folders
+
+
+Future
+XBMC NOTIFY
+- GUI.ShowNotification
+
+
+-change path updates
