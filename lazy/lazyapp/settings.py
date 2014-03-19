@@ -91,6 +91,11 @@ VIDEO_FILE_EXTS = (
     '.mp4',
 )
 
+TVSHOW_MULTI_REGEX = (
+
+)
+
+
 TVSHOW_REGEX = (
     '(?i).+\.S[0-9]+E[0-9]+.+',
     '(?i).+\.S[0-9]+\..+',
@@ -98,11 +103,12 @@ TVSHOW_REGEX = (
     '(?i).+\.[0-9]+x[0-9]+\..+',
     '(?i).+S[0-9]+E[0-9]+.+',
     '(?i).+Season [0-9]+ Episode [0-9]+',
+
 )
 
 TVSHOW_SEASON_MULTI_PACK_REGEX = (
-    "(?i).+\.S[0-9]+-[0-9]+\..+",
-    "(?i).+\.S[0-9]+-S[0-9]+\..+",
+    '(?i).+S([0-9]+)-S([0-9]+)[\. ].+',
+    '(?i).+S([0-9]+)-([0-9]+)[\. ].+',
 )
 
 TVSHOW_SPECIALS_REGEX = (

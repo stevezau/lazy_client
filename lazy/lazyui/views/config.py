@@ -7,7 +7,7 @@ import lazycore
 import os
 import re
 from django.core.urlresolvers import reverse_lazy
-from lazyui import utils
+from lazycore.utils import common
 from lazycore.models import TVShowMappings, Tvdbcache
 from lazyapp.forms import AddTVMapForm, AddApprovedShow, AddIgnoreShow
 from lazycore.utils.tvdb_api import Tvdb
@@ -156,7 +156,7 @@ class IgnoredCreate(FormView):
         # It should return an HttpResponse.
         #TODO: Make class for ignore items
         if not form.cleaned_data['show_name'] == "":
-            utils.ignore_show(form.cleaned_data['show_name'].replace(" ", "."))
+            common.ignore_show(form.cleaned_data['show_name'].replace(" ", "."))
         return super(IgnoredCreate, self).form_valid(form)
 
 
@@ -181,7 +181,7 @@ def delete_ignore(items):
     response = HttpResponse(content_type="text/plain")
 
     for item in items:
-        lazycore.utils.remove_ignore(item)
+        common.remove_ignore(item)
         response.write("Deleted %s\n" % item)
 
 
@@ -212,7 +212,7 @@ def update(request, type):
         if len(items) == 0:
             return HttpResponse("Nothing selected", content_type="text/plain", status=210)
         try:
-            function = utils.load_button_module("lazyui.views.config", type)
+            function = common.load_button_module("lazyui.views.config", type)
             return function(items)
         except Exception as e:
             logger.exception(e)

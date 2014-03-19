@@ -6,9 +6,9 @@ from django.forms import ValidationError
 import logging
 from django.core.urlresolvers import reverse
 from django.core.urlresolvers import reverse_lazy
-import lazycore
 from lazycore.models import DownloadItem, Tvdbcache
 from lazyui import utils
+from lazycore.utils import common
 from lazycore.utils.tvdb_api import Tvdb
 from lazyapp.forms import DownloadItemManualFixForm
 
@@ -207,14 +207,16 @@ def ignore(items):
     status = 200
     response = HttpResponse(content_type="text/plain")
 
+    from lazycore.utils.metaparser import MetaParser
+
     for item in items:
         try:
             dlitem = DownloadItem.objects.get(pk=item)
-            series_data = lazycore.utils.get_series_info(dlitem.title)
+            series_data = MetaParser(dlitem.title, type=MetaParser.TYPE_TVSHOW)
 
             if series_data:
-                ignoretitle = series_data.name.replace(" ", ".")
-                lazycore.utils.ignore_show(ignoretitle)
+                ignoretitle = series_data.details['series'].replace(" ", ".")
+                common.ignore_show(ignoretitle)
                 dlitem.delete()
                 response.write("Deleted and ignored %s\n" % ignoretitle)
             else:

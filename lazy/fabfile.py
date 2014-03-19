@@ -4,26 +4,37 @@ from fabric.contrib import django
 
 django.project('lazyapp')
 
+from lazycore.utils.queuemanager import QueueManager
 
 #first lets set the local path to ~/home/lazy
 
-
 def upgrade():
-    #first pull down github
+    #First stop all
+    stop_all()
+
+    #pull down github
     #git_pull()
 
     #now lets run any upgrade scripts
 
+
     install_reqs()
     collect_static()
     sync_db()
-    restart_apache()
+
+    start_all()
 
     update_version()
 
 def update_version():
     pass
 
+
+def stop_all():
+    print(green("Stopping services..."))
+    QueueManager.stop_queue()
+    local("sudo service supervisor stop")
+    local("sudo service apache2 stop")
 
 def restart():
     local('python manage.py sitetreeload --mode=replace /home/media/lazy/lazyweb/fixtures/lazyweb_initialdata.json')
@@ -52,6 +63,8 @@ def sync_db():
     local("python manage.py migrate")
 
 
-def restart_apache():
-    print(green("Restart apache"))
+def start_all():
+    print(green("Starting services"))
     local("sudo service apache2 restart")
+    local("sudo service supervisor start")
+    QueueManager.start_queue()

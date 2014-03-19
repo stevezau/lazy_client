@@ -1,21 +1,16 @@
+from lazycore.utils import common
+
 __author__ = 'Steve'
 import os, logging
-from lazycore import utils
 from lazycore.models import Tvdbcache
 from lazycore.utils.tvdb_api import Tvdb
-import re
-import os
 from lazycore.utils import ftpmanager
-import logging
 from datetime import datetime, timedelta
-import subprocess
 from lazycore.exceptions import *
 from lazycore.models import DownloadItem
-import sys
-import pprint
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
-
+from lazycore.utils.metaparser import MetaParser
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +33,6 @@ class TVShowScanner:
 
     #BOTH
     ALREADY_IN_QUEUE = "already_in_queue"
-
 
     missing_eps = None
     tvshow_path = None
@@ -140,8 +134,10 @@ class TVShowScanner:
                 for season_dir_file in os.listdir(season_path):
                     ep_file = os.path.join(season_path, season_dir_file)
 
-                    if utils.is_video_file(ep_file):
-                        season, eps = utils.get_ep_season_from_title(ep_file)
+                    if common.is_video_file(ep_file):
+                        parser = MetaParser(ep_file, type=MetaParser.TYPE_TVSHOW)
+                        season = parser.get_season()
+                        eps = parser.get_eps()
 
                         if season == cur_season:
                             for ep in eps:
@@ -351,7 +347,9 @@ class TVShowScanner:
                                 for torrent in torrents:
                                     #check season and ep number
                                     try:
-                                        pre_scan_season, pre_scan_eps = utils.get_ep_season_from_title(torrent)
+                                        parser = MetaParser(torrent, type=MetaParser.TYPE_TVSHOW)
+                                        pre_scan_season = parser.get_season()
+                                        pre_scan_eps = parser.get_eps()
 
                                         if pre_scan_season == cur_season_no:
                                             for pre_scan_ep in pre_scan_eps:
@@ -520,21 +518,23 @@ class TVShowScanner:
 
             ftp_rls_name = os.path.basename(ftp_rls)
 
-            if utils.match_str_regex(settings.TVSHOW_SPECIALS_REGEX, ftp_rls_name):
-                continue
+            parser = MetaParser(ftp_rls_name, type=MetaParser.TYPE_TVSHOW)
 
+            if 'special' in parser.details:
+                continue
 
             highest_match = 0
 
             for name in self.search_names:
-                similar = utils.compare_torrent_2_show(name, ftp_rls_name)
+                similar = common.compare_torrent_2_show(name, ftp_rls_name)
 
                 if similar > highest_match:
                     highest_match = similar
 
             if highest_match > 0.93:
 
-                ftp_season_no, ftp_ep_nos = utils.get_ep_season_from_title(ftp_rls_name)
+                ftp_season_no = parser.get_season()
+                ftp_ep_nos = parser.get_eps()
 
                 if int(ftp_season_no) == season:
                     for ftp_ep in ftp_ep_nos:
@@ -556,24 +556,22 @@ class TVShowScanner:
             if ftp_rls.startswith("/TVHD"):
                 continue
 
-            if utils.match_str_regex(settings.TVSHOW_SPECIALS_REGEX, ftp_rls_name):
+            parser = MetaParser(ftp_rls_name, type=MetaParser.TYPE_TVSHOW)
+
+            if 'special' in parser.details:
                 continue
 
-            #Check if this is a season pack
-            is_season_pack = utils.match_str_regex(settings.TVSHOW_SEASON_PACK_REGEX, ftp_rls_name)
-            is_multi_season_pack = utils.match_str_regex(settings.TVSHOW_SEASON_MULTI_PACK_REGEX, ftp_rls_name)
-
-            if is_season_pack or is_multi_season_pack:
+            if parser.details['type'] == "season_pack" or parser.details['type'] == "season_pack_multi":
                 highest_match = 0
 
                 for name in self.search_names:
-                    similar = utils.compare_torrent_2_show(name, ftp_rls_name)
+                    similar = common.compare_torrent_2_show(name, ftp_rls_name)
 
                     if similar > highest_match:
                         highest_match = similar
 
                 if highest_match > 0.93:
-                    ftp_season_nos = utils.get_season_from_title(ftp_rls_name)
+                    ftp_season_nos = parser.get_seasons()
 
                     #multi seasons?
                     if ftp_season_nos:
@@ -644,7 +642,9 @@ class TVShowScanner:
 
                 #TODO FIND THE BEST MATCH HERE..
                 for torrent in torrents:
-                    found_seasons = utils.get_season_from_title(torrent)
+                    parser = MetaParser(torrent, type=MetaParser.TYPE_TVSHOW)
+
+                    found_seasons = parser.get_seasons()
 
                     if season in found_seasons:
                         logger.debug("looks like we found the season (season prescan scan) %s in %s" % (season, torrent))
@@ -689,7 +689,9 @@ class TVShowScanner:
                 smallestSize = 0
 
                 for torrent in torrentSeasons:
-                    seasons = utils.get_season_from_title(torrent)
+
+                    parser = MetaParser(torrent, type=MetaParser.TYPE_TVSHOW)
+                    seasons = parser.get_seasons()
 
                     if len(seasons) == 1:
                         bestMatch = torrent
@@ -708,7 +710,9 @@ class TVShowScanner:
                     seasonPath = ftpmanager.download_torrent(site, bestMatch)
 
                     if seasonPath is not False and seasonPath != '':
-                        got_seasons = utils.get_season_from_title(bestMatch)
+
+                        parser = MetaParser(bestMatch, type=MetaParser.TYPE_TVSHOW)
+                        got_seasons = parser.get_seasons()
 
                         if len(got_seasons) == 1:
                             self._add_new_download(seasonPath, onlyget, requested=True)
@@ -744,7 +748,7 @@ class TVShowScanner:
             highest_match = 0
 
             for name in self.search_names:
-                similar = utils.compare_torrent_2_show(name, entry.title)
+                similar = common.compare_torrent_2_show(name, entry.title)
 
                 if similar > highest_match:
                     highest_match = similar
@@ -752,7 +756,9 @@ class TVShowScanner:
 
             if highest_match > 0.93:
 
-                entry_season, entry_eps = utils.get_ep_season_from_title(entry.title)
+                parser = entry.metaparser()
+                entry_season = parser.get_season()
+                entry_eps = parser.get_eps()
 
                 if entry_season == season:
                     for epNo in entry_eps:
@@ -766,10 +772,12 @@ class TVShowScanner:
         #lets check if its in the db already
         for entry in existing_seasons_in_db:
 
-            if utils.match_str_regex(settings.TVSHOW_SPECIALS_REGEX, entry.title):
+            parser = entry.metaparser()
+
+            if 'special' in parser.details:
                 continue
 
-            existing_seasons = utils.get_season_from_title(entry.title)
+            existing_seasons = parser.get_seasons()
 
             for existing_season in existing_seasons:
                 if existing_season == season:
@@ -846,18 +854,19 @@ class TVShowScanner:
 
         for entry in items:
             #loop through the series names for a match
-
             highest_match = 0
 
             for name in self.search_names:
-                similar = utils.compare_torrent_2_show(name, entry.title)
+                similar = common.compare_torrent_2_show(name, entry.title)
 
                 if similar > highest_match:
                     highest_match = similar
 
             if highest_match >= 0.93:
                 #IS this just a season
-                if utils.match_str_regex(settings.TVSHOW_SEASON_PACK_REGEX, entry.title) or utils.match_str_regex(settings.TVSHOW_SEASON_MULTI_PACK_REGEX, entry.title):
+                type = entry.metaparser().details['type']
+
+                if type == "season_pack" or type == "season_pack_multi":
                     found.append(entry)
 
         return found

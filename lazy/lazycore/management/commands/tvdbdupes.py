@@ -2,14 +2,10 @@ from __future__ import division
 from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 from lazycore.models import DownloadItem, Tvdbcache
-import logging, os
-from decimal import Decimal
-from datetime import datetime
-import ftplib
+import logging
+import os
 from django.conf import settings
-from django.db.models import Q
 from lazycore.utils.tvdb_api import Tvdb
-from django.core.exceptions import ObjectDoesNotExist
 
 logger = logging.getLogger(__name__)
 

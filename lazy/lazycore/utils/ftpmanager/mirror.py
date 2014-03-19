@@ -9,6 +9,7 @@ import time
 from datetime import datetime
 from celery import current_task
 from lazycore import utils
+from lazycore.utils import common
 
 
 logger = logging.getLogger(__name__)
@@ -196,19 +197,19 @@ class FTPMirror:
                     if local_size == 0:
                         #try again
                         dlitem.log("Will download %s (%s bytes)" % (short_filename, remote_size))
-                        f = utils.open_file(filename, "wb")
+                        f = common.open_file(filename, "wb")
 
                     if local_size > remote_size:
                         dlitem.log("Strange, local size was bigger then remote, re-downloading %s" % short_filename)
-                        f = utils.open_file(filename, "wb")
+                        f = common.open_file(filename, "wb")
                     else:
                         #lets resume
                         dlitem.log("Partial download %s (%s bytes), lets resume from %s bytes" % (short_filename, local_size, local_size))
-                        f = utils.open_file(filename, "ab")
+                        f = common.open_file(filename, "ab")
 
                 else:
                     dlitem.log("Will download %s (%s bytes)" % (short_filename, remote_size))
-                    f = utils.open_file(filename, "wb")
+                    f = common.open_file(filename, "wb")
 
                 c.setopt(pycurl.RESUME_FROM, local_size)
                 c.fp = f
@@ -234,7 +235,7 @@ class FTPMirror:
                 for c in ok_list:
                     logger.debug("Closing file %s" % c.fp)
 
-                    utils.close_file(c.fp)
+                    common.close_file(c.fp)
 
                     #Did we download the file properly???
                     success = False
@@ -261,7 +262,7 @@ class FTPMirror:
 
                 for c, errno, errmsg in err_list:
 
-                    utils.close_file(c.fp)
+                    common.close_file(c.fp)
                     c.fp = None
                     self.m.remove_handle(c)
 
@@ -328,7 +329,7 @@ class FTPMirror:
         # Cleanup
         for c in self.m.handles:
             if c.fp is not None:
-                utils.close_file(c.fp)
+                common.close_file(c.fp)
                 c.fp = None
             c.close()
         self.m.close()

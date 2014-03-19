@@ -4,10 +4,9 @@ import os
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect, HttpResponse
 from django.conf import settings
-
+from lazycore.utils import common
 from lazyapp.forms import Find, FindMissing
 from lazycore.utils import ftpmanager
-from lazyui import utils
 from lazycore.models import DownloadItem, Job
 from lazycore.utils.missingscanner import MissingScanner
 
@@ -247,7 +246,7 @@ def update(request, type):
         if len(items) == 0:
             return HttpResponse("Nothing selected", content_type="text/plain", status=210)
         try:
-            function = utils.load_button_module("lazyui.views.other", type)
+            function = common.load_button_module("lazyui.views.other", type)
             return function(items)
         except Exception as e:
             logger.exception(e)

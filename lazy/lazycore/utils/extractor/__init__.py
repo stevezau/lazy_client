@@ -1,18 +1,12 @@
 from __future__ import division
-from optparse import make_option
-from django.core.management.base import BaseCommand, CommandError
 from lazycore.models import DownloadItem
 import logging, os
-from decimal import Decimal
-from datetime import datetime
-import ftplib
 import re, shutil
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
+from lazycore.utils.common import match_str_regex
 from lazycore.utils.extractor.movie import MovieExtractor
 from lazycore.utils.extractor.tvshow import TVExtractor
-from lazycore import utils
-from lazycore.utils import xbmc
 from django.core.cache import cache
 
 
@@ -52,7 +46,7 @@ class DownloadItemExtractor():
             if self.download_item.section == "REQUESTS":
                 is_tv_show = False
 
-                if utils.match_str_regex(settings.TVSHOW_REGEX, self.download_item.title) or re.search("(?i).+\.[P|H]DTV\..+", self.download_item.title):
+                if match_str_regex(settings.TVSHOW_REGEX, self.download_item.title) or re.search("(?i).+\.[P|H]DTV\..+", self.download_item.title):
                     is_tv_show = True
 
                 if is_tv_show:

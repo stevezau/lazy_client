@@ -1,9 +1,9 @@
 import re, subprocess, shutil, os, logging, time
+from lazycore.utils import common
 from lazycore.utils.tvdb_api import Tvdb
 from django.conf import settings
-from lazycore import utils
 from lazycore.models import DownloadItem, TVShowMappings, Tvdbcache
-import difflib
+from lazycore.utils.metaparser import MetaParser
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,6 @@ class TVExtractor:
 
         ep = None
         season = None
-        season = None
 
         if 'ep' in file:
             ep = file['ep']
@@ -32,10 +31,10 @@ class TVExtractor:
         if ep and season:
             #Does it already exist?
             logger.debug("Checking if season/ep already exist within %s" % os.path.dirname(dst))
-            existing_files = utils.find_ep_season(os.path.dirname(dst), season, ep)
+            existing_files = common.find_ep_season(os.path.dirname(dst), season, ep)
         else:
             logger.debug("Checking if files already exist within %s" % os.path.dirname(dst))
-            existing_files = utils.find_exist_quality(dst)
+            existing_files = common.find_exist_quality(dst)
 
         download_item.log("Found %s existing files" % len(existing_files))
 
@@ -45,7 +44,7 @@ class TVExtractor:
             #lets find the best one
             for f in existing_files:
                 if b_file:
-                    b_file = utils.compare_best_vid_file(b_file, f)
+                    b_file = common.compare_best_vid_file(b_file, f)
                 else:
                     b_file = f
         else:
@@ -56,15 +55,15 @@ class TVExtractor:
         #now lets figure out if this release is a better quality
         logger.debug(src)
         logger.debug(b_file)
-        logger.debug(utils.compare_best_vid_file(src, b_file))
+        logger.debug(common.compare_best_vid_file(src, b_file))
 
-        if src == utils.compare_best_vid_file(src, b_file):
+        if src == common.compare_best_vid_file(src, b_file):
             #This is the best quality, lets remove the others
             for delfile in existing_files:
                 os.remove(delfile)
 
             #now lets do the move
-            utils.create_path(os.path.abspath(os.path.join(dst, '..')))
+            common.create_path(os.path.abspath(os.path.join(dst, '..')))
             shutil.move(src, dst)
             download_item.log('Moving file: ' + os.path.basename(src) + ' to: ' + dst)
         else:
@@ -78,7 +77,7 @@ class TVExtractor:
 
         download_item.log("Start extraction")
 
-        if os.path.isdir(download_item.localpath) and utils.match_str_regex(settings.SAMPLES_REGEX, download_item.title):
+        if os.path.isdir(download_item.localpath) and common.match_str_regex(settings.SAMPLES_REGEX, download_item.title):
             download_item.log("skipping sample folder %s" % download_item.title)
             return True
 
@@ -89,7 +88,7 @@ class TVExtractor:
 
         if os.path.isdir(download_item.localpath):
 
-            if utils.match_str_regex(settings.TVSHOW_SEASON_MULTI_PACK_REGEX, download_item.title) and not has_override:
+            if common.match_str_regex(settings.TVSHOW_SEASON_MULTI_PACK_REGEX, download_item.title) and not has_override:
 
                 download_item.log("Multi Season pack detected")
 
@@ -122,7 +121,7 @@ class TVExtractor:
                 if os.path.exists(download_item.localpath):
                     return True
 
-            elif utils.match_str_regex(settings.TVSHOW_SEASON_PACK_REGEX, download_item.title) and '.special.' not in download_item.title.lower() and not has_override:
+            elif common.match_str_regex(settings.TVSHOW_SEASON_PACK_REGEX, download_item.title) and '.special.' not in download_item.title.lower() and not has_override:
                 download_item.log("Season pack detected")
 
                 #Lets build up the first folder
@@ -172,24 +171,24 @@ class TVExtractor:
                     return True
 
             else:
-                code = utils.unrar(download_item.localpath)
+                code = common.unrar(download_item.localpath)
 
                 #Is this part of a season pack?
                 parent_dir = os.path.basename(os.path.dirname(download_item.localpath))
 
                 if code == 0:
-                    src_files = utils.get_video_files(download_item.localpath)
+                    src_files = common.get_video_files(download_item.localpath)
                 else:
                     download_item.log('failed extract err %s, lets check the sfv' % code)
-                    sfvck = utils.check_crc(download_item)
+                    sfvck = common.check_crc(download_item)
 
                     download_item.log("SFV CHECK " + str(sfvck))
 
                     if sfvck:
                         #SFV passed, lets get vid files.. maybe it was extracted previously
-                        src_files = utils.get_video_files(download_item.localpath)
+                        src_files = common.get_video_files(download_item.localpath)
                     else:
-                        if utils.match_str_regex(settings.TVSHOW_SEASON_PACK_REGEX, parent_dir) or utils.match_str_regex(settings.TVSHOW_SEASON_MULTI_PACK_REGEX, parent_dir):
+                        if common.match_str_regex(settings.TVSHOW_SEASON_PACK_REGEX, parent_dir) or common.match_str_regex(settings.TVSHOW_SEASON_MULTI_PACK_REGEX, parent_dir):
                             download_item.log("SFV check had errors, we cant set this to pending or it will download the whole thing again, it has been added as a seperate download")
 
                             mv_path = settings.TVHD_TEMP
@@ -228,11 +227,11 @@ class TVExtractor:
 
         show_vid_file = src_files[0]
 
-        if utils.match_str_regex(settings.TVSHOW_REGEX, download_item.title) or download_item.tvdbid is not None:
+        if common.match_str_regex(settings.TVSHOW_REGEX, download_item.title) or download_item.tvdbid is not None:
             #This is a normal tvshow..
             title = download_item.title
 
-            if utils.match_str_regex(settings.TVSHOW_SPECIALS_REGEX, download_item.title) or utils.match_str_regex(settings.TVSHOW_SEASON_PACK_REGEX, download_item.title):
+            if common.match_str_regex(settings.TVSHOW_SPECIALS_REGEX, download_item.title) or common.match_str_regex(settings.TVSHOW_SEASON_PACK_REGEX, download_item.title):
                 if re.match('(?i).+S[0-9][0-9]E[0-9][0-9].+', download_item.title):
                     pass
                 else:
@@ -247,20 +246,20 @@ class TVExtractor:
                         raise Exception(msg)
 
             #We need to strip out nat geo etc from docos title
-            if utils.match_str_regex(settings.DOCOS_REGEX, download_item.title):
-                title = utils.replace_regex(settings.DOCOS_REGEX, download_item.title, "")
-                parser = utils.get_series_info(title)
+            if common.match_str_regex(settings.DOCOS_REGEX, download_item.title):
+                title = common.replace_regex(settings.DOCOS_REGEX, download_item.title, "")
+                parser = MetaParser(title, type=MetaParser.TYPE_TVSHOW)
             else:
-                parser = utils.get_series_info(title)
+                parser = MetaParser(title, type=MetaParser.TYPE_TVSHOW)
 
             series_name = None
 
             if parser:
-                series_name = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", parser.name).strip()
+                series_name = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", parser.details['series']).strip()
                 series_name = re.sub(" +", " ", series_name).strip()
 
-                series_season = str(parser.season).zfill(2)
-                series_ep = str(parser.episode).zfill(2)
+                series_season = str(parser.details['season']).zfill(2)
+                series_ep = str(parser.details['episodeNumber']).zfill(2)
 
             try:
                 showmap = TVShowMappings.objects.get(title=series_name.lower())
@@ -362,7 +361,7 @@ class TVExtractor:
                         if ep_num != '':
                             ep_id += "E" + ep_num
 
-                season_folder = utils.find_season_folder(dest_folder, int(series_season))
+                season_folder = common.find_season_folder(dest_folder, int(series_season))
 
                 if not season_folder:
                     season_folder = "Season" + str(series_season).lstrip("0")
@@ -383,7 +382,7 @@ class TVExtractor:
 
                 dest_folder = dest_folder.strip()
 
-                utils.create_path(dest_folder)
+                common.create_path(dest_folder)
 
                 ep_name = series_name + ' - ' + 'S' + str(series_season) + ep_id + ' - ' + series_ep_name
 
@@ -399,10 +398,11 @@ class TVExtractor:
                 return True
 
         elif re.match('(?i)^(History\.Channel|Discovery\.Channel|National\.Geographic).+', download_item.title):
-            #We have a doco, we treat the title as a movie
-            series_name, __ = utils.get_movie_info(download_item.title)
+            #We have a doco
+            parser = download_item.metaparser()
+            series_name = parser.details['series']
 
-            doco_folder = utils.get_regex(series_name, '(?i)(National Geographic Wild|National Geographic|Discovery Channel|History Channel)', 1)
+            doco_folder = common.get_regex(series_name, '(?i)(National Geographic Wild|National Geographic|Discovery Channel|History Channel)', 1)
 
             if not doco_folder:
                 raise Exception('Unable to figure out the type of doco')
@@ -410,7 +410,7 @@ class TVExtractor:
             dest_folder = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", os.path.abspath(dest_folder + os.sep + doco_folder + ' Docos'))
             dest_folder = re.sub(" +", " ", dest_folder)
 
-            utils.create_path(dest_folder)
+            common.create_path(dest_folder)
 
             series_name = re.sub("(?i)National Geographic|Discovery Channel|History Channel", "", series_name).strip()
 

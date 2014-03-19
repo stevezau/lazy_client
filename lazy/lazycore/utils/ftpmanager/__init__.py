@@ -4,7 +4,6 @@ Created on 06/04/2012
 @author: Steve
 '''
 from __future__ import division
-from django.core.cache import cache
 import logging
 import os
 import re
@@ -12,9 +11,9 @@ from ftplib import FTP_TLS
 from django.conf import settings
 from lazycore import utils
 import time
-from celery import current_task
+from lazycore.utils import common
+from lazycore.utils.metaparser import MetaParser
 from lazycore.exceptions import FTPException
-import ftplib
 
 logger = logging.getLogger(__name__)
 
@@ -113,7 +112,7 @@ def listdir():
         file_type = line_values[0].strip()
         filename = line_values[-1].lstrip()
 
-        if utils.match_str_regex(settings.FTP_IGNORE_FILES, filename):
+        if common.match_str_regex(settings.FTP_IGNORE_FILES, filename):
             continue
 
         # Get the file size.
@@ -133,7 +132,7 @@ def get_files_for_download(folder):
     size = 0
 
     #TODO: Improve this checking..
-    if utils.is_video_file(folder):
+    if common.is_video_file(folder):
         #we have a file
         size = get_size(folder)
         file_found = [folder, size]
@@ -236,26 +235,30 @@ def get_required_folders_for_multi(folder, onlyget):
                 continue
 
         for file in files:
+
             #first lets check if something we might be interested in
             if len(onlyget_clean_eps) == 0 and len(onlyget_clean_seasons) == 0:
                 break
 
+            parser = (file[0])
 
-            if utils.is_video_file(file[0]):
-                found_ep_season, found_ep = utils.get_ep_season_from_title(file[0])
+            if 'container' in parser.details:
+
+                #we have a file
+                found_eps = parser.get_eps()
+                found_ep_season = parser.get_season()
 
                 if found_ep_season in onlyget_clean_eps.keys():
                     eps = onlyget_clean_eps[found_ep_season]
 
-                    if found_ep in eps:
+                    if found_eps in eps:
                         onlyget_clean_eps[found_ep_season].remove(ep)
 
-                    if len(found_ep) > 1:
+                    if len(found_eps) > 1:
                         #multi ep
-
                         process = False
 
-                        for ep in found_ep:
+                        for ep in found_eps:
                             if ep in eps:
                                 process = True
 
@@ -265,19 +268,19 @@ def get_required_folders_for_multi(folder, onlyget):
                             size += file[1]
                             urls = urls + file_found
 
-                            for ep in found_ep:
+                            for ep in found_eps:
                                 try:
                                     onlyget_clean_eps[found_ep_season].remove(ep)
                                 except:
                                     pass
 
-                    elif len(found_ep) == 1:
-                        if found_ep[0] in eps:
+                    elif len(found_eps) == 1:
+                        if found_eps[0] in eps:
                             logger.debug("We found a match, we must download this! %s" % file[0])
                             file_found = [(str(os.path.join(curdir, file[0])), file[1])]
                             size += file[1]
                             urls = urls + file_found
-                            onlyget_clean_eps[found_ep_season].remove(found_ep[0])
+                            onlyget_clean_eps[found_ep_season].remove(found_eps[0])
 
         #Lets check if required items are in folders
         for dir in dirs:
@@ -287,14 +290,15 @@ def get_required_folders_for_multi(folder, onlyget):
             dir = dir[0]
             full_dir = os.path.join(curdir, dir)
 
-            print full_dir
-            print dir
+            parser = MetaParser(file[0], type=MetaParser.TYPE_TVSHOW)
+
+            type = parser.details['type']
 
             #multi season pack
-            if utils.match_str_regex(settings.TVSHOW_SEASON_MULTI_PACK_REGEX, dir):
+            if type == "season_pack_multi":
                 logger.debug("Multi Season pack detected %s" % dir)
 
-                seasons = utils.get_season_from_title(dir)
+                seasons = parser.get_seasons()
 
                 #first do we even want to bother
                 process = False
@@ -308,10 +312,10 @@ def get_required_folders_for_multi(folder, onlyget):
                     skippath.append(full_dir)
                     continue
 
-            elif utils.match_str_regex(settings.TVSHOW_SEASON_PACK_REGEX, dir):
+            elif type == "season_pack":
                 logger.debug("Season pack detected %s" % dir)
 
-                seasons = utils.get_season_from_title(dir)
+                seasons = parser.get_seasons()
 
                 for season in seasons:
                     if season in onlyget_clean_seasons:
@@ -322,22 +326,23 @@ def get_required_folders_for_multi(folder, onlyget):
                         size += found_size
                         urls = urls + found_urls
 
-            elif utils.match_str_regex(settings.TVSHOW_REGEX, dir):
+            elif type == "episode":
                 logger.debug("We found an ep %s" % dir)
                 skippath.append(full_dir)
 
                 #first lets check if something we might be interested in
-                found_ep_season, found_ep = utils.get_ep_season_from_title(dir)
+                found_eps = parser.get_eps()
+                found_ep_season = parser.get_season()
 
                 if found_ep_season in onlyget_clean_eps.keys():
                     eps = onlyget_clean_eps[found_ep_season]
 
-                    if len(found_ep) > 1:
+                    if len(found_eps) > 1:
                         #multi ep
 
                         process = False
 
-                        for ep in found_ep:
+                        for ep in found_eps:
                             if ep in eps:
                                 process = True
 
@@ -348,20 +353,20 @@ def get_required_folders_for_multi(folder, onlyget):
                             size += found_size
                             urls = urls + found_urls
 
-                            for ep in found_ep:
+                            for ep in found_eps:
                                 try:
                                     onlyget_clean_eps[found_ep_season].remove(ep)
                                 except:
                                     pass
 
-                    elif len(found_ep) == 1:
-                        if found_ep[0] in eps:
+                    elif len(found_eps) == 1:
+                        if found_eps[0] in eps:
                             logger.debug("We found a match, we must download this! %s" % dir)
                             skippath.append(full_dir)
                             found_urls, found_size = get_files_for_download(full_dir)
                             size += found_size
                             urls = urls + found_urls
-                            eps.remove(found_ep[0])
+                            eps.remove(found_eps[0])
 
     for season, eps in onlyget_clean_eps.copy().iteritems():
         if len(eps) == 0:
@@ -414,7 +419,7 @@ def getTVTorrentsPreScan(search_names):
                 #found a torrent..
                 torrent = match.group(1).strip()
 
-                ratio = utils.compare_torrent_2_show(show_name, torrent)
+                ratio = common.compare_torrent_2_show(show_name, torrent)
 
                 if ratio >= 0.93:
                     logger.debug("Adding torrent to prescan %s" % torrent)
@@ -424,6 +429,8 @@ def getTVTorrentsPreScan(search_names):
 
 #TODO: FIX THIS up
 def getTVTorrents(site, search_names, season, ep):
+
+    from lazycore.models import DownloadItem
 
     logger.info("Searching %s torrents for   %s S%s E%s" % (site, search_names[0], str(season).zfill(2), str(ep).zfill(2)))
 
@@ -450,12 +457,15 @@ def getTVTorrents(site, search_names, season, ep):
                 #found a torrent..
                 torrent = match.group(1).strip()
 
-                ratio = utils.compare_torrent_2_show(show_name, torrent)
+                ratio = common.compare_torrent_2_show(show_name, torrent)
 
                 if ratio >= 0.93:
                     logger.debug("Potential found match %s" % match.group(1))
 
-                    torSeason, torEps = utils.get_ep_season_from_title(match.group(1))
+                    parser = MetaParser(match.group(1), type=MetaParser.TYPE_TVSHOW)
+
+                    torSeason = parser.get_season()
+                    torEps = parser.get_eps()
 
                     try:
                         if int(torSeason) == season:
@@ -502,12 +512,12 @@ def getTVTorrentsSeason(site, show_names, season=0):
                 #found a torrent..
                 torrent = match.group(1).strip()
 
-                ratio = utils.compare_torrent_2_show(show_name, torrent)
+                ratio = common.compare_torrent_2_show(show_name, torrent)
 
                 if ratio >= 0.93:
                     #its for this show..
 
-                    if utils.match_str_regex(settings.TVSHOW_SPECIALS_REGEX, torrent):
+                    if common.match_str_regex(settings.TVSHOW_SPECIALS_REGEX, torrent):
                         continue
 
                     try:
@@ -517,7 +527,8 @@ def getTVTorrentsSeason(site, show_names, season=0):
                             #we want to return it all!!
                             torrents.append(torrent)
                         else:
-                            torSeasons = utils.get_season_from_title(line.strip())
+                            parser = MetaParser(line.strip(), type=MetaParser.TYPE_TVSHOW)
+                            torSeasons = parser.get_seasons()
 
                             if season in torSeasons:
                                 logger.info("Found match %s" % torrent)
@@ -548,9 +559,9 @@ def download_torrent(site, torrent, gettv=False):
 
     for line in ftpresult.split("\n"):
 
-        path_found = utils.get_regex(line, "200- Finished grabbing Torrent file. Now starting the torrent, when completed the files will show up under (.+)", 1)
-        error_found = utils.get_regex(line, "200- ERROR: (.+)", 1)
-        already_downloaded_path = utils.get_regex(line, "ERROR: Torrent already downloaded here: (.+)", 1)
+        path_found = common.get_regex(line, "200- Finished grabbing Torrent file. Now starting the torrent, when completed the files will show up under (.+)", 1)
+        error_found = common.get_regex(line, "200- ERROR: (.+)", 1)
+        already_downloaded_path = common.get_regex(line, "ERROR: Torrent already downloaded here: (.+)", 1)
 
         if path_found and path_found != "":
             path = path_found
@@ -581,7 +592,7 @@ def search_torrents(search):
         process_tors = False
 
         for line in ftpresult.split("\n"):
-            error = utils.get_regex(line, "[0-9]+- ERROR: (.+)", 1)
+            error = common.get_regex(line, "[0-9]+- ERROR: (.+)", 1)
 
             if error:
                 if "errors" in cur_site:
@@ -590,19 +601,19 @@ def search_torrents(search):
                     cur_site['errors'] = []
                     cur_site['errors'].append(error)
 
-            found_site = utils.get_regex(line, '.+===.+Matches Found on\ ([A-Za-z\-0-9]+)', 1)
+            found_site = common.get_regex(line, '.+===.+Matches Found on\ ([A-Za-z\-0-9]+)', 1)
 
             if found_site:
                 #found a new site
                 cur_site = {}
                 results[found_site] = cur_site
 
-            if utils.match_str_regex(['200- TORRENT.+SIZE.+'], line):
+            if common.match_str_regex(['200- TORRENT.+SIZE.+'], line):
                 process_tors = True
 
             if process_tors:
-                found_torrent = utils.get_regex(line, '200- (.+)\ ([0-9]+\.[0-9]+.[MBGB]+).+', 1)
-                found_size = utils.get_regex(line, '200- (.+)\ ([0-9]+\.[0-9]+.[MBGB]+).+', 2)
+                found_torrent = common.get_regex(line, '200- (.+)\ ([0-9]+\.[0-9]+.[MBGB]+).+', 1)
+                found_size = common.get_regex(line, '200- (.+)\ ([0-9]+\.[0-9]+.[MBGB]+).+', 2)
 
                 if found_size:
                     found_size = found_size.strip()

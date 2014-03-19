@@ -1,9 +1,9 @@
 from lazycore.models import DownloadItem
 import re, logging, os
-from lazycore import utils
 from django.conf import settings
 import shutil
 from flexget.utils.imdb import ImdbSearch, ImdbParser
+from lazycore.utils import common
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +15,7 @@ class MovieExtractor():
 
     def extract(self, download_item, dest_folder):
 
-        if utils.match_str_regex(settings.MOVIE_PACKS_REGEX, download_item.title) and '.special.' not in download_item.title.lower():
+        if common.match_str_regex(settings.MOVIE_PACKS_REGEX, download_item.title) and '.special.' not in download_item.title.lower():
                 download_item.log("Movie pack detected")
 
                 #Lets build up the first folder
@@ -62,19 +62,19 @@ class MovieExtractor():
         dest_folder = os.path.abspath(dest_folder)
 
         if os.path.isdir(download_item.localpath):
-            code = utils.unrar(download_item.localpath)
+            code = common.unrar(download_item.localpath)
 
             if code == 0:
-                src_files = utils.get_video_files(download_item.localpath)
+                src_files = common.get_video_files(download_item.localpath)
             else:
                 #failed.. lets do sfv check
                 download_item.log('failed extract, lets check the sfv')
-                sfvck = utils.check_crc(download_item)
+                sfvck = common.check_crc(download_item)
 
                 download_item.log("SFV CHECK " + str(sfvck))
 
                 if(sfvck):
-                    src_files = utils.get_video_files(download_item.localpath)
+                    src_files = common.get_video_files(download_item.localpath)
                 else:
                     #reset it
                     msg = "CRC Errors in the download, deleted the errors and resetting back to the queue: %s" % code
@@ -118,7 +118,11 @@ class MovieExtractor():
             logger.error(msg)
             raise Exception(msg)
 
-        movie_name, movie_year = utils.get_movie_info(os.path.splitext(os.path.basename(download_item.localpath))[0])
+        parser = download_item.metaparser()
+        movie_name = parser.details['Title']
+
+        if 'year' in parser.details:
+            movie_year = parser.details['year']
 
         if movie_year:
             #We have all the info we need. Move the files.
@@ -163,7 +167,7 @@ class MovieExtractor():
                 if download_item.section == "XVID":
                     #Movie alraedy exists.. if this is an avi file and its an mkv then dont replace with a lower quality
 
-                    existing_vid_files = utils.get_video_files(dest_folder)
+                    existing_vid_files = common.get_video_files(dest_folder)
 
                     if len(existing_vid_files) > 0:
                         download_item.log("Found an existing movie folder, lets make sure we are not replacing with a lower xvid quality")
@@ -178,5 +182,5 @@ class MovieExtractor():
                             download_item.log('Deleting existing movie folder as its a lower quality ' + dest_folder)
                             shutil.rmtree(dest_folder)
 
-            src_files = utils.setup_dest_files(src_files, dest_folder, movie_name + ' (' + str(movie_year) + ')')
-            utils.move_files(src_files)
+            src_files = common.setup_dest_files(src_files, dest_folder, movie_name + ' (' + str(movie_year) + ')')
+            common.move_files(src_files)

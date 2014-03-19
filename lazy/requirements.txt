@@ -12,3 +12,4 @@ django-celery-transactions
 pillow
 flower
 fabric
+guessit

@@ -7,10 +7,10 @@ from decimal import Decimal
 from datetime import datetime
 from django.conf import settings
 import ftplib
-from lazycore import utils
 from djcelery.app import current_app
 from celery.app.control import Control
 import time
+from lazycore.utils import common
 
 
 LOCK_EXPIRE = 60 * 5  # Lock expires in 5 minutes
@@ -108,7 +108,7 @@ class QueueManager():
                     dlItem.save()
 
                 if status == DownloadItem.JOB_FINISHED:
-                    localsize = utils.get_size(dlItem.localpath)
+                    localsize = common.get_size(dlItem.localpath)
                     dlItem.log("Job has finished")
                     dlItem.log('Local size of folder is: %s' % localsize)
 

@@ -2,14 +2,11 @@ from __future__ import division
 from django.db import models
 from django.dispatch import receiver
 from django.db.models.signals import pre_save, post_save
-from django.dispatch import receiver
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 import logging, os, re
 from lazycore.utils.tvdb_api import Tvdb
 from datetime import datetime
-from lazycore import utils
-from urllib import urlretrieve
 from flexget.utils.imdb import ImdbSearch, ImdbParser
 from lazycore.exceptions import AlradyExists_Updated, AlradyExists
 from django.core.files import File
@@ -17,14 +14,10 @@ from django.core.files.temp import NamedTemporaryFile
 import urllib2
 from lazycore.utils import ftpmanager
 import inspect
-import pprint
 from celery.result import AsyncResult
-from django.db import models
 from lazycore.exceptions import DownloadException
 import time
-import ftplib
 from lazycore.utils.jsonfield.fields import JSONField
-from django.core.cache import cache
 from celery.task.control import revoke
 from lazycore.utils.ftpmanager.mirror import FTPMirror
 
@@ -114,6 +107,18 @@ class DownloadItem(models.Model):
     epoverride = models.IntegerField(default=0, blank=True, null=True)
     seasonoverride = models.IntegerField(default=0, blank=True, null=True)
     onlyget = JSONField(blank=True, null=True)
+
+    def metaparser(self):
+        from lazycore.utils.metaparser import MetaParser
+
+        if self.section == "HD" or self.section == "XVID":
+            parser = MetaParser(self.title, type=MetaParser.TYPE_MOVIE)
+        elif self.section == "TVHD":
+            parser = MetaParser(self.title, type=MetaParser.TYPE_TVSHOW)
+        else:
+            parser = MetaParser(self.title)
+
+        return parser
 
     def download(self):
 
@@ -215,7 +220,8 @@ class DownloadItem(models.Model):
             if task:
                 result = task.result
                 if 'speed' in result:
-                    speed = utils.bytes2human(result['speed'], "%(value).1f %(symbol)s/sec")
+                    from lazycore.utils import common
+                    speed = common.bytes2human(result['speed'], "%(value).1f %(symbol)s/sec")
 
 
         return speed
@@ -723,25 +729,23 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
 
     tvdbapi = Tvdb()
 
-    is_tv_show = utils.match_str_regex(settings.TVSHOW_REGEX, instance.title)
+    type = instance.get_type()
 
     #must be a tvshow
-    if is_tv_show:
+    if type == DownloadItem.TYPE_TVSHOW:
         if instance.tvdbid_id is None:
             logger.debug("Looks like we are working with a TVShow")
 
             #We need to try find the series info
-            parser = utils.get_series_info(instance.title)
+            details = instance.get_details()
 
-            logger.info(parser)
+            if details:
+                series_name = details['series']
 
-            if parser:
-                seriesName = parser.name
-
-                logger.info(seriesName)
+                logger.info(series_name)
 
                 try:
-                    match = tvdbapi[seriesName]
+                    match = tvdbapi[series_name]
                     logger.debug("Show found")
                     instance.tvdbid_id = int(match['id'])
 
@@ -750,19 +754,26 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
                         instance.imdbid_id = int(match['imdb_id'].lstrip("tt"))
 
                 except Exception as e:
-                    logger.exception("Error finding : %s via thetvdb.com due to  %s" % (seriesName, e.message))
+                    logger.exception("Error finding : %s via thetvdb.com due to  %s" % (series_name, e.message))
             else:
                 logger.exception("Unable to parse series info")
 
-    #must be a movie!
     else:
+        #must be a movie!
         if instance.imdbid_id is None:
             logger.debug("Looks like we are working with a Movie")
             #Lets try find the movie details
-            movieName, movieYear = utils.get_movie_info(instance.title)
+            details = instance.get_details()
+
+            movie_title = details['title']
+
+            if 'year' in details:
+                movie_year = details['year']
+            else:
+                movie_year = None
 
             imdbs = ImdbSearch()
-            results = imdbs.best_match(movieName, movieYear)
+            results = imdbs.best_match(movie_title, movie_year)
 
             if results and results['match'] > 0.70:
                 movieObj = ImdbParser()

@@ -4,7 +4,7 @@ from django.core.management.base import BaseCommand
 from lazycore.models import Imdbcache
 import logging
 import os
-from lazycore import utils
+from lazycore.utils import common
 from flexget.utils.imdb import ImdbSearch, ImdbParser
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
@@ -51,7 +51,7 @@ class Command(BaseCommand):
 
             #Step 2 - Lets remove all imdbcache objects with path is zero size
             if os.path.exists(str(imdb_obj.localpath)):
-                size = utils.get_size(imdb_obj.localpath)
+                size = common.get_size(imdb_obj.localpath)
                 if size < 204800:
                     logger.info("%s: empty folder, deleteing" % imdb_obj.localpath)
                     shutil.rmtree(imdb_obj.localpath)
@@ -87,7 +87,7 @@ class Command(BaseCommand):
                 continue
 
             #First, if its empty then delete it
-            size = utils.get_size(path)
+            size = common.get_size(path)
 
             if size < 204800:
                 logger.info("%s: empty folder, deleteing" % path)
@@ -101,7 +101,10 @@ class Command(BaseCommand):
                 #does not exist
                 logger.info("FOLDER: %s is not associated with any imdb object.. lets try fix" % dir)
                 try:
-                    movie_name, movie_year = utils.get_movie_info(dir)
+                    parser = MetaParser(dir)
+
+
+                    movie_name, movie_year = get_movie_info(dir)
 
                     if not movie_name or not movie_year:
                         logger.error("FOLDER: %s unable to figure out year and movie name" % dir)
@@ -130,8 +133,8 @@ class Command(BaseCommand):
                         imdbobj = Imdbcache.objects.get(id=imdb_id)
 
                         #lets compare the two
-                        cur_files = utils.get_video_files(path)
-                        existing_files = utils.get_video_files(imdbobj.localpath)
+                        cur_files = common.get_video_files(path)
+                        existing_files = common.get_video_files(imdbobj.localpath)
 
                         if len(cur_files) > 1 or len(existing_files) > 1:
                             logger.error("cannot handle multiple vid files yet")
@@ -140,7 +143,7 @@ class Command(BaseCommand):
                         cur_file = cur_files[0]['src']
                         existing_file = existing_files[0]['src']
 
-                        best_file = utils.compare_best_vid_file(cur_file, existing_file)
+                        best_file = common.compare_best_vid_file(cur_file, existing_file)
 
                         if best_file == cur_file:
                             #This one is better then the existing one, lets replace it

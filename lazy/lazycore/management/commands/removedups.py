@@ -1,13 +1,8 @@
 from __future__ import division
 from optparse import make_option
 from django.core.management.base import BaseCommand
-from lazycore.models import Imdbcache
 import logging
-import os
-from lazycore import utils
 from lazycore.models import DownloadItem
-from flexget.utils.imdb import ImdbSearch, ImdbParser
-from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 
