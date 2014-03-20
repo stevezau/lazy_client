@@ -294,6 +294,12 @@ LOGGING = {
             'propagate': True,
             'level':'INFO',
         },
+        'guessit': {
+            'handlers':['console'],
+            'propagate': True,
+            'level':'INFO',
+        },
+
         'south': {
             'handlers':['console'],
             'propagate': True,

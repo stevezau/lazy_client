@@ -290,7 +290,7 @@ def get_required_folders_for_multi(folder, onlyget):
             dir = dir[0]
             full_dir = os.path.join(curdir, dir)
 
-            parser = MetaParser(file[0], type=MetaParser.TYPE_TVSHOW)
+            parser = MetaParser(dir, type=MetaParser.TYPE_TVSHOW)
 
             type = parser.details['type']
 
