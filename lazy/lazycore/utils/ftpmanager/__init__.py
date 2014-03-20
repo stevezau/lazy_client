@@ -240,7 +240,7 @@ def get_required_folders_for_multi(folder, onlyget):
             if len(onlyget_clean_eps) == 0 and len(onlyget_clean_seasons) == 0:
                 break
 
-            parser = (file[0])
+            parser = MetaParser(file[0], type=MetaParser.TYPE_TVSHOW)
 
             if 'container' in parser.details:
 
