@@ -729,7 +729,7 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
 
     tvdbapi = Tvdb()
 
-    type = instance.parser().type
+    type = instance.metaparser().type
 
     #must be a tvshow
     if type == DownloadItem.TYPE_TVSHOW:
