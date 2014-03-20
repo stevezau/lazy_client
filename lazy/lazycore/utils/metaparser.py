@@ -11,6 +11,7 @@ class MetaParser():
 
     title = ""
     details = []
+    type
 
     def __init__(self, title, type=TYPE_UNKNOWN):
         self.title = title
