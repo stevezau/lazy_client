@@ -731,8 +731,10 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
 
     type = instance.metaparser().type
 
+    from lazycore.utils.metaparser import MetaParser
+
     #must be a tvshow
-    if type == DownloadItem.TYPE_TVSHOW:
+    if type == MetaParser.TYPE_TVSHOW:
         if instance.tvdbid_id is None:
             logger.debug("Looks like we are working with a TVShow")
 
