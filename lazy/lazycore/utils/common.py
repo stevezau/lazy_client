@@ -306,7 +306,7 @@ def get_cd_number(file_name):
 
 def find_season_folder(path, seasonn):
 
-    folders = [f for f in os.listdir(path) if os.isdir(join(path, f))]
+    folders = [f for f in os.listdir(path) if os.path.isdir(join(path, f))]
 
     for folder in folders:
         folder_name = os.path.basename(folder)

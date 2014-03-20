@@ -739,10 +739,10 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
             logger.debug("Looks like we are working with a TVShow")
 
             #We need to try find the series info
-            details = instance.get_details()
+            parser = instance.metaparser()
 
-            if details:
-                series_name = details['series']
+            if parser.details:
+                series_name = parser.details['series']
 
                 logger.info(series_name)
 
@@ -765,12 +765,12 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
         if instance.imdbid_id is None:
             logger.debug("Looks like we are working with a Movie")
             #Lets try find the movie details
-            details = instance.get_details()
+            parser = instance.metaparser()
 
-            movie_title = details['title']
+            movie_title = parser.details['title']
 
-            if 'year' in details:
-                movie_year = details['year']
+            if 'year' in parser.details:
+                movie_year = parser.details['year']
             else:
                 movie_year = None
 

@@ -294,6 +294,9 @@ def get_required_folders_for_multi(folder, onlyget):
 
             type = parser.details['type']
 
+            #lets make sure it has a season
+
+
             #multi season pack
             if type == "season_pack_multi":
                 logger.debug("Multi Season pack detected %s" % dir)
@@ -327,7 +330,6 @@ def get_required_folders_for_multi(folder, onlyget):
                         urls = urls + found_urls
 
             elif type == "episode":
-                logger.debug("We found an ep %s" % dir)
                 skippath.append(full_dir)
 
                 #first lets check if something we might be interested in
