@@ -119,7 +119,7 @@ class MovieExtractor():
             raise Exception(msg)
 
         parser = download_item.metaparser()
-        movie_name = parser.details['Title']
+        movie_name = parser.details['title']
 
         if 'year' in parser.details:
             movie_year = parser.details['year']

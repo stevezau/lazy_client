@@ -81,14 +81,14 @@ def compare_torrent_2_show(show, torrent):
 
     torrent = torrent.replace(' ', '.')
 
+    parser = MetaParser(torrent, type=MetaParser.TYPE_TVSHOW)
+
     if match_str_regex(settings.DOCOS_REGEX, torrent):
         #we have a doco, lets strip the nato geo, doco title out for matching
         other_title = re.sub("History\.Channel|Discovery\.Channel|National\.Geographic", "", torrent)
-        parser = MetaParser(other_title)
-    else:
-        parser = MetaParser(torrent)
+        parser = MetaParser(other_title, type=MetaParser.TYPE_TVSHOW)
 
-    if 'series' in parser.details:
+    if parser.details and 'series' in parser.details:
         tor_series_name = parser.details['series']
 
         #now compare them
