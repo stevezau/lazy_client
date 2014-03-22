@@ -13,6 +13,9 @@ import os
 ###Lazy settings###
 ###################
 import lazysettings
+from django.conf import settings
+
+TIME_ZONE = 'Australia/Sydney'
 
 # XBMC Details
 
