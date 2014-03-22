@@ -3,7 +3,7 @@ import os
 
 # MYSQL Details
 MYSQL_USER = 'root'
-MYSQL_PASS = 'XXXXXXXX'
+MYSQL_PASS = 'XXXXXX'
 MYSQL_IP = 'localhost'
 MYSQL_PORT = '3389'
 
@@ -11,12 +11,12 @@ MYSQL_PORT = '3389'
 TMPFOLDER = "/tmp"
 
 #Account ID on thetvdb.com
-TVDB_ACCOUNTID = "XXXXXXXX"
+TVDB_ACCOUNTID = "XXXXXX"
 
-
+TIME_ZONE = "Australia/Sydney"
 
 MAX_SIM_DOWNLOAD_JOBS = 1
-LFTP_THREAD_PER_DOWNLOAD = 3
+THREADS_PER_DOWNLOAD = 3
 
 # Where is your data path
 DATA_PATH = "/data/Videos"
@@ -36,8 +36,8 @@ XVID = os.path.join(DATA_PATH, "Movies")
 # FTP Details
 FTP_IP = "66.90.113.61"
 FTP_PORT = 32245
-FTP_USER = "XXXXXXXX"
-FTP_PASS = "XXXXXXXX"
+FTP_USER = "XXXXXX"
+FTP_PASS = "XXXXXX"
 
 
 # Shouldnt need to change these
@@ -50,3 +50,5 @@ FLEXGET_IGNORE = "/home/media/.flexget/ignore.yml"
 XBMC_API_URLS = [
     'http://192.168.0.190:8080/jsonrpc'
 ]
+
+QUEUE = "rabbitmq"

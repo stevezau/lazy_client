@@ -31,8 +31,10 @@ TMPFOLDER = lazysettings.TMPFOLDER
 
 TVDB_ACCOUNTID = lazysettings.TVDB_ACCOUNTID
 
+TIME_ZONE = lazysettings.TIME_ZONE
+
 MAX_SIM_DOWNLOAD_JOBS = lazysettings.MAX_SIM_DOWNLOAD_JOBS
-THREADS_PER_DOWNLOAD = lazysettings.LFTP_THREAD_PER_DOWNLOAD
+THREADS_PER_DOWNLOAD = lazysettings.THREADS_PER_DOWNLOAD
 
 # Where is your data path
 DATA_PATH = lazysettings.DATA_PATH
@@ -254,11 +256,18 @@ INSTALLED_APPS = (
 ##############
 ### CELERY ###
 ##############
-BROKER_URL = "amqp://"
-CELERY_RESULT_BACKEND = "amqp://"
-CELERY_ACKS_LATE = False
-CELERY_TRACK_STARTED = True
-CELERYD_PREFETCH_MULTIPLIER = 1
+
+if lazysettings.queue == "db":
+    CELERY_RESULT_BACKEND='djcelery.backends.database:DatabaseBackend',
+    CELERY_ACKS_LATE = False
+    CELERY_TRACK_STARTED = True
+    CELERYD_PREFETCH_MULTIPLIER = 1
+else:
+    BROKER_URL = "amqp://"
+    CELERY_RESULT_BACKEND = "amqp://"
+    CELERY_ACKS_LATE = False
+    CELERY_TRACK_STARTED = True
+    CELERYD_PREFETCH_MULTIPLIER = 1
 
 # Application definition
 
