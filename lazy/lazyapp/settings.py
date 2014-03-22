@@ -299,6 +299,11 @@ LOGGING = {
             'propagate': True,
             'level':'INFO',
         },
+        'GuessMovieTitleFromPosition': {
+            'handlers':['console'],
+            'propagate': True,
+            'level':'INFO',
+        },
 
         'south': {
             'handlers':['console'],
@@ -414,4 +419,4 @@ REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'lazycore.utils.custom_exception_handler'
 }
 
-__VERSION__ = "0.1"
+__VERSION__ = 1

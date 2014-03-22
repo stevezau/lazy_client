@@ -54,6 +54,14 @@ class DownloadLog(models.Model):
         db_table = 'download_log'
 
 
+class Version(models.Model):
+    class Meta:
+        """ Meta """
+        db_table = 'version'
+
+    version = models.IntegerField()
+
+
 class DownloadItem(models.Model):
     class Meta:
         """ Meta """
