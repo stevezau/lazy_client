@@ -7,8 +7,8 @@ import logging
 from django.core.urlresolvers import reverse
 from django.core.urlresolvers import reverse_lazy
 from lazycore.models import DownloadItem, Tvdbcache
-from lazyui import utils
-from lazycore.utils import common
+from lazyui import common
+from lazycore.utils import common as commoncore
 from lazycore.utils.tvdb_api import Tvdb
 from lazyapp.forms import DownloadItemManualFixForm
 
@@ -216,7 +216,7 @@ def ignore(items):
 
             if series_data:
                 ignoretitle = series_data.details['series'].replace(" ", ".")
-                common.ignore_show(ignoretitle)
+                commoncore.ignore_show(ignoretitle)
                 dlitem.delete()
                 response.write("Deleted and ignored %s\n" % ignoretitle)
             else:
@@ -382,7 +382,7 @@ def update(request, type):
         if len(items) == 0:
             return HttpResponse("Nothing selected", content_type="text/plain", status=210)
         try:
-            function = utils.load_button_module("lazyui.views.downloads", type)
+            function = common.load_button_module("lazyui.views.downloads", type)
             return function(items)
         except Exception as e:
             logger.exception(e)

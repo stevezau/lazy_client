@@ -4,7 +4,7 @@ import os
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect, HttpResponse
 from django.conf import settings
-from lazycore.utils import common
+from lazyui import common
 from lazyapp.forms import Find, FindMissing
 from lazycore.utils import ftpmanager
 from lazycore.models import DownloadItem, Job

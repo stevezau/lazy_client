@@ -3,11 +3,11 @@ from django.views.generic import TemplateView, ListView, CreateView, FormView
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 import logging
-import lazycore
 import os
 import re
 from django.core.urlresolvers import reverse_lazy
-from lazycore.utils import common
+from lazycore.utils import common as commoncore
+from lazyui import common
 from lazycore.models import TVShowMappings, Tvdbcache
 from lazyapp.forms import AddTVMapForm, AddApprovedShow, AddIgnoreShow
 from lazycore.utils.tvdb_api import Tvdb
@@ -156,7 +156,7 @@ class IgnoredCreate(FormView):
         # It should return an HttpResponse.
         #TODO: Make class for ignore items
         if not form.cleaned_data['show_name'] == "":
-            common.ignore_show(form.cleaned_data['show_name'].replace(" ", "."))
+            commoncore.ignore_show(form.cleaned_data['show_name'].replace(" ", "."))
         return super(IgnoredCreate, self).form_valid(form)
 
 
@@ -181,7 +181,7 @@ def delete_ignore(items):
     response = HttpResponse(content_type="text/plain")
 
     for item in items:
-        common.remove_ignore(item)
+        commoncore.remove_ignore(item)
         response.write("Deleted %s\n" % item)
 
 
