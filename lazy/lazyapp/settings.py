@@ -257,7 +257,7 @@ INSTALLED_APPS = (
 ### CELERY ###
 ##############
 
-if lazysettings.queue == "db":
+if lazysettings.QUEUE == "db":
     CELERY_RESULT_BACKEND='djcelery.backends.database:DatabaseBackend',
     CELERY_ACKS_LATE = False
     CELERY_TRACK_STARTED = True
