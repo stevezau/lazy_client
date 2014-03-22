@@ -31,8 +31,6 @@ TMPFOLDER = lazysettings.TMPFOLDER
 
 TVDB_ACCOUNTID = lazysettings.TVDB_ACCOUNTID
 
-TIME_ZONE = lazysettings.TIME_ZONE
-
 MAX_SIM_DOWNLOAD_JOBS = lazysettings.MAX_SIM_DOWNLOAD_JOBS
 THREADS_PER_DOWNLOAD = lazysettings.THREADS_PER_DOWNLOAD
 
@@ -390,7 +388,7 @@ DATABASES = {
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'Australia/Sydney'
+TIME_ZONE = lazysettings.TIME_ZONE
 USE_I18N = True
 USE_L10N = True
 USE_TZ = True
