@@ -10,11 +10,11 @@ from optparse import make_option
 import os.path
 from importlib import import_module
 import pkgutil
-from lazyapp import upgrade
+
 from django.conf import settings
 from lazycore.models import Version
 from django.core.exceptions import ObjectDoesNotExist
-
+import thread
 
 logger = logging.getLogger(__name__)
 
@@ -61,19 +61,20 @@ class Command(BaseCommand):
         print(green("Deleting old python files..."))
         local("find /home/media/lazy -name \"*.pyc\" -exec rm -rf {} \;")
 
-    def update_version(self):
+    def update_version(self, version=settings.__VERSION__):
         try:
             cur_version = Version.objects.get(id=1)
             cur_version.id = 1
-            cur_version.version = settings.__VERSION__
+            cur_version.version = version
             cur_version.save()
         except ObjectDoesNotExist:
             new_ver = Version()
             new_ver.id = 1
-            new_ver.version = settings.__VERSION__
+            new_ver.version = version
             new_ver.save()
 
     def upgrade_scripts(self):
+        from lazyapp import upgrade
         pkgpath = os.path.dirname(upgrade.__file__)
 
         upgrade_scripts = []
@@ -94,7 +95,9 @@ class Command(BaseCommand):
             mod = import_module("lazyapp.upgrade.lazyver_%s" % ver)
             upgrade_fn = getattr(mod, "upgrade")
             upgrade_fn()
-            #TODO: UPGRADE VERSION FROM HERE
+
+            #update version number so we dont re-run script
+            self.update_version(ver)
 
     def stop_all(self):
         print(green("Stopping services..."))
@@ -111,6 +114,9 @@ class Command(BaseCommand):
         local("sudo pip install -r requirements.txt")
 
     def reload_data(self):
+        from django.core.cache import cache
+        cache.clear()
+
         print(green("Collecting static files..."))
         local("python manage.py collectstatic --noinput")
         print(green("Loading menu data..."))

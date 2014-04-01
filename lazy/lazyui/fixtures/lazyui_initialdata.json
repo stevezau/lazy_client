@@ -894,5 +894,29 @@
         "urlaspattern": true, 
         "access_guest": false
     }
+},
+{
+    "pk": 39, 
+    "model": "sitetree.treeitem", 
+    "fields": {
+        "parent": null, 
+        "access_restricted": false, 
+        "access_permissions": [], 
+        "description": "", 
+        "insitetree": true, 
+        "hint": "", 
+        "url": "admin:index", 
+        "inbreadcrumbs": true, 
+        "title": "Admin", 
+        "tree": 1, 
+        "access_perm_type": 1, 
+        "alias": null, 
+        "sort_order": 39, 
+        "inmenu": true, 
+        "access_loggedin": false, 
+        "hidden": false, 
+        "urlaspattern": true, 
+        "access_guest": false
+    }
 }
 ]
