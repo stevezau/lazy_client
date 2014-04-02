@@ -17,8 +17,6 @@ from lazycore.exceptions import FTPException
 
 logger = logging.getLogger(__name__)
 
-#TODO: REFACTOR CRAPPY FTP/TORRENT CODE
-
 ftps = FTP_TLS()
 
 def cwd(dir):
@@ -156,7 +154,6 @@ def close():
 
 
 def connect():
-
     connected = False
     retry_count = 0
     last_error = ""
@@ -545,6 +542,8 @@ def getTVTorrentsSeason(site, show_names, season=0):
 
 def sendcmd(cmd):
     if is_connected():
+        if cmd != "PRET LIST":
+            logger.debug("sending command to ftp %s" % cmd)
         return ftps.sendcmd(cmd)
 
 
@@ -586,6 +585,7 @@ def search_torrents(search):
     ftpresult = sendcmd("site torrent search all %s" % search)
 
     if ftpresult and ftpresult != '':
+        logger.debug("Got our results, lets display")
         results = {}
 
         cur_site = {}
@@ -635,8 +635,7 @@ def search_torrents(search):
                         cur_site['torrents'][found_torrent]['name'] = found_torrent
                         cur_site['torrents'][found_torrent]['size'] = found_size
 
-        import pprint
-        pprint.pprint(results)
+        logger.debug("Results are %s" % results)
         return results
 
 
