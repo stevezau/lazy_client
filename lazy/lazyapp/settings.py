@@ -73,7 +73,7 @@ except:
 #### !!!!DO NOT CHANGE ANYTHING BELOW!!!! ###
 #############################################
 
-FTP_TIMEOUT_RETRY_COUNT = 2
+FTP_TIMEOUT_RETRY_COUNT = 3
 FTP_TIMEOUT_RETRY_DELAY = 10  #Seconds
 FTP_TIMEOUT_WAIT = 90  #Seconds
 
@@ -91,10 +91,6 @@ VIDEO_FILE_EXTS = (
     '.mkv',
     '.avi',
     '.mp4',
-)
-
-TVSHOW_MULTI_REGEX = (
-
 )
 
 
@@ -425,4 +421,4 @@ REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'lazycore.utils.custom_exception_handler'
 }
 
-__VERSION__ = 1
+__VERSION__ = 2
