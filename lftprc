@@ -1,8 +1,0 @@
-set ssl:verify-certificate no
-set mirror:exclude-regex '-OFFLINE$|[0-9]+ of [0-9]+ files'
-
-# priority files
-set mirror:order '*.sfv *.nfo' '.rar'
-set mirror:skip-noaccess yes
-
-set xfer:disk-full-fatal yes

@@ -133,7 +133,7 @@ def query_api(url, method, post=None):
     except RequestException as e:
         log.exception(e.response)
         if e.response.status_code == 500:
-            msg = 'Internal API Error: %s %s %s %' % (method, url, post, e.message)
+            msg = 'Internal API Error: %s %s %s %s' % (method, url, post, e.message)
             raise plugin.PluginError(msg, log)
         raise
 
