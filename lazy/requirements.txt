@@ -9,7 +9,5 @@ django-celery
 django-mobile
 easy_extract
 django-celery-transactions
-pillow
-flower
 fabric
 guessit

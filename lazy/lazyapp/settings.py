@@ -12,62 +12,56 @@ import os
 ###################
 ###Lazy settings###
 ###################
-import lazysettings
-from django.conf import settings
-
 
 # XBMC Details
+QUEUE = "rabbitmq"
 
 XBMC_API = "http://192.168.0.190:8080"
 
 # MYSQL Details
+MYSQL_USER = 'root'
+MYSQL_PASS = 'password'
+MYSQL_IP = 'localhost'
+MYSQL_PORT = '3389'
 
-MYSQL_USER = lazysettings.MYSQL_USER
-MYSQL_PASS = lazysettings.MYSQL_PASS
-MYSQL_IP = lazysettings.MYSQL_IP
-MYSQL_PORT = lazysettings.MYSQL_PORT
+TMPFOLDER = "/tmp"
+TVDB_ACCOUNTID = "XXXXXXXXX"
 
-TMPFOLDER = lazysettings.TMPFOLDER
-
-TVDB_ACCOUNTID = lazysettings.TVDB_ACCOUNTID
-
-MAX_SIM_DOWNLOAD_JOBS = lazysettings.MAX_SIM_DOWNLOAD_JOBS
-THREADS_PER_DOWNLOAD = lazysettings.THREADS_PER_DOWNLOAD
+MAX_SIM_DOWNLOAD_JOBS = 1
+THREADS_PER_DOWNLOAD = 3
 
 # Where is your data path
-DATA_PATH = lazysettings.DATA_PATH
-INCOMING_PATH = lazysettings.INCOMING_PATH
+DATA_PATH = "/data/Videos"
+INCOMING_PATH = os.path.join(DATA_PATH, "_incoming")
 
 # Folders, shouldnt need to edit this
 
-TVHD_TEMP = lazysettings.TVHD_TEMP
-HD_TEMP = lazysettings.HD_TEMP
-XVID_TEMP = lazysettings.XVID_TEMP
-REQUESTS_TEMP = lazysettings.REQUESTS_TEMP
+TVHD_TEMP = os.path.join(INCOMING_PATH, "TVShows")
+HD_TEMP = os.path.join(INCOMING_PATH, "Movies")
+XVID_TEMP = os.path.join(INCOMING_PATH, "Movies")
+REQUESTS_TEMP = os.path.join(INCOMING_PATH, "Requests")
 
-TVHD = lazysettings.TVHD
-HD = lazysettings.HD
-XVID = lazysettings.XVID
+TVHD = os.path.join(DATA_PATH, "TVShows")
+HD = os.path.join(DATA_PATH, "Movies")
+XVID = os.path.join(DATA_PATH, "Movies")
 
 # FTP Details
-FTP_IP = lazysettings.FTP_IP
-FTP_PORT = lazysettings.FTP_PORT
-FTP_USER = lazysettings.FTP_USER
-FTP_PASS = lazysettings.FTP_PASS
-
+FTP_IP = "66.90.113.61"
+FTP_PORT = 32245
+FTP_USER = "XXXXXX"
+FTP_PASS = "XXXXX"
 
 # Shouldnt need to change these
-MEDIA_ROOT = lazysettings.MEDIA_ROOT
-MEDIA_URL = lazysettings.MEDIA_URL
+MEDIA_ROOT = "/home/media/lazy/static/media"
+MEDIA_URL = "/lazy/media/"
 
-FLEXGET_APPROVED = lazysettings.FLEXGET_APPROVED
-FLEXGET_IGNORE = lazysettings.FLEXGET_IGNORE
+FLEXGET_APPROVED = "/home/media/.flexget/approve.yml"
+FLEXGET_IGNORE = "/home/media/.flexget/ignore.yml"
 
-try:
-    XBMC_API_URLS = lazysettings.XBMC_API_URLS
-except:
-    pass
 
+XBMC_API_URLS = [
+    'http://localhost:8080/jsonrpc'
+]
 
 #############################################
 #### !!!!DO NOT CHANGE ANYTHING BELOW!!!! ###
@@ -75,7 +69,7 @@ except:
 
 FTP_TIMEOUT_RETRY_COUNT = 3
 FTP_TIMEOUT_RETRY_DELAY = 10  #Seconds
-FTP_TIMEOUT_WAIT = 90  #Seconds
+FTP_TIMEOUT_WAIT = 120  #Seconds
 
 DOWNLOAD_RETRY_COUNT = 3
 DOWNLOAD_RETRY_DELAY = 15 #minutes
@@ -163,55 +157,10 @@ TVSHOW_AUTOFIX_REPLACEMENTS = {
 
 ILLEGAL_CHARS_REGEX = '[:\"*?<>|]+'
 
-#########################
-### CHECK LAZY PATHTS ###
-#########################
-
-if not os.path.isfile(FLEXGET_IGNORE):
-    #Lets create it
-    ignore_file = open(FLEXGET_IGNORE, 'a')
-    ignore_file.write("regexp:\n")
-    ignore_file.write("  from: title\n")
-    ignore_file.write("  reject:\n")
-    ignore_file.write("    - ^FIRST.IGNORE.DEL.ME.AFTER.YOU.ADD.MORE\n")
-    ignore_file.close()
-
-if not os.path.isfile(FLEXGET_APPROVED):
-    #Lets create it
-    approved_file = open(FLEXGET_APPROVED, 'a')
-    approved_file.write("regexp:\n")
-    approved_file.write("  from: title\n")
-    approved_file.write("  accept:\n")
-    approved_file.write("    - national.geographic\n")
-    approved_file.write("    - discovery.channel\n")
-    approved_file.write("    - history.channel\n")
-    approved_file.close()
-
-if not os.path.exists(MEDIA_ROOT):
-    #create it
-    os.mkdir(MEDIA_ROOT)
-
-for path in [TMPFOLDER,
-             MEDIA_ROOT,
-             DATA_PATH,
-             INCOMING_PATH,
-             TVHD,
-             TVHD_TEMP,
-             XVID,
-             XVID_TEMP,
-             REQUESTS_TEMP,
-             HD,
-             HD_TEMP]:
-    if not os.path.exists(path):
-        raise Exception("Folder dose not exist %s" % path)
-    if not os.access(path, os.W_OK):
-        raise Exception("Cannot write to folder %s" % path)
-
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.6/howto/deployment/checklist/
@@ -246,22 +195,6 @@ INSTALLED_APPS = (
     'lazyapi',
     'lazyui',
 )
-
-##############
-### CELERY ###
-##############
-
-if lazysettings.QUEUE == "db":
-    CELERY_RESULT_BACKEND='djcelery.backends.database:DatabaseBackend',
-    CELERY_ACKS_LATE = False
-    CELERY_TRACK_STARTED = True
-    CELERYD_PREFETCH_MULTIPLIER = 1
-else:
-    BROKER_URL = "amqp://"
-    CELERY_RESULT_BACKEND = "amqp://"
-    CELERY_ACKS_LATE = False
-    CELERY_TRACK_STARTED = True
-    CELERYD_PREFETCH_MULTIPLIER = 1
 
 # Application definition
 
@@ -364,27 +297,12 @@ ROOT_URLCONF = 'lazyapp.urls'
 WSGI_APPLICATION = 'lazyapp.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/1.6/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'lazy',                      # Or path to database file if using sqlite3.
-        'USER': MYSQL_USER,                      # Not used with sqlite3.
-        'PASSWORD': MYSQL_PASS,                  # Not used with sqlite3.
-        'HOST': MYSQL_IP,                      # Set to empty string for localhost. Not used with sqlite3.
-        'PORT': MYSQL_PORT,                      # Set to empty string for default. Not used with sqlite3.
-    }
-}
-
-
 # Internationalization
 # https://docs.djangoproject.com/en/1.6/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = lazysettings.TIME_ZONE
+TIME_ZONE = "Australia/Sydney"
 USE_I18N = True
 USE_L10N = True
 USE_TZ = True
@@ -422,3 +340,82 @@ REST_FRAMEWORK = {
 }
 
 __VERSION__ = 2
+
+
+from lazysettings import *
+
+
+# Database
+# https://docs.djangoproject.com/en/1.6/ref/settings/#databases
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'lazy',                      # Or path to database file if using sqlite3.
+        'USER': MYSQL_USER,                      # Not used with sqlite3.
+        'PASSWORD': MYSQL_PASS,                  # Not used with sqlite3.
+        'HOST': MYSQL_IP,                      # Set to empty string for localhost. Not used with sqlite3.
+        'PORT': MYSQL_PORT,                      # Set to empty string for default. Not used with sqlite3.
+    }
+}
+
+#########################
+### CHECK LAZY PATHTS ###
+#########################
+
+if not os.path.isfile(FLEXGET_IGNORE):
+    #Lets create it
+    ignore_file = open(FLEXGET_IGNORE, 'a')
+    ignore_file.write("regexp:\n")
+    ignore_file.write("  from: title\n")
+    ignore_file.write("  reject:\n")
+    ignore_file.write("    - ^FIRST.IGNORE.DEL.ME.AFTER.YOU.ADD.MORE\n")
+    ignore_file.close()
+
+if not os.path.isfile(FLEXGET_APPROVED):
+    #Lets create it
+    approved_file = open(FLEXGET_APPROVED, 'a')
+    approved_file.write("regexp:\n")
+    approved_file.write("  from: title\n")
+    approved_file.write("  accept:\n")
+    approved_file.write("    - national.geographic\n")
+    approved_file.write("    - discovery.channel\n")
+    approved_file.write("    - history.channel\n")
+    approved_file.close()
+
+if not os.path.exists(MEDIA_ROOT):
+    #create it
+    os.mkdir(MEDIA_ROOT)
+
+for path in [TMPFOLDER,
+             MEDIA_ROOT,
+             DATA_PATH,
+             INCOMING_PATH,
+             TVHD,
+             TVHD_TEMP,
+             XVID,
+             XVID_TEMP,
+             REQUESTS_TEMP,
+             HD,
+             HD_TEMP]:
+    if not os.path.exists(path):
+        raise Exception("Folder dose not exist %s" % path)
+    if not os.access(path, os.W_OK):
+        raise Exception("Cannot write to folder %s" % path)
+
+
+##############
+### CELERY ###
+##############
+
+if QUEUE == "db":
+    CELERY_RESULT_BACKEND='djcelery.backends.database:DatabaseBackend',
+    CELERY_ACKS_LATE = False
+    CELERY_TRACK_STARTED = True
+    CELERYD_PREFETCH_MULTIPLIER = 1
+else:
+    BROKER_URL = "amqp://"
+    CELERY_RESULT_BACKEND = "amqp://"
+    CELERY_ACKS_LATE = False
+    CELERY_TRACK_STARTED = True
+    CELERYD_PREFETCH_MULTIPLIER = 1

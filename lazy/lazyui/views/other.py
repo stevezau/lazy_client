@@ -72,7 +72,6 @@ class FindIndexView(FormView):
     form_class = Find
 
     def form_valid(self, form):
-        print form.cleaned_data['search']
         return HttpResponseRedirect(reverse('other.find.search', kwargs={'search': form.cleaned_data['search']}))
 
 class SearchIndexView(TemplateView):

@@ -3,7 +3,7 @@ import os
 
 # MYSQL Details
 MYSQL_USER = 'root'
-MYSQL_PASS = 'XXXXXX'
+MYSQL_PASS = 'drift990'
 MYSQL_IP = 'localhost'
 MYSQL_PORT = '3389'
 
@@ -11,7 +11,7 @@ MYSQL_PORT = '3389'
 TMPFOLDER = "/tmp"
 
 #Account ID on thetvdb.com
-TVDB_ACCOUNTID = "XXXXXX"
+TVDB_ACCOUNTID = "289F895955772DE3"
 
 TIME_ZONE = "Australia/Sydney"
 
@@ -36,8 +36,8 @@ XVID = os.path.join(DATA_PATH, "Movies")
 # FTP Details
 FTP_IP = "66.90.113.61"
 FTP_PORT = 32245
-FTP_USER = "XXXXXX"
-FTP_PASS = "XXXXXX"
+FTP_USER = "steve"
+FTP_PASS = "site990"
 
 
 # Shouldnt need to change these
