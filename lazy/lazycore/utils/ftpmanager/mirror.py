@@ -133,7 +133,7 @@ class FTPMirror:
             c.setopt(pycurl.FOLLOWLOCATION, 1)
             c.setopt(pycurl.MAXREDIRS, 5)
             c.setopt(pycurl.NOSIGNAL, 1)
-            #c.setopt(pycurl.VERBOSE, 1)
+            c.setopt(pycurl.VERBOSE, 1)
             c.setopt(pycurl.FTP_SSL, pycurl.FTPSSL_ALL)
             c.setopt(pycurl.SSL_VERIFYPEER, 0)
             c.setopt(pycurl.SSL_VERIFYHOST, 0)
