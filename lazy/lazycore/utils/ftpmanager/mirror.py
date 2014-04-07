@@ -142,7 +142,7 @@ class FTPMirror:
             c.setopt(pycurl.FOLLOWLOCATION, 1)
             c.setopt(pycurl.FTP_RESPONSE_TIMEOUT, 20)
             c.setopt(pycurl.TIMEOUT, 300)
-            c.setopt(pycurl.SOCKET_TIMEOUT, 100)
+
             c.setopt(pycurl.MAXREDIRS, 5)
             #c.setopt(pycurl.NOSIGNAL, 1)
             c.setopt(pycurl.VERBOSE, 1)
