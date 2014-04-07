@@ -36,6 +36,15 @@ def signal_term_handler(signal, frame):
     print "Working on line numner %s %s" % (caller, line)
 
     for key, value in frame.f_locals.items():
+
+        try:
+            if key == "self":
+                for c in value.m.handles:
+                    print c.getinfo(pycurl.EFFECTIVE_URL)
+                    print c.getinfo(pycurl.FTP_RESPONSE_TIMEOUT)
+        except:
+            pass
+
         print "key: %s | val %s" % (key, value)
 
 
