@@ -20,6 +20,9 @@ import time
 from lazycore.utils.jsonfield.fields import JSONField
 from celery.task.control import revoke
 from lazycore.utils.ftpmanager.mirror import FTPMirror
+from django.core.cache import cache
+from django.db.models import Q
+from flexget.utils import qualities
 
 logger = logging.getLogger(__name__)
 
@@ -115,6 +118,34 @@ class DownloadItem(models.Model):
     epoverride = models.IntegerField(default=0, blank=True, null=True)
     seasonoverride = models.IntegerField(default=0, blank=True, null=True)
     onlyget = JSONField(blank=True, null=True)
+
+    def extract(self):
+
+        LOCK_EXPIRE = 60 * 10
+        lock_id = "model-%s-lock" % self.title
+        acquire_lock = lambda: cache.add(lock_id, "true", LOCK_EXPIRE)
+        release_lock = lambda: cache.delete(lock_id)
+
+        if not acquire_lock():
+            logger.debug("Already extracting %s , exiting" % self.download_item.title)
+            raise Exception("Already extracting")
+
+        try:
+            parser = self.metaparser()
+
+            if parser.type == parser.TYPE_TVSHOW:
+                from lazycore.utils.extractor.tvshow import TVExtractor
+                extractor = TVExtractor()
+                extractor.extract()
+
+            elif parser.type == parser.TYPE_MOVIE:
+                from lazycore.utils.extractor.movie import MovieExtractor
+
+
+            else:
+                raise Exception("Unable to figure out if this is a movie or tvshow")
+        finally:
+            release_lock()
 
     def metaparser(self):
         from lazycore.utils.metaparser import MetaParser
@@ -734,6 +765,42 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
                 instance.localpath = os.path.join(path, instance.title)
             except:
                 raise Exception("Unable to find section path in config: %s" % section)
+
+
+        parser = instance.metaparser()
+
+        title = None
+
+        if 'title' in parser.details:
+            title = parser.details['title']
+
+        if 'series' in parser.details:
+            title = parser.details['series']
+
+        if title:
+            logger.info("Looking for existing %s in the queue" % title)
+
+            #Check if already in queue (maybe this is higher quality or proper).
+            for dlitem in DownloadItem.objects.all().filter(Q(status=DownloadItem.QUEUE) | Q(status=DownloadItem.DOWNLOADING) | Q(status=DownloadItem.PENDING)):
+                dlitem_title = None
+                dlitem_parser = dlitem.metaparser()
+
+                if 'title' in dlitem_parser.details:
+                    dlitem_title = dlitem_parser.details['title']
+
+                if 'series' in dlitem_parser.details:
+                    dlitem_title = dlitem_parser.details['series']
+
+                if dlitem_title and dlitem_title.lower() == title.lower():
+                    logger.info("Found %s already in queue, lets see what is better quality" % dlitem.title)
+
+                    if dlitem_parser.quality > parser.quality:
+                        logger.info("Download already existsin queue with better quality will ignore this one")
+                        raise AlradyExists_Updated(dlitem)
+                    else:
+                        logger.info("Deleting %s from queue as it has a lower quality" % dlitem.title)
+                        dlitem.delete()
+
 
     tvdbapi = Tvdb()
 

@@ -9,7 +9,6 @@ from lazycore.utils.extractor.movie import MovieExtractor
 from lazycore.utils.extractor.tvshow import TVExtractor
 from django.core.cache import cache
 
-
 logger = logging.getLogger(__name__)
 
 LOCK_EXPIRE = 60 * 5  # Lock expires in 5 minutes
@@ -30,7 +29,7 @@ class DownloadItemExtractor():
         extractor_type = None
         dest_folder = None
 
-        lock_id = "%s-lock" % self.download_item.title
+        lock_id = "extract-%s-lock" % self.download_item.title
         acquire_lock = lambda: cache.add(lock_id, "true", LOCK_EXPIRE)
         release_lock = lambda: cache.delete(lock_id)
 

@@ -18,13 +18,13 @@ class DownloadItemSerializer(serializers.ModelSerializer):
         fields = ('title', 'imdbid_id', 'tvdbid_id', 'status', 'section', 'localpath', 'status')
 
 
-
 class ImdbItemSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField()
 
     class Meta:
         model = Imdbcache
         fields = ('id', 'title', 'score', 'votes', 'year', 'genres', 'description')
+
 
 class TvdbItemSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField()

@@ -9,11 +9,7 @@ import time
 import zlib
 from django.conf import settings
 from easy_extract.archive_finder import ArchiveFinder
-from rest_framework import status
-from rest_framework.response import Response
 from lazycore.utils.rar import RarArchive
-from rest_framework.views import exception_handler
-from lazycore.exceptions import AlradyExists
 
 
 import logging
@@ -30,6 +26,41 @@ SYMBOLS = {
                        'zebi', 'yobi'),
 }
 
+
+def get_lazy_errors():
+
+    errors = []
+
+    #Firte lets check if it should be running..
+    for path in [settings.TMPFOLDER,
+         settings.MEDIA_ROOT,
+         settings.DATA_PATH,
+         settings.INCOMING_PATH,
+         settings.TVHD,
+         settings.TVHD_TEMP,
+         settings.XVID,
+         settings.XVID_TEMP,
+         settings.REQUESTS_TEMP,
+         settings.HD,
+         settings.HD_TEMP]:
+        if not os.path.exists(path):
+            errors.append("Path does not exist: %s" % path)
+        if not os.access(path, os.W_OK):
+            errors.append("Path is not writable: %s" % path)
+
+    #Check Free space
+    if os.path.exists(settings.DATA_PATH):
+        statvfs = os.statvfs(settings.DATA_PATH)
+
+        dt = statvfs.f_frsize * statvfs.f_blocks     # Size of filesystem in bytes
+        df = statvfs.f_frsize * statvfs.f_bfree      # Actual number of free bytes
+
+        free_gb = df / 1024 / 1024 / 1024
+
+        if free_gb < settings.FREE_SPACE:
+            errors.append("Not enough free space %s GB free" % free_gb)
+
+    return errors
 
 def strip_illegal_chars(s):
     return re.sub(settings.ILLEGAL_CHARS_REGEX, " ", s)
@@ -419,18 +450,6 @@ def get_video_files(path):
                 src_files.append(file)
 
     return src_files
-
-
-def custom_exception_handler(exc):
-    # Call REST framework's default exception handler first,
-    # to get the standard error response.
-    response = exception_handler(exc)
-
-    if isinstance(exc, AlradyExists):
-        return Response({'detail': 'already exists'},
-                        status=status.HTTP_202_ACCEPTED)
-
-    return response
 
 
 def get_size(local):

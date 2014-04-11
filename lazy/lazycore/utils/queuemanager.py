@@ -10,6 +10,7 @@ import ftplib
 from djcelery.app import current_app
 from celery.app.control import Control
 import time
+import os
 from lazycore.utils import common
 
 
@@ -24,16 +25,20 @@ class QueueManager():
     def start_queue():
         #Start the queue and trigger a queue process job
         cache.delete("stop_queue")
+        cache.delete("stop_queue_errors")
 
         from lazycore.management.commands.queue import Command
         cmd = Command()
         cmd.handle.delay()
 
     @staticmethod
-    def stop_queue():
+    def stop_queue(errors=False):
 
         #Stop the queue
-        cache.set("stop_queue", "true", None)
+        if errors:
+            cache.set("stop_queue_errors", "true", None)
+        else:
+            cache.set("stop_queue", "true", None)
 
         #reset all downloading
         dlitems = DownloadItem.objects.all().filter(status=DownloadItem.DOWNLOADING)
@@ -47,6 +52,26 @@ class QueueManager():
 
     @staticmethod
     def queue_running():
+
+        errors = common.get_lazy_errors()
+
+        if len(errors) > 0:
+            #lets stop the queue
+            QueueManager.stop_queue(errors=True)
+            return False
+        else:
+            #No errors, lets check if stop_queue_errors was set
+            queue_stopped_errors = cache.get('stop_queue_errors')
+
+            if queue_stopped_errors == 'true':
+                #lets delete it
+                cache.delete("stop_queue_errors")
+
+                if None is cache.get('stop_queue'):
+                    #Lets start the queue
+                    QueueManager.start_queue()
+
+
         queue_stopped = cache.get('stop_queue')
 
         if None is queue_stopped:

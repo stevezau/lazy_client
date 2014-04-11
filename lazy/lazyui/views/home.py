@@ -36,15 +36,19 @@ class IndexView(TemplateView):
 
         context['queue_running'] = QueueManager.queue_running()
 
-        statvfs = os.statvfs(settings.DATA_PATH)
+        if os.path.exists(settings.DATA_PATH):
+            statvfs = os.statvfs(settings.DATA_PATH)
 
-        dt = statvfs.f_frsize * statvfs.f_blocks     # Size of filesystem in bytes
-        df = statvfs.f_frsize * statvfs.f_bfree      # Actual number of free bytes
+            dt = statvfs.f_frsize * statvfs.f_blocks     # Size of filesystem in bytes
+            df = statvfs.f_frsize * statvfs.f_bfree      # Actual number of free bytes
 
-        percentfree = (df / float(dt)) * 100
-        percentused = round(100 - percentfree, 2)
+            percentfree = (df / float(dt)) * 100
+            percentused = round(100 - percentfree, 2)
 
-        context['free_gb'] = df / 1024 / 1024 / 1024
-        context['percent_used'] = percentused
+            context['free_gb'] = df / 1024 / 1024 / 1024
+            context['percent_used'] = percentused
+        else:
+            context['free_gb'] = 0
+            context['percent_used'] = 0
 
         return context

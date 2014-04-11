@@ -10,8 +10,17 @@ logger = logging.getLogger(__name__)
 
 class MovieExtractor():
 
+    dest = settings.HD
+    path = ""
 
-    #TODO: Need to refactor this code to make it cleaner
+    #def __init__(self, path, dest=settings.HD):
+    #    self.path = path
+    #    self.dest = dest
+
+    def do_extract(self):
+
+        #first lets loop through and unrar all items..
+        pass
 
     def extract(self, download_item, dest_folder):
 

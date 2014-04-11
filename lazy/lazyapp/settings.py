@@ -63,6 +63,8 @@ XBMC_API_URLS = [
     'http://localhost:8080/jsonrpc'
 ]
 
+FREE_SPACE = 30 #GB
+
 #############################################
 #### !!!!DO NOT CHANGE ANYTHING BELOW!!!! ###
 #############################################
@@ -242,6 +244,16 @@ LOGGING = {
             'propagate': True,
             'level':'INFO',
         },
+        'GuessEpisodeInfoFromPosition': {
+            'handlers':['console'],
+            'propagate': True,
+            'level':'INFO',
+        },
+        'GuessFiletype': {
+            'handlers':['console'],
+            'propagate': True,
+            'level':'INFO',
+        },
 
         'south': {
             'handlers':['console'],
@@ -326,6 +338,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.core.context_processors.static',
     'django.contrib.messages.context_processors.messages',
     'django_mobile.context_processors.flavour',
+    'lazyui.context_processors.errors',
 )
 
 TEMPLATE_LOADERS = (
@@ -336,7 +349,7 @@ TEMPLATE_LOADERS = (
 
 
 REST_FRAMEWORK = {
-    'EXCEPTION_HANDLER': 'lazycore.utils.custom_exception_handler'
+    'EXCEPTION_HANDLER': 'lazyapi.utils.custom_exception_handler'
 }
 
 __VERSION__ = 2
@@ -387,21 +400,7 @@ if not os.path.exists(MEDIA_ROOT):
     #create it
     os.mkdir(MEDIA_ROOT)
 
-for path in [TMPFOLDER,
-             MEDIA_ROOT,
-             DATA_PATH,
-             INCOMING_PATH,
-             TVHD,
-             TVHD_TEMP,
-             XVID,
-             XVID_TEMP,
-             REQUESTS_TEMP,
-             HD,
-             HD_TEMP]:
-    if not os.path.exists(path):
-        raise Exception("Folder dose not exist %s" % path)
-    if not os.access(path, os.W_OK):
-        raise Exception("Cannot write to folder %s" % path)
+
 
 
 ##############

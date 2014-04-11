@@ -2,6 +2,7 @@ __author__ = 'steve'
 import guessit
 from django.conf import settings
 import re
+from flexget.utils.qualities import Quality
 
 class MetaParser():
 
@@ -11,7 +12,8 @@ class MetaParser():
 
     title = ""
     details = []
-    type
+    type = 3
+    quality = None
 
     def __init__(self, title, type=TYPE_UNKNOWN):
         self.title = title
@@ -25,6 +27,7 @@ class MetaParser():
                 self.type = self.TYPE_MOVIE
 
         self.details = self.get_details()
+        self.quality = Quality(title)
 
     def get_season(self):
         seasons = self.get_seasons()

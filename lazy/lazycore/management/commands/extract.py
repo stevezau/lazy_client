@@ -11,7 +11,7 @@ from lazycore.utils.queuemanager import QueueManager
 
 logger = logging.getLogger(__name__)
 
-LOCK_EXPIRE = 60 * 5 # Lock expires in 5 minutes
+LOCK_EXPIRE = 60 * 20 # Lock expires in 20 minutes
 
 class Command(BaseCommand):
 
@@ -50,12 +50,6 @@ class Command(BaseCommand):
 
         if not acquire_lock():
             logger.debug("Extract already running, exiting")
-            return
-
-        lock_id = "%s-lock" % (self.name)
-
-        if not acquire_lock():
-            logger.debug("Extractor already running, exiting")
             return
 
         #Find jobs running and if they are finished or not

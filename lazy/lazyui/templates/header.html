@@ -4,3 +4,14 @@
         {% sitetree_menu from "lazymenu" include "trunk"  template "headermenu.html" %}
     <div style="clear: both;"></div>
 </div>
+
+{% if errors %}
+
+    <div class="middle">
+        {% for error in lazy_errors %}
+            <div class="error">Error: {{ error }}</div>
+        {% endfor %}
+    </div>
+
+{% endif %}
+
