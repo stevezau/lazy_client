@@ -21,6 +21,7 @@ from lazycore.utils.jsonfield.fields import JSONField
 from celery.task.control import revoke
 from lazycore.utils.ftpmanager.mirror import FTPMirror
 from django.core.cache import cache
+
 from django.db.models import Q
 from flexget.utils import qualities
 
@@ -692,6 +693,8 @@ def add_new_imdbitem(sender, created, instance, **kwargs):
 @receiver(pre_save, sender=DownloadItem)
 def add_new_downloaditem_pre(sender, instance, **kwargs):
 
+    from lazycore.utils.metaparser import MetaParser
+
     if instance.id is None:
         logger.debug("Adding a new download %s" % instance.ftppath)
 
@@ -792,14 +795,27 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
                     dlitem_title = dlitem_parser.details['series']
 
                 if dlitem_title and dlitem_title.lower() == title.lower():
-                    logger.info("Found %s already in queue, lets see what is better quality" % dlitem.title)
 
-                    if dlitem_parser.quality > parser.quality:
-                        logger.info("Download already existsin queue with better quality will ignore this one")
-                        raise AlradyExists_Updated(dlitem)
+                    check = False
+
+                    if parser.type == MetaParser.TYPE_TVSHOW:
+                        if 'season' in parser.details and 'episodeNumber' in parser.details and 'season' in dlitem_parser.details and 'episodeNumber' in dlitem_parser.details:
+                            if parser.details['season'] == dlitem_parser.details['season'] and parser.details['season'] == dlitem_parser.details['episodeNumber']:
+                                check = True
+
                     else:
-                        logger.info("Deleting %s from queue as it has a lower quality" % dlitem.title)
-                        dlitem.delete()
+                        check = True
+
+                    if check:
+
+                        logger.info("Found %s already in queue, lets see what is better quality" % dlitem.title)
+
+                        if dlitem_parser.quality > parser.quality:
+                            logger.info("Download already existsin queue with better quality will ignore this one")
+                            raise AlradyExists_Updated(dlitem)
+                        else:
+                            logger.info("Deleting %s from queue as it has a lower quality" % dlitem.title)
+                            dlitem.delete()
 
 
     tvdbapi = Tvdb()
