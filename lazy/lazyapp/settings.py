@@ -13,6 +13,8 @@ import os
 ###Lazy settings###
 ###################
 
+__VERSION__ = 3
+
 # XBMC Details
 QUEUE = "rabbitmq"
 
@@ -352,7 +354,7 @@ REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'lazyapi.utils.custom_exception_handler'
 }
 
-__VERSION__ = 2
+
 
 
 from lazysettings import *
