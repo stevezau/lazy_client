@@ -140,7 +140,7 @@ class FTPMirror:
             c = pycurl.Curl()
             c.fp = None
             c.setopt(pycurl.FOLLOWLOCATION, 1)
-            c.setopt(pycurl.FTP_RESPONSE_TIMEOUT, 20)
+            #c.setopt(pycurl.FTP_RESPONSE_TIMEOUT, 20)
             c.setopt(pycurl.TIMEOUT, settings.FTP_TIMEOUT_WAIT_DOWNLOAD)
 
             c.setopt(pycurl.MAXREDIRS, 5)
@@ -189,7 +189,7 @@ class FTPMirror:
                     logger.debug("breaking")
                     if len(freelist) == settings.THREADS_PER_DOWNLOAD:
                         logger.debug("Sleeping 1 second")
-                        time.sleep(4)
+                        time.sleep(1)
                     break
 
                 url, filename, remote_size, ___ = queue.pop(pop_key)
