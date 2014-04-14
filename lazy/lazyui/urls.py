@@ -5,12 +5,13 @@ from django.core.urlresolvers import reverse_lazy
 from lazyui.views import downloads, config, other
 from lazyui.views import home
 
+from django.contrib.auth.views import login
 
 urlpatterns = patterns('',
 
     #Login
-    (r'^login/$', 'django.contrib.auth.views.login', {'template_name': 'login.html'}),
-    (r'^logout/$', 'django.contrib.auth.views.logout_then_login'),
+    url(r'^login/$', 'django.contrib.auth.views.login', {'template_name': 'login.html'}, name="login"),
+    url(r'^logout/$', 'django.contrib.auth.views.logout_then_login', name="logout"),
 
 
     #Home - Default Index

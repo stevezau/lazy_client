@@ -216,6 +216,8 @@ class QueueManager():
                             dlItem.download()
 
                         except ftplib.error_perm as e:
+                            logger.exception(e)
+
                             #It does not exist?
                             if "FileNotFound" in e.message:
                                 if dlItem.requested:
@@ -223,25 +225,27 @@ class QueueManager():
                                     dlItem.message = 'Waiting for item to appear on ftp'
                                     dlItem.save()
                                     continue
-                            else:
-                                logger.error(e)
-                                dlItem.message = e.message
-                                dlItem.log(e.message)
-                                dlItem.retries += 1
-                                dlItem.save()
-                                continue
+
+                            logger.error(e.message)
+                            dlItem.message = e.message
+                            dlItem.log(e.message)
+                            dlItem.retries += 1
+                            dlItem.save()
+                            continue
 
                         except DownloadException as e:
-                            if e.message == "Unable to get size and files on the FTP":
-                                if dlItem.requested:
-                                    logger.debug(e)
-                                    dlItem.message = 'Waiting for item to appear on ftp'
-                                    dlItem.save()
+                            logger.exception(e)
+
+                            if dlItem.requested and e.message == "Unable to get size and files on the FTP":
+                                logger.debug(e)
+                                dlItem.message = 'Waiting for item to appear on ftp'
+                                dlItem.save()
                             else:
                                 dlItem.log(e)
                                 dlItem.message = e
                                 dlItem.retries += 1
                                 dlItem.save()
+
                             continue
                         except Exception as e:
                             dlItem.log(e.message)

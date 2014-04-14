@@ -1,6 +1,8 @@
 from django.http import HttpResponseRedirect
 from django.conf import settings
 from re import compile
+from django.core.urlresolvers import reverse
+
 
 EXEMPT_URLS = [compile(settings.LOGIN_URL.lstrip('/'))]
 if hasattr(settings, 'LOGIN_EXEMPT_URLS'):
@@ -24,8 +26,9 @@ class LoginRequiredMiddleware:
  work, ensure your TEMPLATE_CONTEXT_PROCESSORS setting includes\
  'django.core.context_processors.auth'."
 
+        if settings.PWD_PROTECT:
+            if not request.user.is_authenticated():
+                path = request.path_info.lstrip('/')
 
-        if not request.user.is_authenticated():
-            path = request.path_info.lstrip('/')
-            if not any(m.match(path) for m in EXEMPT_URLS):
-                return HttpResponseRedirect(settings.LOGIN_URL)
+                if not any(m.match(path) for m in EXEMPT_URLS):
+                    return HttpResponseRedirect(reverse('login') + "?next=" + request.path)

@@ -74,6 +74,7 @@ FREE_SPACE = 30 #GB
 FTP_TIMEOUT_RETRY_COUNT = 3
 FTP_TIMEOUT_RETRY_DELAY = 10  #Seconds
 FTP_TIMEOUT_WAIT = 120  #Seconds
+FTP_TIMEOUT_WAIT_DOWNLOAD = 20  #Seconds
 
 DOWNLOAD_RETRY_COUNT = 3
 DOWNLOAD_RETRY_DELAY = 15 #minutes
@@ -298,8 +299,6 @@ MIDDLEWARE_CLASSES = (
     'lazyui.middleware.LoginRequiredMiddleware',
 )
 
-LOGIN_URL = '/lazy/login/'
-
 LOGIN_EXEMPT_URLS = (
     'login/',
     'lazy/api',
@@ -324,6 +323,8 @@ USE_TZ = True
 INTERNAL_IPS = (
     '192.168.0.200'
 )
+
+PWD_PROTECT = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.6/howto/static-files/

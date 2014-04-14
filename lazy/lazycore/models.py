@@ -138,11 +138,8 @@ class DownloadItem(models.Model):
                 from lazycore.utils.extractor.tvshow import TVExtractor
                 extractor = TVExtractor()
                 extractor.extract()
-
             elif parser.type == parser.TYPE_MOVIE:
                 from lazycore.utils.extractor.movie import MovieExtractor
-
-
             else:
                 raise Exception("Unable to figure out if this is a movie or tvshow")
         finally:
@@ -167,6 +164,8 @@ class DownloadItem(models.Model):
         #Find jobs running and if they are finished or not
         task = self.get_task()
 
+        logger.debug("Job task state: %s" % task)
+
         if None is task:
             pass
         elif task.state == "REVOKED":
@@ -177,7 +176,6 @@ class DownloadItem(models.Model):
         else:
             self.log("%s already being downloaded" % self.ftppath)
             return
-
 
         if self.onlyget:
             #we dont want to get everything.. lets figure this out
