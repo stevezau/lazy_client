@@ -4,18 +4,15 @@ import logging
 from fabric.api import *
 from fabric.colors import green, red
 from fabric.operations import prompt
-from fabric.api import run
-from fabric.tasks import execute
 from lazycore.utils.queuemanager import QueueManager
 from optparse import make_option
-import os.path
+import os
 from importlib import import_module
 import pkgutil
 from fabric.api import settings
-from django.conf import settings
 from lazycore.models import Version
+from django.conf import settings as djangosettings
 from django.core.exceptions import ObjectDoesNotExist
-import thread
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +37,10 @@ class Command(BaseCommand):
         self.do_upgrade(git=git)
 
     def do_upgrade(self, git=True):
+
+        if os.path.exists("lazysettings.bk"):
+            local("mv lazysettings.bk lazysettings.py")
+
         #First stop all
         self.stop_all()
 
@@ -62,7 +63,7 @@ class Command(BaseCommand):
         print(green("Deleting old python files..."))
         local("find /home/media/lazy -name \"*.pyc\" -exec rm -rf {} \;")
 
-    def update_version(self, version=settings.__VERSION__):
+    def update_version(self, version=djangosettings.__VERSION__):
         try:
             cur_version = Version.objects.get(id=1)
             cur_version.id = 1
@@ -112,21 +113,30 @@ class Command(BaseCommand):
 
         with settings(warn_only=True):
 
-            print(green("Pulling master from GitHub..."))
+            retries = 5
 
-            for i in range(3):
+            for i in range(retries):
+
+                up_to = retries - i
 
                 if replace:
-                    result = local('git pull')
+                    local("mv lazysettings.py lazysettings.bk")
+                    local("git stash")
+                    local("git stash drop")
+                    local("mv lazysettings.bk lazysettings.py")
+                    local("chmod +x manage.py")
+                    result = local('git pull', capture=True)
                 else:
-                    result = local('git pull')
+                    result = local('git pull', capture=True)
 
-                if result.stdout.find("Invalid username or password"):
-                    print(red("Invalid user/pass for Git, i'll give you 1 more try!..."))
+
+                if "Invalid username or password" in result.stderr:
+                    print(red("Invalid user/pass for Git, try again!..."))
                     continue
 
-                if result.stdout.find("Your local changes to the following files would be overwritten by merge:"):
+                if "Your local changes to the following files would be overwritten by merge:" in result.stderr:
                     print(red("Appears you have edited files locally, shall i replace them?"))
+                    print result.stderr
                     replace = prompt("What is your password?", default="yes", validate=r'yes|no')
 
                     if replace == "yes":
@@ -137,9 +147,9 @@ class Command(BaseCommand):
                 if result.return_code == 0:
                     return
                 else:
-                   print(red("Invalud return code, lets try again"))
+                   print(red("Invalid return code, lets try again"))
 
-            raise SystemExit()
+            raise SystemExit("ERROR: Unable to get latest files from GitHub")
 
     def install_reqs(self):
         print(green("Installing requirements..."))
