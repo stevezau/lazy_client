@@ -440,6 +440,11 @@ class DownloadItem(models.Model):
 
         return percent_complete
 
+    def clear_log(self):
+        for obj in self.downloadlog_set.all():
+            obj.delete()
+
+
 class Imdbcache(models.Model):
 
     class Meta:

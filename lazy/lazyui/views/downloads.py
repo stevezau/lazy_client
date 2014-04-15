@@ -19,6 +19,16 @@ class DownloadLog(DetailView):
     model = DownloadItem
     template_name = "downloads/log.html"
 
+    def post(self, request, *args, **kwargs):
+        items = request.POST.getlist('item')
+
+        if items:
+            request.session["fixitems"] = items
+            self.request.session.modified = True
+            return HttpResponseRedirect(reverse('downloads.manualfixitem', kwargs={'pk': items[0]}))
+
+        return super(DownloadsManuallyFix, self).post(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super(DownloadLog, self).get_context_data(**kwargs)
         context['selectable'] = False
@@ -373,8 +383,7 @@ def approve(items):
     response.status_code = status
     return response
 
-
-def update(request, type):
+def update(request, action):
 
     if request.method == 'POST':
         items = request.POST.getlist('item')
@@ -382,7 +391,7 @@ def update(request, type):
         if len(items) == 0:
             return HttpResponse("Nothing selected", content_type="text/plain", status=210)
         try:
-            function = common.load_button_module("lazyui.views.downloads", type)
+            function = common.load_button_module("lazyui.views.downloads", action)
             return function(items)
         except Exception as e:
             logger.exception(e)
@@ -390,3 +399,15 @@ def update(request, type):
 
     return HttpResponse("Invalid request", content_type="text/plain")
 
+def downloadlog_clear(request, pk):
+
+    response = HttpResponse(content_type="text/plain")
+
+    try:
+        obj = DownloadItem.objects.get(id=pk)
+        obj.clear_log()
+        response.write("Cleared log")
+    except Exception as e:
+        response.write("Unable to clear log.. %s" % e)
+
+    return response

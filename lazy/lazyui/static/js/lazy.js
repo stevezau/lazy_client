@@ -245,11 +245,14 @@ $( document ).ready(function() {
 		var okPage = $('.downloads').attr('okPage');
 		var refresh = $('.downloads').attr('refresh');
 		var downloads = $('.downloads').length;
-		
-		if (downloads == 0) {
-			refresh = 'false';
-		}
-		
+        var button_reload_page = $(this).attr('reload');
+
+        if (refresh == undefined) {
+            if (downloads == 0) {
+                refresh = 'false';
+            }
+        }
+
 		event.preventDefault();
 		
 		formdata=$('#formID').serialize();
@@ -276,19 +279,24 @@ $( document ).ready(function() {
 			     
 			      buttons: {
 			          Ok: function() {
-				    	  	if (okPage == undefined) {
-				    	  		$( this ).dialog( "close" );
-				    	  	} else {
-				    	  		window.location.href = okPage;
-				    	  		
-				    	  	}
-				    	  	$(window).scrollTop(0);
+                          if (button_reload_page == "true") {
+                              $( this ).dialog( "close" );
+                              location.reload();
+                          }
+                          if (okPage == undefined) {
+                              $( this ).dialog( "close" );
+                          } else {
+                              window.location.href = okPage;
+
+                          }
+                          $(window).scrollTop(0);
 			          }
 			        }
 			    });
 
 		});
-		return false;
+
+ 		return false;
 	});
 	
 	
