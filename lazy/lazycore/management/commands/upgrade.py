@@ -3,6 +3,7 @@ from django.core.management.base import BaseCommand
 import logging
 from fabric.api import *
 from fabric.colors import green, red
+from fabric.operations import prompt
 from fabric.api import run
 from fabric.tasks import execute
 from lazycore.utils.queuemanager import QueueManager
@@ -10,7 +11,7 @@ from optparse import make_option
 import os.path
 from importlib import import_module
 import pkgutil
-
+from fabric.api import settings
 from django.conf import settings
 from lazycore.models import Version
 from django.core.exceptions import ObjectDoesNotExist
@@ -106,8 +107,39 @@ class Command(BaseCommand):
         local("sudo service apache2 stop")
 
     def git_pull(self):
-        print(green("Pulling master from GitHub..."))
-        local('git pull')
+
+        replace = False
+
+        with settings(warn_only=True):
+
+            print(green("Pulling master from GitHub..."))
+
+            for i in range(3):
+
+                if replace:
+                    result = local('git pull')
+                else:
+                    result = local('git pull')
+
+                if result.stdout.find("Invalid username or password"):
+                    print(red("Invalid user/pass for Git, i'll give you 1 more try!..."))
+                    continue
+
+                if result.stdout.find("Your local changes to the following files would be overwritten by merge:"):
+                    print(red("Appears you have edited files locally, shall i replace them?"))
+                    replace = prompt("What is your password?", default="yes", validate=r'yes|no')
+
+                    if replace == "yes":
+                        replace == True
+
+                    continue
+
+                if result.return_code == 0:
+                    return
+                else:
+                   print(red("Invalud return code, lets try again"))
+
+            raise SystemExit()
 
     def install_reqs(self):
         print(green("Installing requirements..."))
