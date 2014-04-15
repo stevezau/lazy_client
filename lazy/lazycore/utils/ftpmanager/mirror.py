@@ -140,7 +140,7 @@ class FTPMirror:
             c = pycurl.Curl()
             c.fp = None
             c.setopt(pycurl.FOLLOWLOCATION, 1)
-            #c.setopt(pycurl.TIMEOUT, settings.FTP_TIMEOUT_WAIT_DOWNLOAD)
+            c.setopt(pycurl.TIMEOUT, settings.FTP_TIMEOUT_WAIT_DOWNLOAD)
 
             c.setopt(pycurl.MAXREDIRS, 5)
             c.setopt(pycurl.NOSIGNAL, 1)

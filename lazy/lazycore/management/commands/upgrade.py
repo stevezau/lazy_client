@@ -137,7 +137,7 @@ class Command(BaseCommand):
                 if "Your local changes to the following files would be overwritten by merge:" in result.stderr:
                     print(red("Appears you have edited files locally, shall i replace them?"))
                     print result.stderr
-                    replace = prompt("What is your password?", default="yes", validate=r'yes|no')
+                    replace = prompt("Replace locally edit files?", default="yes", validate=r'yes|no')
 
                     if replace == "yes":
                         replace == True
