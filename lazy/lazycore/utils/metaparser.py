@@ -107,5 +107,5 @@ class MetaParser():
             self.details = guessit.guess_movie_info(self.title)
             return self.details
         else:
-            #unknown
-            pass
+            self.details = guessit.guess_video_info(self.title)
+            return self.details
