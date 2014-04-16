@@ -216,7 +216,7 @@ def download_torrent(items):
             path = ftpmanager.download_torrent(site, torrent)
 
             if path and not path == "":
-                response.write("Downloading to %s" % path)
+                response.write("Downloading to %s\n" % path)
 
                 #Now add it to the queue
                 new_download_item = DownloadItem()
@@ -226,11 +226,12 @@ def download_torrent(items):
                 new_download_item.save()
 
             else:
-                response.write("Unable to download %s as it was not found") % torrent
+                response.write("Unable to download %s as it was not found\n") % torrent
 
         except Exception as e:
+            logger.exception(e)
             status = 210
-            response.write("Unable to download %s as %s" % (item, e))
+            response.write("Unable to download %s as %s\n" % (item, e))
 
     response.status_code = status
     return response
