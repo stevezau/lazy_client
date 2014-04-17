@@ -173,7 +173,7 @@ def connect():
             #first lets close any existing connections
             close()
             ftps.set_debuglevel(0)
-            ftps.connect(settings.FTP_IP, settings.FTP_PORT, timeout=settings.FTP_TIMEOUT_WAIT)
+            ftps.connect(settings.FTP_IP, settings.FTP_PORT, timeout=settings.FTP_TIMEOUT_CONNECT)
             logger.debug("Connected")
             logger.debug("Logging in")
             ftps.login(settings.FTP_USER, settings.FTP_PASS)

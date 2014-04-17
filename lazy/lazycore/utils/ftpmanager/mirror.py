@@ -6,6 +6,7 @@ from django.conf import settings
 from djcelery_transactions import task
 import pycurl
 import time
+from threading import Timer
 from datetime import datetime
 from celery import current_task
 from lazycore import utils
@@ -18,11 +19,15 @@ retry_on_errors = [
     13,  #CURLE_FTP_WEIRD_PASV_REPLY (13) libcurl failed to get a sensible result back from the server as a response to either a PASV or a EPSV command. The server is flawed.
     14,  #CURLE_FTP_WEIRD_227_FORMAT
     35,
+    42, #Callback aborted (timed out)
     7,  #Connection refused
     12,  #CURLE_FTP_ACCEPT_TIMEOUT (12) During an active FTP session while waiting for the server to connect, the CURLOPT_ACCEPTTIMOUT_MS (or the internal default) timeout expired.
     23,  #CURLE_WRITE_ERROR (23) An error occurred when writing received data to a local file, or an error was returned to libcurl from a write callback.
     28,  #CURLE_OPERATION_TIMEDOUT (28) Operation timeout. The specified time-out period was reached according to the conditions.
 ]
+
+def timer_fn():
+    return
 
 def signal_term_handler(signal, frame):
 
@@ -56,11 +61,62 @@ def signal_term_handler(signal, frame):
 
 class FTPChecker:
 
-    def progress_check(self, download_t, download_d, upload_t, upload_d):
-        print "Total to download", download_t
-        print "Total downloaded", download_d
-        print "Total to upload", upload_t
-        print "Total uploaded", upload_d
+    last_check = time.time()
+    downloaded = 0
+    killed = False
+
+    def __init__(self):
+        self.start_timer()
+
+    def start_timer(self):
+        self.timer = Timer(settings.FTP_TIMEOUT_TRANSFER, timer_fn)
+        self.timer.start()
+
+    def progress_check(self, dltotal, dlnow, ultotal, ulnow):
+        if self.killed:
+            return 2
+
+        if not self.timer.isAlive():
+            logger.debug("Running check on data rate to make sure it has not died!")
+
+            if None is self.downloaded:
+                self.downloaded = dlnow
+                return
+
+            #seconds since last check
+            now = time.time()
+            seconds_last_check = now - self.last_check
+
+            logger.debug("DLTotal: %s  dlnow: %s    downloaded: %s  " % (dltotal, dlnow, self.downloaded))
+            #logger.debug("last_check %s    seconds_since %s " % (self.last_check, seconds_last_check))
+
+            #lets figure out the transfer rate over the last interval
+            if self.downloaded == 0:
+                got_bytes = dlnow
+            else:
+                got_bytes = dlnow - self.downloaded
+
+            xfer_rate = round(got_bytes / seconds_last_check)
+
+            #logger.debug("Got bytes: %s" % got_bytes)
+            #logger.debug("XFER RATE BYTES: %s" % xfer_rate)
+
+            xfer_rate_human = common.bytes2human(xfer_rate, "%(value).1f %(symbol)s/sec")
+            logger.debug("XFER RATE HUMAN: %s" % xfer_rate_human)
+
+            self.downloaded = dlnow
+
+            if xfer_rate < settings.FTP_TIMEOUT_MIN_SPEED:
+                logger.debug("NO DATA RECEIVED LETS KILL IT")
+                #hmm, lets kill it!
+                self.killed = True
+                return 2
+
+            #now launch a new timer
+            self.last_check = time.time()
+            self.start_timer()
+
+
 
 class FTPMirror:
 
@@ -78,6 +134,8 @@ class FTPMirror:
     @task(bind=True)
     def mirror_ftp_folder(self, urls, dlitem):
 
+        update_interval = 3 #seconds
+
         if not utils.queuemanager.QueueManager.queue_running():
             logger.debug("Queue is stopped, exiting")
             return
@@ -88,7 +146,8 @@ class FTPMirror:
 
         dlitem.log("Starting Download")
 
-        last_status_update = datetime.now()
+        self.timer = Timer(update_interval, timer_fn)
+        self.timer.start()
 
         self.m = pycurl.CurlMulti()
 
@@ -158,12 +217,11 @@ class FTPMirror:
             c.setopt(pycurl.SSL_VERIFYHOST, 0)
 
             #TIMER FUNCTIONS
-            c.setopt(pycurl.LOW_SPEED_LIMIT, settings.FTP_TIMEOUT_MIN_SPEED)
-            c.setopt(pycurl.LOW_SPEED_TIME, settings.FTP_TIMEOUT_WAIT_DOWNLOAD)
+            #c.setopt(pycurl.LOW_SPEED_LIMIT, settings.FTP_TIMEOUT_MIN_SPEED)
+            #c.setopt(pycurl.LOW_SPEED_TIME, settings.FTP_TIMEOUT_WAIT_DOWNLOAD)
             #c.setopt(pycurl.TIMEOUT, 3600)
 
-            #c.setopt(c.NOPROGRESS, 0)
-            #c.setopt(c.PROGRESSFUNCTION, progress)
+            c.setopt(c.NOPROGRESS, 0)
 
             #PRET SUPPORT
             c.setopt(188, 1)
@@ -209,6 +267,9 @@ class FTPMirror:
 
                 url, filename, remote_size, ___ = queue.pop(pop_key)
                 c = freelist.pop()
+
+                checker = FTPChecker()
+                c.setopt(c.PROGRESSFUNCTION, checker.progress_check)
 
                 dlitem.log("Remote file %s size: %s" % (filename, remote_size))
 
@@ -295,6 +356,10 @@ class FTPMirror:
 
                     #should we retry?
                     if errno in retry_on_errors:
+
+                        if errmsg == "Callback aborted":
+                            errmsg = "No data received for %s seconds" % settings.FTP_TIMEOUT_TRANSFER
+
                         msg = "Unlimited retrying: %s %s %s" % (os.path.basename(c.filename), errno, errmsg)
                         queue.append((c.url, c.filename, c.remote_size, datetime.now()))
                         num_processed -= 1
@@ -331,12 +396,7 @@ class FTPMirror:
                     break
 
             #should we update?
-            now = datetime.now()
-            seconds = (now-last_status_update).total_seconds()
-
-            if seconds > 3:
-                last_status_update = now
-
+            if not self.timer.isAlive():
                 #Lets get speed
                 speed = 0
 
@@ -347,6 +407,9 @@ class FTPMirror:
                         dlitem.log("error getting speed %s" % e.message)
 
                 current_task.update_state(state='RUNNING', meta={'updated': time.mktime(now.timetuple()), 'speed': speed, 'last_error': last_err})
+
+                self.timer = Timer(update_interval, timer_fn)
+                self.timer.start()
 
             # Currently no more I/O is pending, could do something in the meantime
             # (display a progress bar, etc.).
