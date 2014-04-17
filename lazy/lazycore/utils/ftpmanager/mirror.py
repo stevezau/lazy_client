@@ -54,6 +54,13 @@ def signal_term_handler(signal, frame):
 
         print "key: %s | val %s" % (key, value)
 
+class FTPChecker:
+
+    def progress_check(self, download_t, download_d, upload_t, upload_d):
+        print "Total to download", download_t
+        print "Total downloaded", download_d
+        print "Total to upload", upload_t
+        print "Total uploaded", upload_d
 
 class FTPMirror:
 
@@ -143,16 +150,20 @@ class FTPMirror:
             c = pycurl.Curl()
             c.fp = None
             c.setopt(pycurl.FOLLOWLOCATION, 1)
-            c.setopt(pycurl.LOW_SPEED_LIMIT, settings.FTP_TIMEOUT_MIN_SPEED)
-            c.setopt(pycurl.LOW_SPEED_TIME, settings.FTP_TIMEOUT_WAIT_DOWNLOAD)
-            c.setopt(pycurl.TIMEOUT, 3600)
-
             c.setopt(pycurl.MAXREDIRS, 5)
             c.setopt(pycurl.NOSIGNAL, 1)
             #c.setopt(pycurl.VERBOSE, 1)
             c.setopt(pycurl.FTP_SSL, pycurl.FTPSSL_ALL)
             c.setopt(pycurl.SSL_VERIFYPEER, 0)
             c.setopt(pycurl.SSL_VERIFYHOST, 0)
+
+            #TIMER FUNCTIONS
+            c.setopt(pycurl.LOW_SPEED_LIMIT, settings.FTP_TIMEOUT_MIN_SPEED)
+            c.setopt(pycurl.LOW_SPEED_TIME, settings.FTP_TIMEOUT_WAIT_DOWNLOAD)
+            #c.setopt(pycurl.TIMEOUT, 3600)
+
+            #c.setopt(c.NOPROGRESS, 0)
+            #c.setopt(c.PROGRESSFUNCTION, progress)
 
             #PRET SUPPORT
             c.setopt(188, 1)
