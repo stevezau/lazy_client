@@ -39,11 +39,18 @@ def signal_term_handler(signal, frame):
 
         try:
             if key == "self":
+
                 for c in value.m.handles:
-                    print c.getinfo(pycurl.EFFECTIVE_URL)
-                    print c.getinfo(pycurl.FTP_RESPONSE_TIMEOUT)
-        except:
-            pass
+                    print "Effective url %s:" % c.getinfo(pycurl.EFFECTIVE_URL)
+                    print "CURLINFO_TOTAL_TIME:%s" % c.getinfo(pycurl.TOTAL_TIME)
+                    print "CURLINFO_CONNECT_TIME:%s" % c.getinfo(pycurl.CONNECT_TIME)
+                    print "CURLINFO_STARTTRANSFER_TIME:%s" % c.getinfo(pycurl.STARTTRANSFER_TIME)
+                    print "CURLINFO_SIZE_DOWNLOAD:%s" % c.getinfo(pycurl.SIZE_DOWNLOAD)
+                    print "CURLINFO_SPEED_DOWNLOAD:%s" % c.getinfo(pycurl.SPEED_DOWNLOAD)
+                    print "CURLINFO_CONTENT_LENGTH_DOWNLOAD:%s" % c.getinfo(pycurl.CONTENT_LENGTH_DOWNLOAD)
+
+        except Exception as e:
+            logger.exception(e)
 
         print "key: %s | val %s" % (key, value)
 
@@ -54,16 +61,12 @@ class FTPMirror:
         # We should ignore SIGPIPE when using pycurl.NOSIGNAL - see
         # the libcurl tutorial for more info.
 
-        try:
-            import signal
-            from signal import SIGPIPE, SIG_IGN
-            SIGUSR1 = 10
+        import signal
+        SIGUSR1 = 10
 
-            signal.signal(SIGUSR1, signal_term_handler)
-            signal.signal(signal.SIGPIPE, signal.SIG_IGN)
+        signal.signal(SIGUSR1, signal_term_handler)
+        signal.signal(signal.SIGPIPE, signal.SIG_IGN)
 
-        except ImportError:
-            pass
 
     @task(bind=True)
     def mirror_ftp_folder(self, urls, dlitem):
@@ -142,6 +145,7 @@ class FTPMirror:
             c.setopt(pycurl.FOLLOWLOCATION, 1)
             c.setopt(pycurl.LOW_SPEED_LIMIT, settings.FTP_TIMEOUT_MIN_SPEED)
             c.setopt(pycurl.LOW_SPEED_TIME, settings.FTP_TIMEOUT_WAIT_DOWNLOAD)
+            c.setopt(pycurl.TIMEOUT, 3600)
 
             c.setopt(pycurl.MAXREDIRS, 5)
             c.setopt(pycurl.NOSIGNAL, 1)
