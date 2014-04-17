@@ -62,60 +62,65 @@ def signal_term_handler(signal, frame):
 class FTPChecker:
 
     last_check = time.time()
-    downloaded = 0
+    downloaded = None
     killed = False
 
-    def __init__(self):
-        self.start_timer()
+    def __init__(self, thread_num):
+        self.thread_num = thread_num
 
-    def start_timer(self):
-        self.timer = Timer(settings.FTP_TIMEOUT_TRANSFER, timer_fn)
-        self.timer.start()
+    def debug(self, msg):
+        logger.debug("CURL Thread %s %s:  " %(self.thread_num, msg))
+
+    def get_rate(self, dlprevious, dlnow, interval):
+        #lets figure out the transfer rate over the last interval
+        if dlprevious == 0:
+            got_bytes = dlnow
+        else:
+            got_bytes = dlnow - dlprevious
+
+        xfer_rate = round(got_bytes / interval)
+
+        self.debug("Got bytes: %s" % got_bytes)
+
+        xfer_rate_human = common.bytes2human(xfer_rate, "%(value).1f %(symbol)s/sec")
+        self.debug("XFER RATE: %s" % xfer_rate_human)
+
+        return xfer_rate
+
+    def reset(self):
+        self.downloaded = None
+        self.last_check = time.time()
+        self.killed = False
 
     def progress_check(self, dltotal, dlnow, ultotal, ulnow):
         if self.killed:
+            self.debug("Job was already killed, exiting")
             return 2
 
-        if not self.timer.isAlive():
-            logger.debug("Running check on data rate to make sure it has not died!")
+        #seconds since last check
+        now = time.time()
+        seconds_last_check = now - self.last_check
+
+        if seconds_last_check > settings.FTP_TIMEOUT_TRANSFER:
+            self.debug("Running check on data rate to make sure it has not died! seconds %s" % (seconds_last_check))
+            self.debug("DLTotal: %s  dlnow: %s    downloaded: %s  " % (dltotal, dlnow, self.downloaded))
+
+            self.last_check = time.time()
 
             if None is self.downloaded:
                 self.downloaded = dlnow
+                self.debug("First time check, skipping")
                 return
 
-            #seconds since last check
-            now = time.time()
-            seconds_last_check = now - self.last_check
-
-            logger.debug("DLTotal: %s  dlnow: %s    downloaded: %s  " % (dltotal, dlnow, self.downloaded))
-            #logger.debug("last_check %s    seconds_since %s " % (self.last_check, seconds_last_check))
-
-            #lets figure out the transfer rate over the last interval
-            if self.downloaded == 0:
-                got_bytes = dlnow
-            else:
-                got_bytes = dlnow - self.downloaded
-
-            xfer_rate = round(got_bytes / seconds_last_check)
-
-            #logger.debug("Got bytes: %s" % got_bytes)
-            #logger.debug("XFER RATE BYTES: %s" % xfer_rate)
-
-            xfer_rate_human = common.bytes2human(xfer_rate, "%(value).1f %(symbol)s/sec")
-            logger.debug("XFER RATE HUMAN: %s" % xfer_rate_human)
+            xfer_rate = self.get_rate(self.downloaded, dlnow, seconds_last_check)
 
             self.downloaded = dlnow
 
             if xfer_rate < settings.FTP_TIMEOUT_MIN_SPEED:
-                logger.debug("NO DATA RECEIVED LETS KILL IT")
+                self.debug("NO DATA RECEIVED LETS KILL IT")
                 #hmm, lets kill it!
                 self.killed = True
                 return 2
-
-            #now launch a new timer
-            self.last_check = time.time()
-            self.start_timer()
-
 
 
 class FTPMirror:
@@ -208,6 +213,7 @@ class FTPMirror:
         for i in range(settings.THREADS_PER_DOWNLOAD):
             c = pycurl.Curl()
             c.fp = None
+            c.thread_num = i
             c.setopt(pycurl.FOLLOWLOCATION, 1)
             c.setopt(pycurl.MAXREDIRS, 5)
             c.setopt(pycurl.NOSIGNAL, 1)
@@ -221,8 +227,10 @@ class FTPMirror:
             #c.setopt(pycurl.LOW_SPEED_TIME, settings.FTP_TIMEOUT_WAIT_DOWNLOAD)
             #c.setopt(pycurl.TIMEOUT, 3600)
 
-            c.setopt(c.NOPROGRESS, 0)
+            c.checker = FTPChecker(c.thread_num)
 
+            c.setopt(c.NOPROGRESS, 0)
+            c.setopt(c.PROGRESSFUNCTION, c.checker.progress_check)
             #PRET SUPPORT
             c.setopt(188, 1)
             self.m.handles.append(c)
@@ -268,8 +276,9 @@ class FTPMirror:
                 url, filename, remote_size, ___ = queue.pop(pop_key)
                 c = freelist.pop()
 
-                checker = FTPChecker()
-                c.setopt(c.PROGRESSFUNCTION, checker.progress_check)
+
+                c.checker.reset()
+                logger.debug("CREATE NEW Thread %s  sec: %s      OTHER: %s" % (c.checker.thread_num, c.checker.last_check, c.checker))
 
                 dlitem.log("Remote file %s size: %s" % (filename, remote_size))
 
@@ -337,12 +346,12 @@ class FTPMirror:
                         time.sleep(3)
 
                     if success:
-                        dlitem.log("Success:%s" % (os.path.basename(c.filename)))
+                        dlitem.log("CURL Thread: %s Success:%s" % (c.thread_num, os.path.basename(c.filename)))
                     else:
                         failed_list[c.filename] = 1
                         queue.append((c.url, c.filename, c.remote_size, datetime.now()))
                         num_processed -= 1
-                        dlitem.log("Failure: %s as it Didnt download properly, the local (%s) size does not match the remote size (%s), lets retry" % (os.path.basename(c.filename), local_size, c.remote_size))
+                        dlitem.log("CURL Thread: %s  Failure: %s as it Didnt download properly, the local (%s) size does not match the remote size (%s), lets retry" % (c.thread_num, os.path.basename(c.filename), local_size, c.remote_size))
 
                     c.fp = None
                     freelist.append(c)
@@ -360,7 +369,7 @@ class FTPMirror:
                         if errmsg == "Callback aborted":
                             errmsg = "No data received for %s seconds" % settings.FTP_TIMEOUT_TRANSFER
 
-                        msg = "Unlimited retrying: %s %s %s" % (os.path.basename(c.filename), errno, errmsg)
+                        msg = "CURL Thread %s: Unlimited retrying: %s %s %s" % (c.thread_num, os.path.basename(c.filename), errno, errmsg)
                         queue.append((c.url, c.filename, c.remote_size, datetime.now()))
                         num_processed -= 1
 
@@ -370,21 +379,21 @@ class FTPMirror:
                             count = failed_list.get(c.filename)
 
                             if count >= 3:
-                                msg = "Failed: %s %s %s" % (os.path.basename(c.filename), errno, errmsg)
+                                msg = "CURL Thread %s: Failed: %s %s %s" % (c.thread_num, os.path.basename(c.filename), errno, errmsg)
                                 last_err = errmsg
                             else:
                                 failed_list[c.filename] += 1
 
                                 #retry
                                 queue.append((c.url, c.filename, c.remote_size, datetime.now()))
-                                msg = "Retrying: %s %s %s" % (os.path.basename(c.filename), errno, errmsg)
+                                msg = "CURL Thread %s: Retrying: %s %s %s" % (c.thread_num, os.path.basename(c.filename), errno, errmsg)
                                 num_processed -= 1
 
                         else:
                             #lets retry
                             failed_list[c.filename] = 1
                             queue.append((c.url, c.filename, c.remote_size, datetime.now()))
-                            msg = "Retrying: %s %s %s" % (os.path.basename(c.filename), errno, errmsg)
+                            msg = "CURL Thread %s: Retrying: %s %s %s" % (c.thread_num, os.path.basename(c.filename), errno, errmsg)
                             num_processed -= 1
 
                     dlitem.log(msg)
@@ -406,7 +415,7 @@ class FTPMirror:
                     except Exception as e:
                         dlitem.log("error getting speed %s" % e.message)
 
-                current_task.update_state(state='RUNNING', meta={'updated': time.mktime(now.timetuple()), 'speed': speed, 'last_error': last_err})
+                current_task.update_state(state='RUNNING', meta={'updated': time.mktime(datetime.now().timetuple()), 'speed': speed, 'last_error': last_err})
 
                 self.timer = Timer(update_interval, timer_fn)
                 self.timer.start()

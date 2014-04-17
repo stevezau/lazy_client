@@ -101,7 +101,6 @@ def listdir():
 
     for line in listing:
         # Parse, assuming a UNIX listing
-        print line
         #type=file;x.crc32=f17667ca;size=50000000;modify=20140415232831.000;unix.owner=drftpd;unix.group=drftpd;x.slaves=SPG1; the.call.centre.s02e02.720p.hdtv.x264-c4tv.r20
         line_values = line.split(";")
 
