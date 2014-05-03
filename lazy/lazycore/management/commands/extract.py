@@ -67,7 +67,10 @@ class Command(BaseCommand):
         #if options['myoption'] == 'default':
         #    return 'Success!'
 
-        extract_all = options['extract_all']
+        if 'extract_all' in options:
+            extract_all = options['extract_all']
+        else:
+            extract_all = False
 
         #raise CommandError('Only the default is supported')
 
