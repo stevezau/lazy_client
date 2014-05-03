@@ -3,6 +3,7 @@
 
 -cleanup ftp
 
+-disxo
 
 CLEANUP SECTION
 --delete via watcehd flag

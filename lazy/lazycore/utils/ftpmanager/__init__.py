@@ -525,7 +525,7 @@ def getTVTorrentsSeason(site, show_names, season=0):
                 if ratio >= 0.93:
                     #its for this show..
 
-                    if common.match_str_regex(settings.TVSHOW_SPECIALS_REGEX, torrent):
+                    if common.match_str_regex(["(?i).+special.+"], torrent):
                         continue
 
                     try:

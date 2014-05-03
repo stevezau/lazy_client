@@ -9,7 +9,6 @@ from datetime import datetime, timedelta
 from lazycore.exceptions import *
 from lazycore.models import DownloadItem
 from django.core.exceptions import ObjectDoesNotExist
-from django.conf import settings
 from lazycore.utils.metaparser import MetaParser
 
 logger = logging.getLogger(__name__)

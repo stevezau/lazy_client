@@ -7,6 +7,7 @@ from django.conf import settings
 from lazyui import common
 from lazyapp.forms import Find, FindMissing
 from lazycore.utils import ftpmanager
+from lazycore.exceptions import AlradyExists, AlradyExists_Updated
 from lazycore.models import DownloadItem, Job
 from lazycore.utils.missingscanner import MissingScanner
 
@@ -218,12 +219,17 @@ def download_torrent(items):
             if path and not path == "":
                 response.write("Downloading to %s\n" % path)
 
-                #Now add it to the queue
-                new_download_item = DownloadItem()
-                new_download_item.status = DownloadItem.QUEUE
-                new_download_item.ftppath = path
-                new_download_item.requested = True
-                new_download_item.save()
+                try:
+                    #Now add it to the queue
+                    new_download_item = DownloadItem()
+                    new_download_item.status = DownloadItem.QUEUE
+                    new_download_item.ftppath = path
+                    new_download_item.requested = True
+                    new_download_item.save()
+                except AlradyExists:
+                    raise Exception("item already been downloaded!")
+                except AlradyExists_Updated:
+                    raise Exception("item already been downloaded!")
 
             else:
                 response.write("Unable to download %s as it was not found\n") % torrent

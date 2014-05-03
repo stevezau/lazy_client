@@ -32,17 +32,20 @@ def get_lazy_errors():
     errors = []
 
     #Firte lets check if it should be running..
-    for path in [settings.TMPFOLDER,
-         settings.MEDIA_ROOT,
-         settings.DATA_PATH,
-         settings.INCOMING_PATH,
-         settings.TVHD,
-         settings.TVHD_TEMP,
-         settings.XVID,
-         settings.XVID_TEMP,
-         settings.REQUESTS_TEMP,
-         settings.HD,
-         settings.HD_TEMP]:
+    for path in [
+        settings.TMPFOLDER,
+        settings.MEDIA_ROOT,
+        settings.DATA_PATH,
+        settings.INCOMING_PATH,
+        settings.TVHD,
+        settings.TVHD_TEMP,
+        settings.XVID,
+        settings.XVID_TEMP,
+        settings.REQUESTS_TEMP,
+        settings.HD,
+        settings.HD_TEMP
+    ]:
+
         if not os.path.exists(path):
             errors.append("Path does not exist: %s" % path)
         if not os.access(path, os.W_OK):
@@ -116,7 +119,7 @@ def compare_torrent_2_show(show, torrent):
 
     parser = MetaParser(torrent, type=MetaParser.TYPE_TVSHOW)
 
-    if match_str_regex(settings.DOCOS_REGEX, torrent):
+    if 'doco_channel' in parser.details:
         #we have a doco, lets strip the nato geo, doco title out for matching
         other_title = re.sub("History\.Channel|Discovery\.Channel|National\.Geographic", "", torrent)
         parser = MetaParser(other_title, type=MetaParser.TYPE_TVSHOW)
@@ -149,22 +152,6 @@ def remove_ignore(title):
     #Now lets write the new lines
     ins = open(settings.FLEXGET_IGNORE, "w")
     ins.writelines(newlines)
-
-
-def crc(fileName):
-    prev=0
-
-    ##for the script to work on any sfv file no matter where it's located , we have to parse the absolute path of each file within sfv
-    ##so, we will add the file path to each file name , pretty neat huh ?
-    fileName=os.path.join(fileName)
-
-    #print fileName
-    if os.path.exists(fileName):
-        store=open(fileName, "rb")
-        for eachLine in store:
-            prev = zlib.crc32(eachLine, prev)
-        return "%x"%(prev & 0xFFFFFFFF)
-        store.close()
 
 
 def get_file_quality(ext):
@@ -220,178 +207,9 @@ def compare_best_vid_file(f1, f2):
 
     return f1
 
-def crc_check(path):
-    logger.debug("Checking SFV in path %s" % path)
-    os.chdir(path)
-
-    foundSFV = False
-
-    for sfvFile in glob.glob("*.sfv"):
-        foundSFV = True
-        #DO SFV CHECK
-        s = open(sfvFile)
-
-        if os.path.getsize(sfvFile) == 0:
-            logger.debug('empty sfv file')
-            return False
-
-        names_list = []
-        sfv_list = []
-
-        ##loop thru all lines of sfv, removes all unnecessary /r /n chars, split each line to two values,creates two distinct arrays
-        for line in s.readlines():
-            if line.startswith(';'):
-                continue
-            m=line.rstrip('\r\n')
-            m=m.split(' ')
-            names_list.append(m[0])
-            sfv_list.append(m[1])
-
-        i = 0
-        no_errors = True
-
-        while(len(names_list)>i):
-            calc_sfv_value=crc(names_list[i])
-
-
-            if sfv_list[i].lstrip('0')==calc_sfv_value:
-                logger.debug("CRC Check True: %s" % names_list[i])
-                pass
-            else:
-                logger.debug("there was a problem with file deleting it " + names_list[i])
-                logger.debug("CRC Check False!!!: %s" % names_list[i])
-                no_errors=False
-                try:
-                    os.remove(names_list[i])
-                except:
-                    pass
-
-            i = i+1
-
-        if (no_errors):
-            return True
-        else:
-            return False
-
-    if not foundSFV:
-        logger.debug("No SFV FOUND, lets check via unrar")
-
-        first_rar = None
-
-        #first lets find the name of the first rar file
-        for file in os.listdir(path):
-            if re.match(".+\.rar$", file):
-                #this has to be it!
-                first_rar = os.path.join(path, file)
-
-            if re.match(".+\.r00$", file):
-                #might be it
-                first_rar = os.path.join(dlitem.localpath, file)
-
-        if first_rar is None:
-            dlitem.log("Could not find the rar file!")
-
-        else:
-            #lets do the check
-            pass
-
-    return False
-
-
-#TODO: REMOVE ME
-def check_crc(dlitem):
-    path = dlitem.localpath
-    dlitem.log("Checking SFV in path %s" % path)
-
-    os.chdir(path)
-
-    foundSFV = False
-
-    for sfvFile in glob.glob("*.sfv"):
-        foundSFV = True
-        #DO SFV CHECK
-        s = open(sfvFile)
-
-        if os.path.getsize(sfvFile) == 0:
-            dlitem.log('empty sfv file')
-            return False
-
-        names_list = []
-        sfv_list = []
-
-        ##loop thru all lines of sfv, removes all unnecessary /r /n chars, split each line to two values,creates two distinct arrays
-        for line in s.readlines():
-            if line.startswith(';'):
-                continue
-            m=line.rstrip('\r\n')
-            m=m.split(' ')
-            names_list.append(m[0])
-            sfv_list.append(m[1])
-
-        i = 0
-        no_errors = True
-
-        while(len(names_list)>i):
-            calc_sfv_value=crc(names_list[i])
-
-
-            if sfv_list[i].lstrip('0')==calc_sfv_value:
-                logger.debug("CRC Check True: %s" % names_list[i])
-                pass
-            else:
-                dlitem.log("there was a problem with file deleting it " + names_list[i])
-                logger.debug("CRC Check False!!!: %s" % names_list[i])
-                no_errors=False
-                try:
-                    os.remove(names_list[i])
-                except:
-                    pass
-
-            i = i+1
-
-        if (no_errors):
-            return True
-        else:
-            return False
-
-    if not foundSFV:
-        logger.debug("No SFV FOUND, lets check via unrar")
-
-        first_rar = None
-
-        #first lets find the name of the first rar file
-        for file in os.listdir(dlitem.localpath):
-            if re.match(".+\.rar$", file):
-                #this has to be it!
-                first_rar = os.path.join(dlitem.localpath, file)
-
-            if re.match(".+\.r00$", file):
-                #might be it
-                first_rar = os.path.join(dlitem.localpath, file)
-
-        if first_rar is None:
-            dlitem.log("Could not find the rar file!")
-
-        else:
-            #lets do the check
-            pass
-
-    return False
-
 def find_archives(path):
     archive_finder = ArchiveFinder(path, recursive=True, archive_classes=[RarArchive,])
     return archive_finder.archives
-
-def unrar(path):
-    logger.info("Unraring folder %s" % path)
-    archive_finder = ArchiveFinder(path, recursive=True, archive_classes=[RarArchive,])
-    errCode = 0
-
-    for archive in archive_finder.archives:
-        errCode = archive.extract()
-
-    logger.debug("Extract return code was %s" % str(errCode))
-    return errCode
 
 
 def get_regex(string, regex, group):
@@ -399,24 +217,6 @@ def get_regex(string, regex, group):
 
     if search:
         return search.group(group)
-
-
-def get_cd_number(file_name):
-
-    by_cd = get_regex(os.path.basename(os.path.dirname(file_name)), "^CD([0-9]+)$", 1)
-    by_num = get_regex(os.path.basename(file_name), "(?i)CD([0-9])", 1)
-    by_letter = get_regex(os.path.basename(file_name), "-([A-Za-z])\.(avi|iso|mkv)$", 1)
-
-    if by_cd:
-        return by_cd
-    elif by_num:
-        return by_num
-    elif by_letter:
-        return [ord(char) - 96 for char in by_letter.lower()][0]
-    else:
-        return
-
-
 def find_season_folder(path, season):
 
     if not os.path.exists(path):
@@ -436,25 +236,6 @@ def find_season_folder(path, season):
         if 'season' in parser.details:
             if parser.details['season'] == season:
                 return join(path, folder_name)
-
-
-def find_exist_quality(dst):
-
-    file, ext = os.path.splitext(dst)
-
-    found = []
-
-    if os.path.exists(file + ".mkv"):
-        found.append(file + ".mkv")
-
-    if os.path.exists(file + ".avi"):
-        found.append(file + ".avi")
-
-    if os.path.exists(file + ".mp4"):
-        found.append(file + ".mp4")
-
-    return found
-
 
 def find_ep_season(folder, season, ep):
 
@@ -489,25 +270,6 @@ def find_ep_season(folder, season, ep):
     return found
 
 
-def setup_dest_files(src_files, dst_folder, title):
-    # Setup file dest
-    if src_files.__len__() > 1:
-        for f in src_files:
-
-            cd = get_cd_number(f['src'])
-
-            if cd:
-                __, ext = os.path.splitext(f['src'])
-                f['dst'] = os.path.abspath(dst_folder + "/" + title + " CD" + str(cd) + ext)
-            else:
-                raise Exception('Multiple files but could not locate CD numbering')
-    elif src_files.__len__() == 1:
-        __, ext = os.path.splitext(src_files[0]['src'])
-        src_files[0]['dst'] = os.path.abspath(dst_folder + "/" + title + ext)
-    else:
-        raise Exception('No files to move')
-
-    return src_files
 
 def get_video_files(path):
 
@@ -544,34 +306,6 @@ def move_file(src, dest):
     shutil.move(src, dest)
 
     xbmc.add_file(dest)
-
-#TODO: DELETE ME
-def get_vids_files(path):
-
-    src_files = []
-
-    for root, __, files in os.walk(path):
-        for file in files:
-            name, ext = os.path.splitext(file)
-            if re.match('(?i)\.(mkv|iso|avi|m4v|mpg|mp4)', ext):
-
-                #check if it's a sample.
-                if match_str_regex(settings.SAMPLES_REGEX, name):
-                    continue
-
-                path = os.path.join(root,file)
-                folder = os.path.basename(os.path.dirname(path))
-
-                logger.debug('path: ' + path)
-                logger.debug('folder: ' + folder)
-
-                if re.match('(?i)sample', folder):
-                    continue
-
-                file = {'src': path}
-                src_files.append(file)
-
-    return src_files
 
 
 def get_size(local):

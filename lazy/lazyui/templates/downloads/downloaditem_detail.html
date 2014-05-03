@@ -77,11 +77,14 @@
             <div class='download-error'>{{ download.message }}</div>
         {% endif %}
 
+        {% if download.status == 4 %}
+            <div><b>Extracted and Moved: {{ download.dlstart }}</b></div>
+        {% endif %}
+
+
         <div><a href="{% url "downloads.log" download.id %}">View Log</a></div>
 
-        {% if debug %}
-            <div><a href="/admin/lazyui/downloaditem/{{ download.id }}/">View Entry</a></div>
-        {% endif %}
+
 
     </div>
 </div>

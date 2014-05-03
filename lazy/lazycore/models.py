@@ -122,57 +122,31 @@ class DownloadItem(models.Model):
 
     parser = None
 
-    def extract(self):
-
-        LOCK_EXPIRE = 60 * 10
-        lock_id = "model-%s-lock" % self.title
-        acquire_lock = lambda: cache.add(lock_id, "true", LOCK_EXPIRE)
-        release_lock = lambda: cache.delete(lock_id)
-
-        if not acquire_lock():
-            logger.debug("Already extracting %s , exiting" % self.download_item.title)
-            raise Exception("Already extracting")
-
-        try:
-            parser = self.metaparser()
-
-            if parser.type == parser.TYPE_TVSHOW:
-                from lazycore.utils.extractor.tvshow import TVExtractor
-                extractor = TVExtractor()
-                extractor.extract()
-            elif parser.type == parser.TYPE_MOVIE:
-                from lazycore.utils.extractor.movie import MovieExtractor
-            else:
-                raise Exception("Unable to figure out if this is a movie or tvshow")
-        finally:
-            release_lock()
-
     def metaparser(self):
         from lazycore.utils.metaparser import MetaParser
-        from lazycore.utils import common
 
-        parser = None
+        parser = MetaParser(self.title)
 
         if None is self.parser:
             if self.section == "REQUESTS":
                 is_tv_show = False
 
-                if common.match_str_regex(settings.TVSHOW_REGEX, self.title) or re.search("(?i).+\.[P|H]DTV\..+", self.title):
+                if 'series' in parser.details or re.search("(?i).+\.[P|H]DTV\..+", self.title):
                     is_tv_show = True
 
                 if is_tv_show:
-                    parser = MetaParser(self.title, type=MetaParser.TYPE_TVSHOW)
+                    self.parser = MetaParser(self.title, type=MetaParser.TYPE_TVSHOW)
                 else:
-                    parser = MetaParser(self.title, type=MetaParser.TYPE_MOVIE)
+                    self.parser = MetaParser(self.title, type=MetaParser.TYPE_MOVIE)
 
             if self.section == "TVHD":
-                parser = MetaParser(self.title, type=MetaParser.TYPE_TVSHOW)
+                self.parser = MetaParser(self.title, type=MetaParser.TYPE_TVSHOW)
 
             if self.section == "HD" or self.section == "XVID":
-                parser = MetaParser(self.title, type=MetaParser.TYPE_MOVIE)
+                self.parser = MetaParser(self.title, type=MetaParser.TYPE_MOVIE)
 
-            if parser is None:
-                parser = MetaParser(self.title)
+            if None is self.parser:
+                self.parser = parser
 
         else:
             return self.parser
@@ -606,7 +580,7 @@ class Tvdbcache(models.Model):
                         map_name = map_name.replace(search, replace)
 
                     if map_name not in mappings:
-                        alt_names.append(map_name)
+                        alt_names.insert(0, map_name)
 
         except Exception as e:
             logger.exception(e)

@@ -84,41 +84,18 @@ FTP_IGNORE_FILES = (
     '.+% Complete.+',
 )
 
-
-TVSHOW_REGEX = (
-    '(?i).+\.S[0-9]+E[0-9]+.+',
-    '(?i).+\.S[0-9]+\..+',
-    '(?i).+\.S[0-9]+-S[0-9]+\..+',
-    '(?i).+\.[0-9]+x[0-9]+\..+',
-    '(?i).+S[0-9]+E[0-9]+.+',
-    '(?i).+Season [0-9]+ Episode [0-9]+',
-
-)
-
 TVSHOW_SEASON_MULTI_PACK_REGEX = (
     '(?i).+S([0-9]+)-S([0-9]+)[\. ].+',
     '(?i).+S([0-9]+)-([0-9]+)[\. ].+',
 )
 
-TVSHOW_SPECIALS_REGEX = (
-    "(?i).+special.+",
-)
 
 TVSHOW_SEASON_PACK_REGEX = (
     "(?i).+\.S[0-9]+\..+",
 )
 
-TVSHOW_SEASON_REGEX = (
-    "(?i)Season[^0-9]+([0-9]+)",
-    "(?i)Season([0-9]+)",
-)
-
 MOVIE_PACKS_REGEX = (
     "(?i).+\.(TRiLOGY|PACK|Duology|Pentalogy)\..+",
-)
-
-DOCOS_REGEX = (
-    "(?i)^(History\.Channel|Discovery\.Channel|National\.Geographic).+",
 )
 
 DOCO_REGEX = (

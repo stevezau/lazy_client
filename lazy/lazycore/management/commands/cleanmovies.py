@@ -191,15 +191,15 @@ class Command(BaseCommand):
                         imdbobj = Imdbcache.objects.get(id=imdb_id)
 
                         #lets compare the two
-                        cur_files = common.get_vids_files(path)
-                        existing_files = common.get_vids_files(imdbobj.localpath)
+                        cur_files = common.get_video_files(path)
+                        existing_files = common.get_video_files(imdbobj.localpath)
 
                         if len(cur_files) > 1 or len(existing_files) > 1:
                             logger.error("cannot handle multiple vid files yet")
                             continue
 
-                        cur_file = cur_files[0]['src']
-                        existing_file = existing_files[0]['src']
+                        cur_file = cur_files[0]
+                        existing_file = existing_files[0]
 
                         best_file = common.compare_best_vid_file(cur_file, existing_file)
 

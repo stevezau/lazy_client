@@ -10,6 +10,7 @@ from lazycore.utils.extractor.tvshow import TVRenamer
 from django.core.cache import cache
 from lazycore.exceptions import ExtractException, ExtractCRCException
 from lazycore.utils import common
+from datetime import datetime
 from lazycore.exceptions import *
 from lazycore.utils.metaparser import MetaParser
 
@@ -177,6 +178,8 @@ class DownloadItemExtractor(object):
             self.log("Extraction passed")
             self.download_item.status = DownloadItem.COMPLETE
             self.download_item.msg = None
+            self.download_item.taskid = None
+            self.download_item.dlstart = datetime.now()
             self.download_item.save()
 
             try:
