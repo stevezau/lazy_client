@@ -20,6 +20,8 @@ LOCK_EXPIRE = 60 * 5 # Lock expires in 5 minutes
 
 class Command(BaseCommand):
 
+    queue_running = QueueManager.queue_running()
+
     # Displayed from 'manage.py help mycommand'
     help = "Lazy Auto Updater"
 
@@ -103,7 +105,10 @@ class Command(BaseCommand):
 
     def stop_all(self):
         print(green("Stopping services..."))
-        QueueManager.stop_queue()
+
+        if self.queue_running:
+            QueueManager.stop_queue()
+
         local("sudo service supervisor stop")
         local("sudo service apache2 stop")
 
@@ -174,6 +179,8 @@ class Command(BaseCommand):
         print(green("Starting services"))
         local("sudo service apache2 restart")
         local("sudo service supervisor start")
-        QueueManager.start_queue()
+
+        if self.queue_running:
+            QueueManager.start_queue()
 
 

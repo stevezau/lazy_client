@@ -13,8 +13,8 @@ class IndexView(TemplateView):
     template_name = 'home/index.html'
     model = DownloadItem
 
-    def get(self, request, *args, **kwargs):
-        action = request.GET.get('action')
+    def post(self, request, *args, **kwargs):
+        action = request.POST.get('action')
 
         if action == "stop":
             QueueManager.stop_queue()

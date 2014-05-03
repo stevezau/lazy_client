@@ -3,15 +3,16 @@ __author__ = 'steve'
 import json
 import urllib2
 from django.conf import settings
+import os
 
-xbmc_urls = []
+xbmc_api_urls = []
 
 try:
-    xbmc_urls = settings.XBMC_API_URLS
+    xbmc_api_urls = settings.XBMC_API_URLS
 except:
     pass
 
-def send_json(method, params):
+def send_json(api_url, method, params):
 
     data = json.dumps({
         "id": 1,
@@ -20,20 +21,27 @@ def send_json(method, params):
         "params": params
     })
 
-    for api_url in xbmc_urls:
-        req = urllib2.Request(api_url, data, {'Content-Type': 'application/json'})
-        f = urllib2.urlopen(req)
-        response = f.read()
-        f.close()
+    req = urllib2.Request(api_url, data, {'Content-Type': 'application/json'})
+    f = urllib2.urlopen(req)
+    response = f.read()
+    f.close()
 
-def send_notification(title, message):
+def send_notification(api_url, title, message):
 
     data = {"title": title, "message": message}
 
-    send_json("GUI.ShowNotification", data)
+    send_json(api_url, "GUI.ShowNotification", data)
 
-def update_path(path):
+def add_file(f):
 
-    data = {"directory": path}
+    #OK Lets get the path
+    path = os.path.dirname(f)
+    filename = os.path.basename(f)
 
-    send_json("VideoLibrary.Scan", data)
+    for xbmc_api_url in xbmc_api_urls:
+        data = {"directory": path}
+        send_notification(xbmc_api_url, "New Released Added", filename)
+        send_json(xbmc_api_url, "VideoLibrary.Scan", data)
+
+
+

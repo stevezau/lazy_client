@@ -6,7 +6,8 @@
     <h3>Media Server Status ({% if queue_running %}Running{% else %}Stopped{% endif %})</h3>
 
     <div class="middle">
-        <form id="form">
+        <form method="post" id="form">
+        {% csrf_token %}
         {% if queue_running %}
             <input type="hidden" name="action" value="stop">
             <input type="submit" value="Stop Queue">

@@ -120,6 +120,8 @@ class DownloadItem(models.Model):
     seasonoverride = models.IntegerField(default=0, blank=True, null=True)
     onlyget = JSONField(blank=True, null=True)
 
+    parser = None
+
     def extract(self):
 
         LOCK_EXPIRE = 60 * 10
@@ -147,13 +149,33 @@ class DownloadItem(models.Model):
 
     def metaparser(self):
         from lazycore.utils.metaparser import MetaParser
+        from lazycore.utils import common
 
-        if self.section == "HD" or self.section == "XVID":
-            parser = MetaParser(self.title, type=MetaParser.TYPE_MOVIE)
-        elif self.section == "TVHD":
-            parser = MetaParser(self.title, type=MetaParser.TYPE_TVSHOW)
+        parser = None
+
+        if None is self.parser:
+            if self.section == "REQUESTS":
+                is_tv_show = False
+
+                if common.match_str_regex(settings.TVSHOW_REGEX, self.title) or re.search("(?i).+\.[P|H]DTV\..+", self.title):
+                    is_tv_show = True
+
+                if is_tv_show:
+                    parser = MetaParser(self.title, type=MetaParser.TYPE_TVSHOW)
+                else:
+                    parser = MetaParser(self.title, type=MetaParser.TYPE_MOVIE)
+
+            if self.section == "TVHD":
+                parser = MetaParser(self.title, type=MetaParser.TYPE_TVSHOW)
+
+            if self.section == "HD" or self.section == "XVID":
+                parser = MetaParser(self.title, type=MetaParser.TYPE_MOVIE)
+
+            if parser is None:
+                parser = MetaParser(self.title)
+
         else:
-            parser = MetaParser(self.title)
+            return self.parser
 
         return parser
 
@@ -174,7 +196,7 @@ class DownloadItem(models.Model):
         elif task.state == "SUCCESS" or task.state == "FAILURE":
             pass
         else:
-            self.log("%s already being downloaded" % self.ftppath)
+            self.log("%s already being downloaded, task status %s" % (self.ftppath, task.state))
             return
 
         if self.onlyget:
@@ -821,67 +843,67 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
                             dlitem.delete()
 
 
-    tvdbapi = Tvdb()
+        tvdbapi = Tvdb()
 
-    type = instance.metaparser().type
+        type = instance.metaparser().type
 
-    from lazycore.utils.metaparser import MetaParser
+        from lazycore.utils.metaparser import MetaParser
 
-    #must be a tvshow
-    if type == MetaParser.TYPE_TVSHOW:
-        if instance.tvdbid_id is None:
-            logger.debug("Looks like we are working with a TVShow")
+        #must be a tvshow
+        if type == MetaParser.TYPE_TVSHOW:
+            if instance.tvdbid_id is None:
+                logger.debug("Looks like we are working with a TVShow")
 
-            #We need to try find the series info
-            parser = instance.metaparser()
+                #We need to try find the series info
+                parser = instance.metaparser()
 
-            if parser.details:
-                series_name = parser.details['series']
+                if parser.details:
+                    series_name = parser.details['series']
 
-                logger.info(series_name)
+                    logger.info(series_name)
 
-                try:
-                    match = tvdbapi[series_name]
-                    logger.debug("Show found")
-                    instance.tvdbid_id = int(match['id'])
+                    try:
+                        match = tvdbapi[series_name]
+                        logger.debug("Show found")
+                        instance.tvdbid_id = int(match['id'])
 
-                    if match['imdb_id'] is not None:
-                        logger.debug("also found imdbid %s from thetvdb" % match['imdb_id'])
-                        instance.imdbid_id = int(match['imdb_id'].lstrip("tt"))
+                        if match['imdb_id'] is not None:
+                            logger.debug("also found imdbid %s from thetvdb" % match['imdb_id'])
+                            instance.imdbid_id = int(match['imdb_id'].lstrip("tt"))
 
-                except Exception as e:
-                    logger.exception("Error finding : %s via thetvdb.com due to  %s" % (series_name, e.message))
-            else:
-                logger.exception("Unable to parse series info")
+                    except Exception as e:
+                        logger.exception("Error finding : %s via thetvdb.com due to  %s" % (series_name, e.message))
+                else:
+                    logger.exception("Unable to parse series info")
 
-    else:
-        #must be a movie!
-        if instance.imdbid_id is None:
-            logger.debug("Looks like we are working with a Movie")
-            #Lets try find the movie details
-            parser = instance.metaparser()
+        else:
+            #must be a movie!
+            if instance.imdbid_id is None:
+                logger.debug("Looks like we are working with a Movie")
+                #Lets try find the movie details
+                parser = instance.metaparser()
 
-            movie_title = parser.details['title']
+                movie_title = parser.details['title']
 
-            if 'year' in parser.details:
-                movie_year = parser.details['year']
-            else:
-                movie_year = None
+                if 'year' in parser.details:
+                    movie_year = parser.details['year']
+                else:
+                    movie_year = None
 
-            imdbs = ImdbSearch()
-            results = imdbs.best_match(movie_title, movie_year)
+                imdbs = ImdbSearch()
+                results = imdbs.best_match(movie_title, movie_year)
 
-            if results and results['match'] > 0.70:
-                movieObj = ImdbParser()
-                movieObj.parse(results['url'])
+                if results and results['match'] > 0.70:
+                    movieObj = ImdbParser()
+                    movieObj.parse(results['url'])
 
-                logger.debug("Found imdb movie id %s" % movieObj.imdb_id)
+                    logger.debug("Found imdb movie id %s" % movieObj.imdb_id)
 
-                instance.imdbid_id = int(movieObj.imdb_id.lstrip("tt"))
-            else:
-                logger.debug("Didnt find a good enough match on imdb")
+                    instance.imdbid_id = int(movieObj.imdb_id.lstrip("tt"))
+                else:
+                    logger.debug("Didnt find a good enough match on imdb")
 
-    #Now we have sorted both imdbid and thetvdbid lets sort it all out
+        #Now we have sorted both imdbid and thetvdbid lets sort it all out
 
     #If we have a tvdbid do we need to add it to the db or does it exist
     if instance.tvdbid_id is not None:

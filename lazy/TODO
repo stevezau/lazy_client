@@ -1,4 +1,8 @@
 -mobile ui
+-/home/drftpd/bin/move_docs.py error
+
+-cleanup ftp
+
 
 CLEANUP SECTION
 --delete via watcehd flag
@@ -11,9 +15,7 @@ CLEANUP SECTION
 ---cleanup empty movie folders
 
 
-Future
-XBMC NOTIFY
-- GUI.ShowNotification
-
-
 -change path updates
+
+
+

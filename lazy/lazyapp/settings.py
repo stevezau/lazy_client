@@ -15,10 +15,7 @@ import os
 
 __VERSION__ = 3
 
-# XBMC Details
 QUEUE = "rabbitmq"
-
-XBMC_API = "http://192.168.0.190:8080"
 
 # MYSQL Details
 MYSQL_USER = 'root'
@@ -87,12 +84,6 @@ FTP_IGNORE_FILES = (
     '.+% Complete.+',
 )
 
-VIDEO_FILE_EXTS = (
-    '.mkv',
-    '.avi',
-    '.mp4',
-)
-
 
 TVSHOW_REGEX = (
     '(?i).+\.S[0-9]+E[0-9]+.+',
@@ -130,6 +121,13 @@ DOCOS_REGEX = (
     "(?i)^(History\.Channel|Discovery\.Channel|National\.Geographic).+",
 )
 
+DOCO_REGEX = (
+    {"regex": "(?i)^(History.Channel).+", "name": "History Channel Docos"},
+    {"regex": "(?i)^(Discovery.Channel).+", "name": "Discovery Channel Docos"},
+    {"regex": "(?i)^(National.Geographic).(?!Wild)", "name": "National Geographic Docos"},
+    {"regex": "(?i)^(National.Geographic.Wild).+", "name": "National Geographic Wild Docos"},
+)
+
 SAMPLES_REGEX = (
     "(?i).*-sample",
     "(?i).*_sample",
@@ -150,6 +148,16 @@ QUALITY_REGEX = (
     "720p",
     "1080i",
     "1080p",
+)
+
+VIDEO_FILE_EXTS = (
+    'mkv',
+    'avi',
+    'mp4',
+    'iso',
+    'avi',
+    'm4v',
+    'mpg',
 )
 
 TVSHOW_AUTOFIX_REPLACEMENTS = {
@@ -241,7 +249,7 @@ LOGGING = {
         'guessit': {
             'handlers':['console'],
             'propagate': True,
-            'level':'INFO',
+            'level':'ERROR',
         },
         'GuessMovieTitleFromPosition': {
             'handlers':['console'],
@@ -269,10 +277,16 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
+        'stevedore.extension': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
         '': {
             'handlers': ['console', 'logfile'],
             'level': 'DEBUG',
         },
+
         #'lazycore': {
         #    'handlers': ['console'],
         #    'level': 'DEBUG',

@@ -10,6 +10,9 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 import shutil
 from datetime import datetime
+from lazycore.utils.metaparser import MetaParser
+import re
+
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +39,53 @@ class Command(BaseCommand):
         # or raise a CommandError as a failure condition
         #if options['myoption'] == 'default':
         #    return 'Success!'
+        logger.info('Removing duplicate files within movie folder')
+
+        for dir in os.listdir(settings.HD):
+            path = os.path.join(settings.HD, dir)
+
+            #count number of files in folder
+            files = os.listdir(path)
+            vid_files = []
+
+            for file in files:
+                file_path = os.path.join(path, file)
+                if common.is_video_file(file_path):
+                    vid_files.append(file_path)
+
+            if len(vid_files) > 1:
+                best = vid_files[0]
+
+                for file in vid_files:
+                    file_name = os.path.basename(file)
+
+                    if re.match(".+CD[0-9]+.+", file_name):
+                        if 'CD1' in file_name:
+                            best = common.compare_best_vid_file(file, best)
+                    else:
+                        best = common.compare_best_vid_file(file, best)
+
+                #ok, lets keep the best and discard the rest
+                if re.match(".+CD[0-9]+.+", os.path.basename(best)):
+
+                    name = re.sub("CD[0-9].+", "", best)
+
+                    #lets make sure we don't delete the other CD's
+                    for file in vid_files:
+
+                        if re.match(".+CD[0-9]+.+", file) and file.startswith(name):
+                            #logger.info("Skipping %s" % file)
+                            continue
+
+                        if file != best:
+                            logger.info("Deleting %s" % file)
+                            os.remove(file)
+                else:
+                    for file in vid_files:
+                        if file != best:
+                            logger.info("Deleting %s" % file)
+                            os.remove(file)
+
 
         #Find jobs running and if they are finished or not
         logger.info('Performing imdb update')
@@ -79,6 +129,8 @@ class Command(BaseCommand):
 
             imdb_obj.save()
 
+        logger.info('Cleaning Folders')
+
         for dir in os.listdir(settings.HD):
             path = os.path.join(settings.HD, dir)
 
@@ -101,10 +153,16 @@ class Command(BaseCommand):
                 #does not exist
                 logger.info("FOLDER: %s is not associated with any imdb object.. lets try fix" % dir)
                 try:
-                    parser = MetaParser(dir)
+                    parser = MetaParser(dir, type=MetaParser.TYPE_MOVIE)
 
+                    movie_year = None
+                    movie_name = None
 
-                    movie_name, movie_year = get_movie_info(dir)
+                    if 'year' in parser.details:
+                        movie_year = parser.details['year']
+
+                    if 'title' in parser.details:
+                        movie_name = parser.details['title']
 
                     if not movie_name or not movie_year:
                         logger.error("FOLDER: %s unable to figure out year and movie name" % dir)
@@ -133,8 +191,8 @@ class Command(BaseCommand):
                         imdbobj = Imdbcache.objects.get(id=imdb_id)
 
                         #lets compare the two
-                        cur_files = common.get_video_files(path)
-                        existing_files = common.get_video_files(imdbobj.localpath)
+                        cur_files = common.get_vids_files(path)
+                        existing_files = common.get_vids_files(imdbobj.localpath)
 
                         if len(cur_files) > 1 or len(existing_files) > 1:
                             logger.error("cannot handle multiple vid files yet")

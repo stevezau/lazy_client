@@ -63,7 +63,9 @@ def get_lazy_errors():
     return errors
 
 def strip_illegal_chars(s):
-    return re.sub(settings.ILLEGAL_CHARS_REGEX, " ", s)
+    new_s = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", s)
+    new_s = re.sub(" +", " ", new_s)
+    return new_s
 
 
 def open_file(file, options):
@@ -168,13 +170,13 @@ def crc(fileName):
 def get_file_quality(ext):
     ext = ext.lower()
 
-    if ext == "mkv":
+    if ext == ".mkv":
         return 20
 
-    if ext == "avi":
+    if ext == ".avi":
         return 10
 
-    if ext == "mp4":
+    if ext == ".mp4":
         return 10
 
     return 10
@@ -189,7 +191,6 @@ def compare_best_vid_file(f1, f2):
     __, f1_ext = os.path.splitext(f1)
     f1_ext = f1_ext.lower()
     f1_quality = get_file_quality(f1_ext)
-
 
     f2_size = os.path.getsize(f2)
     __, f2_ext = os.path.splitext(f2)
@@ -219,7 +220,85 @@ def compare_best_vid_file(f1, f2):
 
     return f1
 
+def crc_check(path):
+    logger.debug("Checking SFV in path %s" % path)
+    os.chdir(path)
 
+    foundSFV = False
+
+    for sfvFile in glob.glob("*.sfv"):
+        foundSFV = True
+        #DO SFV CHECK
+        s = open(sfvFile)
+
+        if os.path.getsize(sfvFile) == 0:
+            logger.debug('empty sfv file')
+            return False
+
+        names_list = []
+        sfv_list = []
+
+        ##loop thru all lines of sfv, removes all unnecessary /r /n chars, split each line to two values,creates two distinct arrays
+        for line in s.readlines():
+            if line.startswith(';'):
+                continue
+            m=line.rstrip('\r\n')
+            m=m.split(' ')
+            names_list.append(m[0])
+            sfv_list.append(m[1])
+
+        i = 0
+        no_errors = True
+
+        while(len(names_list)>i):
+            calc_sfv_value=crc(names_list[i])
+
+
+            if sfv_list[i].lstrip('0')==calc_sfv_value:
+                logger.debug("CRC Check True: %s" % names_list[i])
+                pass
+            else:
+                logger.debug("there was a problem with file deleting it " + names_list[i])
+                logger.debug("CRC Check False!!!: %s" % names_list[i])
+                no_errors=False
+                try:
+                    os.remove(names_list[i])
+                except:
+                    pass
+
+            i = i+1
+
+        if (no_errors):
+            return True
+        else:
+            return False
+
+    if not foundSFV:
+        logger.debug("No SFV FOUND, lets check via unrar")
+
+        first_rar = None
+
+        #first lets find the name of the first rar file
+        for file in os.listdir(path):
+            if re.match(".+\.rar$", file):
+                #this has to be it!
+                first_rar = os.path.join(path, file)
+
+            if re.match(".+\.r00$", file):
+                #might be it
+                first_rar = os.path.join(dlitem.localpath, file)
+
+        if first_rar is None:
+            dlitem.log("Could not find the rar file!")
+
+        else:
+            #lets do the check
+            pass
+
+    return False
+
+
+#TODO: REMOVE ME
 def check_crc(dlitem):
     path = dlitem.localpath
     dlitem.log("Checking SFV in path %s" % path)
@@ -299,6 +378,9 @@ def check_crc(dlitem):
 
     return False
 
+def find_archives(path):
+    archive_finder = ArchiveFinder(path, recursive=True, archive_classes=[RarArchive,])
+    return archive_finder.archives
 
 def unrar(path):
     logger.info("Unraring folder %s" % path)
@@ -335,21 +417,25 @@ def get_cd_number(file_name):
         return
 
 
-def find_season_folder(path, seasonn):
+def find_season_folder(path, season):
+
+    if not os.path.exists(path):
+        return
+
+    from lazycore.utils.metaparser import MetaParser
 
     folders = [f for f in os.listdir(path) if os.path.isdir(join(path, f))]
 
-    for folder in folders:
-        folder_name = os.path.basename(folder)
+    for folder_name in folders:
 
-        for regex in settings.TVSHOW_SEASON_REGEX:
-            match = re.search(regex, folder_name, re.IGNORECASE)
+        if season == 0 and folder_name.lower() == "specials":
+            return join(path, folder_name)
 
-            if match:
-                found_season = int(match.group(1))
+        parser = MetaParser(folder_name, MetaParser.TYPE_TVSHOW)
 
-                if found_season == seasonn:
-                    return join(path, folder)
+        if 'season' in parser.details:
+            if parser.details['season'] == season:
+                return join(path, folder_name)
 
 
 def find_exist_quality(dst):
@@ -423,8 +509,44 @@ def setup_dest_files(src_files, dst_folder, title):
 
     return src_files
 
-
 def get_video_files(path):
+
+    logger.debug("finding video files in path %s" % path)
+
+    from lazycore.utils.metaparser import MetaParser
+
+    media_files = []
+
+    for root, __, files in os.walk(path):
+        for f in files:
+            fullpath = os.path.join(root, f)
+            name, ext = os.path.splitext(f)
+            parser = MetaParser(f)
+
+            #Check its a video file
+            if is_video_file(f):
+                #check if it's a sample.
+                if match_str_regex(settings.SAMPLES_REGEX, name):
+                    continue
+
+                path = os.path.join(root, f)
+                folder = os.path.basename(os.path.dirname(path))
+
+                if re.match('(?i)sample', folder):
+                    continue
+
+                media_files.append(fullpath)
+
+    return media_files
+
+def move_file(src, dest):
+    from lazycore.utils import xbmc
+    shutil.move(src, dest)
+
+    xbmc.add_file(dest)
+
+#TODO: DELETE ME
+def get_vids_files(path):
 
     src_files = []
 
@@ -482,7 +604,23 @@ def ignore_show(title):
     ins.close()
 
 
-def delete(file):
+def delete(f):
+
+    for i in range(1, 3):
+        try:
+            if os.path.isdir(f):
+                shutil.rmtree(f)
+            elif os.path.isfile(f):
+                os.remove(f)
+            else:
+                if not os.path.exists(f):
+                    return
+        except:
+            pass
+
+        time.sleep(3)
+
+    #Last try
     if os.path.isdir(file):
         shutil.rmtree(file)
     else:
@@ -497,9 +635,12 @@ def replace_regex(regex_list, string, replacement):
     return string
 
 
-def is_video_file(file):
-    for ext in settings.VIDEO_FILE_EXTS:
-        if file.endswith(ext):
+def is_video_file(f):
+
+    ext = os.path.splitext(f)[1][1:].strip()
+
+    for vid_ext in settings.VIDEO_FILE_EXTS:
+        if ext == vid_ext:
             return True
     return False
 
@@ -533,40 +674,3 @@ def create_path(path):
 
     for path in paths_to_create:
         os.mkdir(path)
-
-
-def move_file(src, dst, check_existing=False):
-
-    dst = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", dst)
-
-    create_path(os.path.abspath(os.path.join(dst, '..')))
-
-    do_move = True
-
-    if check_existing:
-        fileName, fileExtension = os.path.splitext(dst)
-        if os.path.isfile(fileName + ".mp4"):
-            os.remove(fileName + ".mp4")
-        if os.path.isfile(fileName + ".mkv"):
-            #skip this as we dont want to replace SD with HD
-            if 'proper' in src.lower():
-                do_move = True
-            else:
-                do_move = False
-
-        if os.path.isfile(fileName + ".avi"):
-            os.remove(fileName + ".avi")
-    if do_move:
-        shutil.move(src, dst)
-        logger.info('Moving file: ' + os.path.basename(src) + ' to: ' + dst)
-    else:
-        logger.info('NOT MOVING FILE AS BETTER QUALITY EXISTS file: ' + os.path.basename(src) + ' to: ' + dst)
-
-
-def move_files(src_files, check_existing=False):
-
-    if not src_files:
-        raise Exception('No files to move', 1)
-
-    for file in src_files:
-        move_file(file['src'], file['dst'], check_existing)

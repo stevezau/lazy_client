@@ -70,6 +70,19 @@ class MetaParser():
         if len(self.details) > 0:
             return self.details
 
+        doco_channel = None
+
+        #Set to TVSHOW if its a doco
+        for doco_check in settings.DOCO_REGEX:
+            regex = doco_check['regex']
+            match = re.search(regex, self.title)
+
+            if match:
+                doco_channel = doco_check['name']
+                self.type = self.TYPE_TVSHOW
+                self.title = self.title.replace(match.group(1), "")
+                break
+
         if self.type == self.TYPE_TVSHOW:
             self.details = guessit.guess_episode_info(self.title)
 
@@ -80,10 +93,6 @@ class MetaParser():
 
                     for regex in settings.TVSHOW_SEASON_MULTI_PACK_REGEX:
                         multi = re.search(regex, self.title)
-
-                        print regex
-                        print self.title
-
 
                         if multi:
                             #now lets get the seasons
@@ -101,10 +110,17 @@ class MetaParser():
                 elif common.match_str_regex(settings.TVSHOW_SEASON_PACK_REGEX, self.title):
                     self.details['type'] = "season_pack"
 
+            if doco_channel:
+                self.details['doco_channel'] = doco_check['name']
+
             return self.details
 
         elif self.type == self.TYPE_MOVIE:
             self.details = guessit.guess_movie_info(self.title)
+
+            if common.match_str_regex(settings.MOVIE_PACKS_REGEX, self.title):
+                self.details['type'] = "movie_pack"
+
             return self.details
         else:
             self.details = guessit.guess_video_info(self.title)

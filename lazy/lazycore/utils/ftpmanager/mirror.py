@@ -80,10 +80,10 @@ class FTPChecker:
 
         xfer_rate = round(got_bytes / interval)
 
-        self.debug("Got bytes: %s" % got_bytes)
+        #self.debug("Got bytes: %s" % got_bytes)
 
         xfer_rate_human = common.bytes2human(xfer_rate, "%(value).1f %(symbol)s/sec")
-        self.debug("XFER RATE: %s" % xfer_rate_human)
+        #self.debug("XFER RATE: %s" % xfer_rate_human)
 
         return xfer_rate
 
@@ -102,14 +102,14 @@ class FTPChecker:
         seconds_last_check = now - self.last_check
 
         if seconds_last_check > settings.FTP_TIMEOUT_TRANSFER:
-            self.debug("Running check on data rate to make sure it has not died! seconds %s" % (seconds_last_check))
-            self.debug("DLTotal: %s  dlnow: %s    downloaded: %s  " % (dltotal, dlnow, self.downloaded))
+            #self.debug("Running check on data rate to make sure it has not died! seconds %s" % (seconds_last_check))
+            #self.debug("DLTotal: %s  dlnow: %s    downloaded: %s  " % (dltotal, dlnow, self.downloaded))
 
             self.last_check = time.time()
 
             if None is self.downloaded:
                 self.downloaded = dlnow
-                self.debug("First time check, skipping")
+                #self.debug("First time check, skipping")
                 return
 
             xfer_rate = self.get_rate(self.downloaded, dlnow, seconds_last_check)
@@ -267,9 +267,8 @@ class FTPMirror:
 
                 if None is pop_key:
                     #didn't find any to process.. are we still downloading an item??
-                    logger.debug("breaking")
                     if len(freelist) == settings.THREADS_PER_DOWNLOAD:
-                        logger.debug("Sleeping 1 second")
+                        #logger.debug("Sleeping 1 second")
                         time.sleep(1)
                     break
 

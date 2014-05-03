@@ -3,15 +3,43 @@ from optparse import make_option
 from django.core.management.base import BaseCommand
 from lazycore.models import DownloadItem
 import logging
-from lazycore.utils.extractor import DownloadItemExtractor
+from lazycore.utils.extractor import DownloadItemExtractor, Extractor
 from celery.task.base import periodic_task
 from django.core.cache import cache
+from django.conf import settings
 from datetime import timedelta
+from lazycore.utils.metaparser import MetaParser
 from lazycore.utils.queuemanager import QueueManager
+import os
+from lazycore.utils import common
 
 logger = logging.getLogger(__name__)
 
 LOCK_EXPIRE = 60 * 20 # Lock expires in 20 minutes
+
+def extract_others(path, type):
+    for f in os.listdir(path):
+        #Is this from lazy?
+
+        full_path = os.path.join(path, f)
+
+        try:
+            DownloadItem.objects.get(localpath=full_path)
+        except:
+            logger.debug("Will try rename %s" % full_path)
+
+            try:
+                if common.get_size(full_path) == 0:
+                    logger.info("Empty folder %s, will delete" % full_path)
+                    common.delete(full_path)
+                    continue
+
+                extractor = Extractor(full_path, type=type)
+                extractor.extract()
+            except Exception as e:
+                logger.error("Error extracting %s" % e)
+
+
 
 class Command(BaseCommand):
 
@@ -19,15 +47,16 @@ class Command(BaseCommand):
     help = "Your help message"
 
     # make_option requires options in optparse format
-    option_list = BaseCommand.option_list  + (
-                        make_option('--myoption', action='store',
-                            dest='myoption',
-                            default='default',
-                            help='Option help message'),
+    option_list = BaseCommand.option_list + (
+                        make_option('--all', action='store_true',
+                            dest='extract_all',
+                            default=False,
+                            help='Try to rename files that lazy didnt download'),
                   )
 
     @periodic_task(bind=True, run_every=timedelta(seconds=600))
     def handle(self, *app_labels, **options):
+
         """
         app_labels - app labels (eg. myapp in "manage.py reset myapp")
         options - configurable command line options
@@ -38,10 +67,12 @@ class Command(BaseCommand):
         #if options['myoption'] == 'default':
         #    return 'Success!'
 
+        extract_all = options['extract_all']
+
         #raise CommandError('Only the default is supported')
 
         if not QueueManager.queue_running():
-            logger.debug("Queue is stopped, exiting")
+            logger.info("Queue is stopped, exiting")
             return
 
         lock_id = "%s-lock" % self.__class__.__name__
@@ -49,7 +80,7 @@ class Command(BaseCommand):
         release_lock = lambda: cache.delete(lock_id)
 
         if not acquire_lock():
-            logger.debug("Extract already running, exiting")
+            logger.info("Extract already running, exiting")
             return
 
         #Find jobs running and if they are finished or not
@@ -67,14 +98,20 @@ class Command(BaseCommand):
                 logger.info("Processing: %s" % dlitem.localpath)
 
                 #offload processing to the DownloadItemExtractor
-                try:
-                    extractor = DownloadItemExtractor(dlitem)
-                    extractor.extract()
-                except Exception as e:
-                    dlitem.log(e.message)
-                    logger.exception("Error extracting %s" % e)
-                    dlitem.retries += 1
-                    dlitem.save()
+                extractor = DownloadItemExtractor(dlitem)
+                extractor.extract()
+
+            #Lets rename stuff that didnt come from lazy
+            if extract_all:
+                #TVShows
+                extract_others(settings.TVHD_TEMP, MetaParser.TYPE_TVSHOW)
+
+                #Movies
+                extract_others(settings.HD_TEMP, MetaParser.TYPE_MOVIE)
+
+                #Other
+                #self.extract_others(settings.REQUESTS_TEMP, MetaParser.TYPE_UNKNOWN)
+
         finally:
             release_lock()
 

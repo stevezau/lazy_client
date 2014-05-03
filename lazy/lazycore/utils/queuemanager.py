@@ -10,7 +10,6 @@ import ftplib
 from djcelery.app import current_app
 from celery.app.control import Control
 import time
-import os
 from lazycore.utils import common
 
 
