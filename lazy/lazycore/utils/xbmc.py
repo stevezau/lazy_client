@@ -30,7 +30,10 @@ def send_notification(api_url, title, message):
 
     data = {"title": title, "message": message}
 
-    send_json(api_url, "GUI.ShowNotification", data)
+    try:
+        send_json(api_url, "GUI.ShowNotification", data)
+    except:
+        pass
 
 def add_file(f):
 
@@ -39,9 +42,13 @@ def add_file(f):
     filename = os.path.basename(f)
 
     for xbmc_api_url in xbmc_api_urls:
-        data = {"directory": path}
-        send_notification(xbmc_api_url, "New Released Added", filename)
-        send_json(xbmc_api_url, "VideoLibrary.Scan", data)
+        try:
+            data = {"directory": path}
+            send_notification(xbmc_api_url, "New Released Added", filename)
+            send_json(xbmc_api_url, "VideoLibrary.Scan", data)
+        except:
+            pass
+            
 
 
 
