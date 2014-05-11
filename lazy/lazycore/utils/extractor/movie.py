@@ -185,10 +185,11 @@ class MovieRenamer:
 
         if os.path.exists(dest_folder):
             #check if not in there already
+            found = False
             for f in existing_folders:
-                found = False
                 if f == dest_folder:
                     found = True
+
             if not found:
                 existing_folders.append(dest_folder)
                 logger.debug("Found existing folder form puporsed dest_folder %s" % dest_folder)
