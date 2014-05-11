@@ -125,13 +125,13 @@ class DownloadItem(models.Model):
     def metaparser(self):
         from lazycore.utils.metaparser import MetaParser
 
-        parser = MetaParser(self.title)
+        title_parser = MetaParser(self.title)
 
         if None is self.parser:
             if self.section == "REQUESTS":
                 is_tv_show = False
 
-                if 'series' in parser.details or re.search("(?i).+\.[P|H]DTV\..+", self.title):
+                if 'series' in title_parser.details or re.search("(?i).+\.[P|H]DTV\..+", self.title):
                     is_tv_show = True
 
                 if is_tv_show:
@@ -146,12 +146,9 @@ class DownloadItem(models.Model):
                 self.parser = MetaParser(self.title, type=MetaParser.TYPE_MOVIE)
 
             if None is self.parser:
-                self.parser = parser
+                self.parser = title_parser
 
-        else:
-            return self.parser
-
-        return parser
+        return self.parser
 
     def download(self):
 
