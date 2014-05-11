@@ -170,8 +170,7 @@ class DownloadItem(models.Model):
         elif task.state == "SUCCESS" or task.state == "FAILURE":
             pass
         else:
-            self.log("%s already being downloaded, task status %s" % (self.ftppath, task.state))
-            return
+            raise DownloadException("%s already being downloaded, task status %s" % (self.ftppath, task.state))
 
         if self.onlyget:
             #we dont want to get everything.. lets figure this out
