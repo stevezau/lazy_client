@@ -3,17 +3,19 @@
 from __future__ import unicode_literals, division, absolute_import
 from flexget.event import event
 from urllib import quote
-from requests.exceptions import RequestException, HTTPError
+from requests.exceptions import RequestException, HTTPError, Timeout
 from logging import getLogger
 from flexget.utils import json, requests
 from flexget import plugin
 from flexget import validator
 from flexget.config_schema import one_or_more
+from flexget.utils.requests import Session
 
 import re
 log = getLogger('lazy')
 
 
+session = Session(timeout=160, max_retries=2)
 
 class PluginLazy(object):
     """
@@ -135,16 +137,21 @@ class PluginLazy(object):
 
 def query_api(url, method, post=None):
     try:
-        response = requests.request(
+        response = session.request(
             'post' if post is not None else 'get',
             url.rstrip("/") + "/" + method.strip("/") + "/",
             data=post)
+
         response.raise_for_status()
         return response
+    except Timeout as e:
+        log.exception(e.response)
+        msg = 'Timeout error connecting!: %s %s %s %s' % (method, url, post, e)
+        raise plugin.PluginError(msg, log)
     except RequestException as e:
         log.exception(e.response)
         if e.response.status_code == 500:
-            msg = 'Internal API Error: %s %s %s %s' % (method, url, post, e.message)
+            msg = 'Internal API Error: %s %s %s %s' % (method, url, post, e)
             raise plugin.PluginError(msg, log)
         raise
 
