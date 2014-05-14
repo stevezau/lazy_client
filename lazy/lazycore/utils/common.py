@@ -78,7 +78,6 @@ def open_file(file, options):
             return open(file, options, 8192)
         except:
             time.sleep(1)
-            pass
 
     #one last try!
     return open(file, options, 8192)

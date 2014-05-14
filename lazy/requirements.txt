@@ -11,3 +11,4 @@ easy_extract
 django-celery-transactions
 fabric
 guessit
+netaddr

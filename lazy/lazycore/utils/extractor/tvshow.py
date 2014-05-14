@@ -145,9 +145,10 @@ class TVRenamer:
                 tvshow_file_name = common.strip_illegal_chars(tvshow_file_name)
 
                 tvshow_file_name += " S00E01"
-                tvshow_file_nfo = "%s.%s" % (tvshow_file_name, ext)
+                tvshow_file_nfo_name = "%s.nfo" % tvshow_file_name
                 tvshow_file_name += ".%s" % ext
 
+                tvshow_file_nfo_dest = os.path.join(dest_folder, tvshow_file_nfo_name)
                 tvshow_file_dest = os.path.join(dest_folder, tvshow_file_name)
 
                 nfo_content = "<episodedetails> \n\
@@ -159,10 +160,10 @@ class TVRenamer:
                 <displayepisode>4096</displayepisode> \n\
                 </episodedetails>" % airdate
 
-                nfof = open(tvshow_file_nfo, 'w')
+                nfof = open(tvshow_file_nfo_dest, 'w')
                 nfof.write(nfo_content)
                 nfof.close()
-                self.log('Wrote NFO file %s' % tvshow_file_nfo)
+                self.log('Wrote NFO file %s' % tvshow_file_nfo_dest)
 
                 #Lets do the move..
                 if os.path.isfile(tvshow_file_dest):
@@ -198,7 +199,7 @@ class TVRenamer:
                 show_obj_season = self.tvdbapi[tvdbcache_obj.id][int(tvshow_file_season)]
                 if show_obj_season:
                     try:
-                        tvshow_file_ep_name = show_obj_season[int(tvshow_file_season)]['episodename'].encode('ascii', 'ignore')
+                        tvshow_file_ep_name = show_obj_season[int(tvshow_file_ep)]['episodename'].encode('ascii', 'ignore')
                         tvshow_file_ep_name = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", tvshow_file_ep_name).strip()
                         tvshow_file_ep_name = tvshow_file_ep_name.replace("/", ".")
                         tvshow_file_ep_name = tvshow_file_ep_name.replace("\\", ".")

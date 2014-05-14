@@ -2,7 +2,7 @@ from django.http import HttpResponseRedirect
 from django.conf import settings
 from re import compile
 from django.core.urlresolvers import reverse
-
+from netaddr import IPNetwork, IPAddress
 
 EXEMPT_URLS = [compile(settings.LOGIN_URL.lstrip('/'))]
 if hasattr(settings, 'LOGIN_EXEMPT_URLS'):
@@ -28,6 +28,12 @@ class LoginRequiredMiddleware:
 
         if settings.PWD_PROTECT:
             if not request.user.is_authenticated():
+                for ip in settings.ALLOWED_IPS:
+                    #Is this an internal ip?
+                    print request.META['REMOTE_ADDR']
+                    if IPAddress(request.META['REMOTE_ADDR']) in IPNetwork(ip):
+                        return
+
                 path = request.path_info.lstrip('/')
 
                 if not any(m.match(path) for m in EXEMPT_URLS):
