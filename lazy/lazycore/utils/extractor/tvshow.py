@@ -204,8 +204,14 @@ class TVRenamer:
                         tvshow_file_ep_name = tvshow_file_ep_name.replace("/", ".")
                         tvshow_file_ep_name = tvshow_file_ep_name.replace("\\", ".")
                     except:
-                        self.log("Found the season but not the ep.. will fake the ep name")
-                        tvshow_file_ep_name = 'Episode %s' % tvshow_file_ep
+
+                        if 'title' in tvshow_file_metaparser and tvshow_file_metaparser['title'] != "":
+                            self.log("Found the season but not the ep title on thetvdb.. will use title from the release name")
+                            tvshow_file_ep_name = tvshow_file_metaparser['title']
+                            tvshow_file_ep_name = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", tvshow_file_ep_name).strip()
+                        else:
+                            self.log("Found the season but not the ep.. will fake the ep name")
+                            tvshow_file_ep_name = 'Episode %s' % tvshow_file_ep
             except:
                 pass
 
