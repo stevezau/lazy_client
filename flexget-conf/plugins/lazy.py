@@ -9,13 +9,11 @@ from flexget.utils import json, requests
 from flexget import plugin
 from flexget import validator
 from flexget.config_schema import one_or_more
-from flexget.utils.requests import Session
+import requests
 
 import re
 log = getLogger('lazy')
 
-
-session = Session(timeout=160, max_retries=2)
 
 class PluginLazy(object):
     """
@@ -137,15 +135,17 @@ class PluginLazy(object):
 
 def query_api(url, method, post=None):
     try:
-        response = session.request(
-            'post' if post is not None else 'get',
-            url.rstrip("/") + "/" + method.strip("/") + "/",
-            data=post)
+        url = url.rstrip("/") + "/" + method.strip("/") + "/"
+
+        if post:
+            response = requests.post(url, data=post, timeout=160.0)
+        else:
+            response = requests.get(url, data=post, timeout=160.0)
 
         response.raise_for_status()
         return response
     except Timeout as e:
-        log.exception(e.response)
+        log.exception(e)
         msg = 'Timeout error connecting!: %s %s %s %s' % (method, url, post, e)
         raise plugin.PluginError(msg, log)
     except RequestException as e:
