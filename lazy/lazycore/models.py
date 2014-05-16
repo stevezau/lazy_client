@@ -122,13 +122,32 @@ class DownloadItem(models.Model):
 
     parser = None
 
+    def get_type(self):
+        from lazycore.utils.metaparser import MetaParser
+
+        if self.section == "TVHD":
+            return MetaParser.TYPE_TVSHOW
+
+        if self.section == "HD" or self.section == "XVID":
+            return MetaParser.TYPE_MOVIE
+
+        return MetaParser.TYPE_UNKNOWN
+
+
     def metaparser(self):
         from lazycore.utils.metaparser import MetaParser
 
-        title_parser = MetaParser(self.title)
-
         if None is self.parser:
-            if self.section == "REQUESTS":
+            type = self.get_type()
+
+            if type == MetaParser.TYPE_TVSHOW:
+                self.parser = MetaParser(self.title, type=MetaParser.TYPE_TVSHOW)
+            elif type == MetaParser.TYPE_MOVIE:
+                self.parser = MetaParser(self.title, type=MetaParser.TYPE_MOVIE)
+            else:
+
+                title_parser = MetaParser(self.title)
+
                 is_tv_show = False
 
                 if 'series' in title_parser.details or re.search("(?i).+\.[P|H]DTV\..+", self.title):
@@ -139,14 +158,8 @@ class DownloadItem(models.Model):
                 else:
                     self.parser = MetaParser(self.title, type=MetaParser.TYPE_MOVIE)
 
-            if self.section == "TVHD":
-                self.parser = MetaParser(self.title, type=MetaParser.TYPE_TVSHOW)
-
-            if self.section == "HD" or self.section == "XVID":
-                self.parser = MetaParser(self.title, type=MetaParser.TYPE_MOVIE)
-
-            if None is self.parser:
-                self.parser = title_parser
+                if None is self.parser:
+                    self.parser = title_parser
 
         return self.parser
 
@@ -778,8 +791,22 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
         if title:
             logger.info("Looking for existing %s in the queue" % title)
 
+            type = instance.get_type()
+
             #Check if already in queue (maybe this is higher quality or proper).
             for dlitem in DownloadItem.objects.all().filter(Q(status=DownloadItem.QUEUE) | Q(status=DownloadItem.DOWNLOADING) | Q(status=DownloadItem.PENDING)):
+
+                #If its a tvshow and the tvdbid does not match then skip
+                if type == MetaParser.TYPE_TVSHOW and dlitem.tvdbid_id and instance.tvdbid_id:
+                    #now compare them
+                    if instance.tvdbid_id != dlitem.tvdbid_id:
+                        continue
+
+                if type == MetaParser.TYPE_MOVIE and dlitem.imdbid_id and instance.imdbid_id:
+                    if instance.imdbid_id != dlitem.imdbid_id:
+                        continue
+
+
                 dlitem_title = None
                 dlitem_parser = dlitem.metaparser()
 

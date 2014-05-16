@@ -17,10 +17,18 @@ class Command(BaseCommand):
 
     # make_option requires options in optparse format
     option_list = BaseCommand.option_list  + (
-                        make_option('--myoption', action='store',
-                            dest='myoption',
-                            default='default',
-                            help='Option help message'),
+                        make_option('--all', action='store_true',
+                            dest='all',
+                            default=False,
+                            help='Run all fixes'),
+                        make_option('--updateimdb', action='store_true',
+                            dest='updatecache',
+                            default=False,
+                            help='Update IMDB cache'),
+                        make_option('--removedups', action='store_true',
+                            dest='removedups',
+                            default=False,
+                            help='Remove duplicate movies'),
                   )
 
     def handle(self, *app_labels, **options):
