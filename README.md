@@ -11,8 +11,7 @@ Install Ubuntu Packages
 =====
 Execute the following on server
 
-
-	$ sudo apt-get install apache2 libapache2-mod-wsgi lftp git python-pip supervisor unrar mysql-server phpmyadmin python-mysqldb  python-dev libpython-dev python-pycurl
+	$ sudo apt-get install apache2 libapache2-mod-wsgi git python-pip supervisor unrar mysql-server phpmyadmin python-mysqldb  python-dev libpython-dev python-pycurl
 
 Setup Mysql
 =====
@@ -66,10 +65,9 @@ Setup storage folders
 
 Lazy Install
 =====
-1) Export the lazy folder from git to /home/media/lazy-repo and create a symbolic link to /home/media/lazy
+1) Import Lazy_client from Git
 
-	$ git clone https://github.com/rameezsadikot/Steve.git /home/media/lazy-repo
-	$ ln -s /home/media/lazy-repo/lazy /home/media/lazy
+	$ git clone https://github.com/stevezau/lazy_client.git /home/media/lazy
 
 2) Setup requirements for lazy
 
