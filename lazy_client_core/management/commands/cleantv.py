@@ -80,9 +80,9 @@ class Command(BaseCommand):
                             diff = curTime - tvdb_obj.updated.replace(tzinfo=None)
                             hours = diff.seconds / 60 / 60
                             if hours > 168:
-                                tvdb_obj.update_from_imdb()
+                                tvdb_obj.update_from_tvdb()
                     else:
-                        tvdb_obj.update_from_imdb()
+                        tvdb_obj.update_from_tvdb()
                 except Exception as e:
                     logger.info("%s: failed getting latest data from tvdb.com %s" % (tvdb_obj.title, e.message))
                     pass
@@ -131,7 +131,6 @@ class Command(BaseCommand):
                 path = os.path.join(settings.TVHD, dir)
 
                 #lets see if it already belongs to a tvshow
-
                 tvobjs = Tvdbcache.objects.all().filter(localpath=path)
 
                 if len(tvobjs) > 1:
