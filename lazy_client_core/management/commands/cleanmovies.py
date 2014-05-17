@@ -9,6 +9,7 @@ from flexget.utils.imdb import ImdbSearch, ImdbParser
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 import shutil
+
 from datetime import datetime
 from lazy_client_core.utils.metaparser import MetaParser
 import re
@@ -22,7 +23,7 @@ class Command(BaseCommand):
     help = "Your help message"
 
     # make_option requires options in optparse format
-    option_list = BaseCommand.option_list  + (
+    option_list = BaseCommand.option_list + (
                         make_option('--all', action='store_true',
                             dest='all',
                             default=False,
@@ -42,17 +43,14 @@ class Command(BaseCommand):
         app_labels - app labels (eg. myapp in "manage.py reset myapp")
         options - configurable command line options
         """
-
-        # Return a success message to display to the user on success
-        # or raise a CommandError as a failure condition
-        #if options['myoption'] == 'default':
-        #    return 'Success!'
-
         if options['removedups'] or options['all']:
             logger.info('Removing duplicate files within movie folder')
 
             for dir in os.listdir(settings.HD):
                 path = os.path.join(settings.HD, dir)
+
+                if not os.path.isdir(path):
+                    continue
 
                 #count number of files in folder
                 files = os.listdir(path)
@@ -127,12 +125,10 @@ class Command(BaseCommand):
                     if imdb_date:
                             diff = curTime - imdb_obj.updated.replace(tzinfo=None)
                             hours = diff.seconds / 60 / 60
-                            if hours > 48:
-                                pass
-                                #imdb_obj.update_from_imdb()
+                            if hours > 168:
+                                imdb_obj.update_from_imdb()
                     else:
-                        pass
-                        #imdb_obj.update_from_imdb()
+                        imdb_obj.update_from_imdb()
 
                 except Exception as e:
                     logger.exception("%s: failed getting latest data from imdb.com %s" % (imdb_obj.title, e.message))
