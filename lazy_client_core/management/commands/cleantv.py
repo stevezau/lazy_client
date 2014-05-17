@@ -76,7 +76,7 @@ class Command(BaseCommand):
                     curTime = datetime.now()
                     tvdb_date = tvdb_obj.updated
 
-                    if tvdb_obj:
+                    if tvdb_date:
                             diff = curTime - tvdb_obj.updated.replace(tzinfo=None)
                             hours = diff.seconds / 60 / 60
                             if hours > 168:
