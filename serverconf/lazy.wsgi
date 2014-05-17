@@ -5,7 +5,7 @@ path = '/home/media/lazy'
 if path not in sys.path:
     sys.path.append(path)
 
-os.environ['DJANGO_SETTINGS_MODULE'] = 'lazy_client_core.settings'
+os.environ['DJANGO_SETTINGS_MODULE'] = 'lazy_client.settings'
 
 import django.core.handlers.wsgi
 application = django.core.handlers.wsgi.WSGIHandler()
