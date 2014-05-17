@@ -36,6 +36,10 @@ class Command(BaseCommand):
                             dest='removedups',
                             default=False,
                             help='Remove duplicate movies'),
+                        make_option('--updateimgs', action='store_true',
+                            dest='updateimgs',
+                            default=False,
+                            help='Remove duplicate movies'),
                   )
 
     def handle(self, *app_labels, **options):
@@ -43,6 +47,11 @@ class Command(BaseCommand):
         app_labels - app labels (eg. myapp in "manage.py reset myapp")
         options - configurable command line options
         """
+
+        if options['updateimgs']:
+            for tvdb_obj in Imdbcache.objects.all():
+                tvdb_obj.update_from_imdb()
+
         if options['removedups'] or options['all']:
             logger.info('Removing duplicate files within movie folder')
 

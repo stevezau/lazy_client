@@ -31,6 +31,10 @@ class Command(BaseCommand):
                             dest='removedups',
                             default=False,
                             help='Remove duplicate movies'),
+                        make_option('--updateimgs', action='store_true',
+                            dest='updateimgs',
+                            default=False,
+                            help='Remove duplicate movies'),
                   )
 
     def handle(self, *app_labels, **options):
@@ -49,6 +53,10 @@ class Command(BaseCommand):
         #Find jobs running and if they are finished or not
 
         tvdbapi = Tvdb()
+
+        if options['updateimgs']:
+            for tvdb_obj in Tvdbcache.objects.all():
+                tvdb_obj.update_from_tvdb()
 
         if options['all'] or options['updatecache']:
             logger.info('Performing tvdb update')
