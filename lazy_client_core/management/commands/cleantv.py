@@ -55,12 +55,12 @@ class Command(BaseCommand):
 
             for tvdb_obj in Tvdbcache.objects.all():
 
-                logger.info("%s: Updating" % tvdb_obj.title)
-
                 #Step 1 - Lets remove all tvdbcache objects with path that does not exist
-                if not os.path.exists(str(tvdb_obj.localpath)):
-                    logger.info("%s: folder does not exist anymore" % tvdb_obj.title)
-                    tvdb_obj.localpath = None
+                if tvdb_obj.localpath:
+                    if not os.path.exists(str(tvdb_obj.localpath)):
+                        logger.info("%s: folder does not exist anymore" % tvdb_obj.title)
+                        tvdb_obj.localpath = None
+                        tvdb_obj.save()
 
                 #Step 2 - Lets remove all imdbcache objects with path is zero size
                 if os.path.exists(str(tvdb_obj.localpath)):
@@ -121,7 +121,8 @@ class Command(BaseCommand):
 
                     except Exception as e:
                         logger.error("DIR: %s Failed while searching via tvdb.com %s" % (path, e.message))
-
+                except Exception as e:
+                    logger.exception("DIR: %s Failed %s" % (path, e.message))
 
 
         if options['all'] or options['removedups']:
