@@ -1,13 +1,9 @@
 -mobile ui
 
--/home/drftpd/bin/move_docs.py error
-
 -fix nfo file.. check all docs for nfo files
 
--cleanup ftp
+-ensure right show when adding to favs
 
-
--disxo
 
 CLEANUP SECTION
 --delete via watcehd flag
@@ -18,8 +14,5 @@ CLEANUP SECTION
 ---update and Remove duplicate tv shows
 ---Cleanup empty tvshow folders
 ---cleanup empty movie folders
-
-
--change path updates
 
 

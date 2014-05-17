@@ -34,7 +34,7 @@ HD = os.path.join(DATA_PATH, "Movies")
 XVID = os.path.join(DATA_PATH, "Movies")
 
 # FTP Details
-FTP_IP = "66.90.113.61"
+FTP_IP = "66.90.73.180"
 FTP_PORT = 32245
 FTP_USER = "steve"
 FTP_PASS = "site990"
