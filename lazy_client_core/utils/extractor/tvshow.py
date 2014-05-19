@@ -41,6 +41,12 @@ class TVRenamer:
                 f.write("    <showtitle>%s</showtitle>" % os.path.basename(path))
                 f.write("</tvshow>")
 
+    def error(self, error):
+        if self.download_item:
+            raise error
+        else:
+            logger.error(error)
+
     def _move_tvshow_files(self, tvshow_files):
 
         if self.download_item:
@@ -84,10 +90,10 @@ class TVRenamer:
             #if this is a special then it needs to be manually processed if there is no override
             if 'special' in tvshow_file_metaparser.details:
                 if None is ep_override:
-                    raise ManuallyFixException("Cannot figure out which special this is on www.thetvdb.com, you need to do it manually")
+                    self.error(ManuallyFixException("Cannot figure out which special this is on www.thetvdb.com, you need to do it manually"))
 
                 if None is season_override:
-                    raise ManuallyFixException("Cannot figure out which special this is on www.thetvdb.com, you need to do it manually")
+                    self.error(ManuallyFixException("Cannot figure out which special this is on www.thetvdb.com, you need to do it manually"))
 
             #Show mappings
             try:
@@ -108,7 +114,7 @@ class TVRenamer:
             else:
                 #we need to figure it out
                 if 'series' not in tvshow_file_metaparser.details:
-                    raise RenameException("Unable to figure out the series name")
+                    self.error(RenameException("Unable to figure out the series name"))
 
                 tvdbcache_obj = self.get_tvdb_details(tvshow_file_metaparser.details['series'])
 
@@ -176,13 +182,13 @@ class TVRenamer:
 
             #NOW FOR NORMAL SHOWS
             if not tvdbcache_obj:
-                raise RenameException("Unable to find show on tvdb")
+                self.error(RenameException("Unable to find show on tvdb"))
 
             if None is tvshow_file_ep:
-                raise RenameException("Unable to figure out the epsiode number")
+                self.error(RenameException("Unable to figure out the epsiode number"))
 
             if None is tvshow_file_season:
-                raise RenameException("Unable to figure out the season number")
+                self.error(RenameException("Unable to figure out the season number"))
 
             #Lets try convert via thexem
             if 'episodeList' not in tvshow_file_metaparser.details:
@@ -218,7 +224,7 @@ class TVRenamer:
 
             #Lets figure out the series name
             if None is tvshow_file_ep_name:
-                raise Exception('Could not find tvshow (TVDB) %s x %s' % (tvshow_file_season, tvshow_file_ep))
+                self.error(Exception('Could not find tvshow (TVDB) %s x %s' % (tvshow_file_season, tvshow_file_ep)))
 
             # Now lets move the file
             self.log("Found season %s episode %s title: %s" % (tvshow_file_season, tvshow_file_ep, tvshow_file_ep_name))
