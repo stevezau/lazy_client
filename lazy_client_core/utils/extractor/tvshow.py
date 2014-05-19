@@ -107,6 +107,9 @@ class TVRenamer:
                 tvdbcache_obj = self.download_item.tvdbid
             else:
                 #we need to figure it out
+                if 'series' not in tvshow_file_metaparser.details:
+                    raise RenameException("Unable to figure out the series name")
+
                 tvdbcache_obj = self.get_tvdb_details(tvshow_file_metaparser.details['series'])
 
             #Lets figure out the series_ep and series_season
@@ -121,8 +124,6 @@ class TVRenamer:
 
             #Ok now lets sort out the file names etc
             #Docos first
-            print tvshow_file_metaparser.details
-            print tvdbcache_obj
 
             if 'doco_channel' in tvshow_file_metaparser.details and not tvdbcache_obj:
                 #Ok we have a doco that was not found on thetvdb.. lets shove it into the Docs folder

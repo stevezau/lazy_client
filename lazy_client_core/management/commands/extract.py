@@ -37,7 +37,7 @@ def extract_others(path, type):
                 extractor = Extractor(full_path, type=type)
                 extractor.extract()
             except Exception as e:
-                logger.exception("Error extracting %s" % e)
+                logger.error("Error extracting %s" % e)
 
 
 
