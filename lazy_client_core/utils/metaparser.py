@@ -4,7 +4,8 @@ from django.conf import settings
 import re
 from flexget.utils.qualities import Quality
 
-class MetaParser():
+
+class MetaParser:
 
     TYPE_TVSHOW = 1
     TYPE_MOVIE = 2

@@ -15,6 +15,8 @@ class TVRenamer:
     tvdbapi = Tvdb()
     download_item = None
 
+    last_error = None
+
     def __init__(self, dlitem=None):
         self.download_item = dlitem
 
@@ -42,10 +44,11 @@ class TVRenamer:
                 f.write("</tvshow>")
 
     def error(self, error):
-        if self.download_item:
-            raise error
-        else:
-            logger.error(error)
+        logger.error(error)
+        self.last_error = error
+
+        raise ExtractException()
+
 
     def _move_tvshow_files(self, tvshow_files):
 
@@ -63,208 +66,223 @@ class TVRenamer:
 
 
         for tvshow_file in tvshow_files:
+            try:
 
-            tvshow_file_ep = None
-            tvshow_file_season = None
-            tvshow_file_metaparser = None
-            tvdbcache_obj = None
-            ext = os.path.splitext(tvshow_file)[1][1:].strip()
+                self.log("Processing %s" % tvshow_file)
 
-            ep_override = None
-            season_override = None
+                tvshow_file_ep = None
+                tvshow_file_season = None
+                tvshow_file_metaparser = None
+                tvdbcache_obj = None
+                ext = os.path.splitext(tvshow_file)[1][1:].strip()
 
-            #Check for overrides
-            if self.download_item:
-                #This is part of a download item
-                tvshow_file_metaparser = self.download_item.metaparser()
+                ep_override = None
+                season_override = None
 
-                if self.download_item.epoverride > 0:
+                #Check for overrides
+                if self.download_item:
+                    #This is part of a download item
+                    tvshow_file_metaparser = self.download_item.metaparser()
+
+                    if tvshow_file_metaparser.details['type'] == 'season_pack' or tvshow_file_metaparser.details['type'] == 'season_pack_multi':
+                        tvshow_file_metaparser = MetaParser(os.path.basename(tvshow_file), type=MetaParser.TYPE_TVSHOW)
+
                     if self.download_item.epoverride > 0:
-                        ep_override = self.download_item.epoverride
+                        if self.download_item.epoverride > 0:
+                            ep_override = self.download_item.epoverride
 
-                    if self.download_item.seasonoverride >= 0:
-                        season_override = self.download_item.seasonoverride
-            else:
-                tvshow_file_metaparser = MetaParser(os.path.basename(tvshow_file))
-
-            #if this is a special then it needs to be manually processed if there is no override
-            if 'special' in tvshow_file_metaparser.details:
-                if None is ep_override:
-                    self.error(ManuallyFixException("Cannot figure out which special this is on www.thetvdb.com, you need to do it manually"))
-
-                if None is season_override:
-                    self.error(ManuallyFixException("Cannot figure out which special this is on www.thetvdb.com, you need to do it manually"))
-
-            #Show mappings
-            try:
-                showmap = TVShowMappings.objects.get(title=tvshow_file_metaparser.details['series'].lower())
-
-                if showmap:
-                    if self.download_item:
-                        self.download_item.tvdbid = showmap
-                    tvdbcache_obj = showmap
-            except:
-                #none found
-                pass
-
-            #Ok lets figure out the tvdbid details
-            if self.download_item and self.download_item.tvdbid:
-                #We have a linked tvdbcache_obj
-                tvdbcache_obj = self.download_item.tvdbid
-            else:
-                #we need to figure it out
-                if 'series' not in tvshow_file_metaparser.details:
-                    self.error(RenameException("Unable to figure out the series name"))
-
-                tvdbcache_obj = self.get_tvdb_details(tvshow_file_metaparser.details['series'])
-
-            #Lets figure out the series_ep and series_season
-            if 'season' in tvshow_file_metaparser.details:
-                tvshow_file_season = tvshow_file_metaparser.details['season']
-            if 'episodeNumber' in tvshow_file_metaparser.details:
-                tvshow_file_ep = tvshow_file_metaparser.details['episodeNumber']
-            if season_override:
-                tvshow_file_season = season_override
-            if ep_override:
-                tvshow_file_ep = ep_override
-
-            #Ok now lets sort out the file names etc
-            #Docos first
-
-            if 'doco_channel' in tvshow_file_metaparser.details and not tvdbcache_obj:
-                #Ok we have a doco that was not found on thetvdb.. lets shove it into the Docs folder
-                dest_folder = os.path.join(self.dest_folder_base, tvshow_file_metaparser.details['doco_channel'])
-                self.create_docs_folder(dest_folder)
-
-                airdate = time.strftime('%Y-%m-%d', time.localtime(os.path.getmtime(tvshow_file)))
-
-                tvshow_file_name = tvshow_file_metaparser.details['series']
-
-                if 'title' in tvshow_file_metaparser.details:
-                    tvshow_file_name += " %s" % tvshow_file_metaparser.details['title']
-
-                if tvshow_file_season:
-                    tvshow_file_name += " S%s" % tvshow_file_season
-
-                if tvshow_file_ep:
-                    tvshow_file_name += " E%s" % tvshow_file_ep
-
-                tvshow_file_name = common.strip_illegal_chars(tvshow_file_name)
-
-                tvshow_file_name += " S00E01"
-                tvshow_file_nfo_name = "%s.nfo" % tvshow_file_name
-                tvshow_file_name += ".%s" % ext
-
-                tvshow_file_nfo_dest = os.path.join(dest_folder, tvshow_file_nfo_name)
-                tvshow_file_dest = os.path.join(dest_folder, tvshow_file_name)
-
-                nfo_content = "<episodedetails> \n\
-                <title>" + os.path.splitext(tvshow_file_name)[0] + "</title> \n\
-                <season>0</season> \n\
-                <episode>1</episode> \n\
-                <aired>%s</aired> \n\
-                <displayseason>0</displayseason>  <!-- For TV show specials, determines how the episode is sorted in the series  --> \n\
-                <displayepisode>4096</displayepisode> \n\
-                </episodedetails>" % airdate
-
-                nfof = open(tvshow_file_nfo_dest, 'w')
-                nfof.write(nfo_content)
-                nfof.close()
-                self.log('Wrote NFO file %s' % tvshow_file_nfo_dest)
-
-                #Lets do the move..
-                if os.path.isfile(tvshow_file_dest):
-                    common.delete(tvshow_file_dest)
-
-                common.move_file(tvshow_file, tvshow_file_dest)
-                self.log('Moving file: %s to %s' % (tvshow_file, tvshow_file_dest))
-                return
-
-            #NOW FOR NORMAL SHOWS
-            if not tvdbcache_obj:
-                self.error(RenameException("Unable to find show on tvdb"))
-
-            if None is tvshow_file_ep:
-                self.error(RenameException("Unable to figure out the epsiode number"))
-
-            if None is tvshow_file_season:
-                self.error(RenameException("Unable to figure out the season number"))
-
-            #Lets try convert via thexem
-            if 'episodeList' not in tvshow_file_metaparser.details:
-                xem_season, xem_ep = self.tvdbapi.get_xem_show_convert(tvdbcache_obj.id, tvshow_file_season, tvshow_file_ep)
-
-                if xem_season is not None and xem_ep is not None:
-                    self.log("Found entry on thexem, converted the season and ep to %s x %s" % (xem_season, xem_ep))
-                    tvshow_file_season = int(xem_season)
-                    tvshow_file_ep = int(xem_ep)
-
-            tvshow_file_ep_name = None
-
-            #lets get the ep name from tvdb
-            try:
-                show_obj_season = self.tvdbapi[tvdbcache_obj.id][int(tvshow_file_season)]
-                if show_obj_season:
-                    try:
-                        tvshow_file_ep_name = show_obj_season[int(tvshow_file_ep)]['episodename'].encode('ascii', 'ignore')
-                        tvshow_file_ep_name = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", tvshow_file_ep_name).strip()
-                        tvshow_file_ep_name = tvshow_file_ep_name.replace("/", ".")
-                        tvshow_file_ep_name = tvshow_file_ep_name.replace("\\", ".")
-                    except:
-
-                        if 'title' in tvshow_file_metaparser and tvshow_file_metaparser['title'] != "":
-                            self.log("Found the season but not the ep title on thetvdb.. will use title from the release name")
-                            tvshow_file_ep_name = tvshow_file_metaparser['title']
-                            tvshow_file_ep_name = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", tvshow_file_ep_name).strip()
-                        else:
-                            self.log("Found the season but not the ep.. will fake the ep name")
-                            tvshow_file_ep_name = 'Episode %s' % tvshow_file_ep
-            except:
-                pass
-
-            #Lets figure out the series name
-            if None is tvshow_file_ep_name:
-                self.error(Exception('Could not find tvshow (TVDB) %s x %s' % (tvshow_file_season, tvshow_file_ep)))
-
-            # Now lets move the file
-            self.log("Found season %s episode %s title: %s" % (tvshow_file_season, tvshow_file_ep, tvshow_file_ep_name))
-
-            #figure out ep/season name
-            tvshow_file_ep_id = ''
-
-            if 'episodeList' in tvshow_file_metaparser.details:
-                for ep_num in tvshow_file_metaparser.details['episodeList']:
-                    tvshow_file_ep_id += "E" + str(ep_num).zfill(2)
-            else:
-                tvshow_file_ep_id = "S%sE%s" % (str(tvshow_file_season).zfill(2), str(tvshow_file_ep).zfill(2))
-
-            #Now lets figure out the dest_folder
-            if tvdbcache_obj.localpath:
-                #we already have a set path..
-                dest_folder = tvdbcache_obj.localpath
-            else:
-                dest_folder = os.path.join(self.dest_folder_base, common.strip_illegal_chars(tvdbcache_obj.title))
-                tvdbcache_obj.localpath = dest_folder
-                tvdbcache_obj.save()
-
-            season_folder = common.find_season_folder(dest_folder, int(tvshow_file_season))
-
-            if season_folder:
-                dest_folder = season_folder
-            else:
-                if tvshow_file_season == 0:
-                    dest_folder = os.path.join(dest_folder, "Specials")
+                        if self.download_item.seasonoverride >= 0:
+                            season_override = self.download_item.seasonoverride
                 else:
-                    name = "Season%s" % tvshow_file_season
-                    dest_folder = os.path.join(dest_folder, name)
+                    tvshow_file_metaparser = MetaParser(os.path.basename(tvshow_file), type=MetaParser.TYPE_TVSHOW)
 
-            dest_folder = dest_folder.strip()
-            common.create_path(dest_folder)
+                #if this is a special then it needs to be manually processed if there is no override
+                if 'special' in tvshow_file_metaparser.details:
+                    if None is ep_override:
+                        self.error(ManuallyFixException("Cannot figure out which special this is on www.thetvdb.com, you need to do it manually"))
 
-            tvshow_file_dest = "%s - %s - %s.%s" % (common.strip_illegal_chars(tvdbcache_obj.title), tvshow_file_ep_id, common.strip_illegal_chars(tvshow_file_ep_name), ext)
-            tvshow_file_dest = os.path.join(dest_folder, tvshow_file_dest)
+                    if None is season_override:
+                        self.error(ManuallyFixException("Cannot figure out which special this is on www.thetvdb.com, you need to do it manually"))
 
-            self.move_file(tvshow_file, tvshow_file_dest, tvshow_file_season, tvshow_file_ep)
+                if 'series' not in tvshow_file_metaparser.details:
+                        self.error(RenameException("Unable to figure out the series name"))
+
+                #Show mappings
+                try:
+                    showmap = TVShowMappings.objects.get(title=tvshow_file_metaparser.details['series'].lower())
+
+                    if showmap:
+                        if self.download_item:
+                            self.download_item.tvdbid = showmap
+                        tvdbcache_obj = showmap.tvdbid
+                except:
+                    #none found
+                    pass
+
+                if not tvdbcache_obj:
+                    #Ok lets figure out the tvdbid details
+                    if self.download_item and self.download_item.tvdbid:
+                        #We have a linked tvdbcache_obj
+                        tvdbcache_obj = self.download_item.tvdbid
+                    else:
+                        #we need to figure it out
+                        tvdbcache_obj = self.get_tvdb_details(tvshow_file_metaparser.details['series'])
+
+                #Lets figure out the series_ep and series_season
+                if 'season' in tvshow_file_metaparser.details:
+                    tvshow_file_season = tvshow_file_metaparser.details['season']
+                if 'episodeNumber' in tvshow_file_metaparser.details:
+                    tvshow_file_ep = tvshow_file_metaparser.details['episodeNumber']
+                if season_override:
+                    tvshow_file_season = season_override
+                if ep_override:
+                    tvshow_file_ep = ep_override
+
+                print tvshow_file_ep
+                print tvshow_file_metaparser.details
+
+                #Ok now lets sort out the file names etc
+                #Docos first
+
+                if 'doco_channel' in tvshow_file_metaparser.details and not tvdbcache_obj:
+                    #Ok we have a doco that was not found on thetvdb.. lets shove it into the Docs folder
+                    dest_folder = os.path.join(self.dest_folder_base, tvshow_file_metaparser.details['doco_channel'])
+                    self.create_docs_folder(dest_folder)
+
+                    airdate = time.strftime('%Y-%m-%d', time.localtime(os.path.getmtime(tvshow_file)))
+
+                    tvshow_file_name = tvshow_file_metaparser.details['series']
+
+                    if 'title' in tvshow_file_metaparser.details:
+                        tvshow_file_name += " %s" % tvshow_file_metaparser.details['title']
+
+                    if tvshow_file_season:
+                        tvshow_file_name += " S%s" % tvshow_file_season
+
+                    if tvshow_file_ep:
+                        tvshow_file_name += " E%s" % tvshow_file_ep
+
+                    tvshow_file_name = common.strip_illegal_chars(tvshow_file_name)
+
+                    tvshow_file_name += " S00E01"
+                    tvshow_file_nfo_name = "%s.nfo" % tvshow_file_name
+                    tvshow_file_name += ".%s" % ext
+
+                    tvshow_file_nfo_dest = os.path.join(dest_folder, tvshow_file_nfo_name)
+                    tvshow_file_dest = os.path.join(dest_folder, tvshow_file_name)
+
+                    nfo_content = "<episodedetails> \n\
+                    <title>" + os.path.splitext(tvshow_file_name)[0] + "</title> \n\
+                    <season>0</season> \n\
+                    <episode>1</episode> \n\
+                    <aired>%s</aired> \n\
+                    <displayseason>0</displayseason>  <!-- For TV show specials, determines how the episode is sorted in the series  --> \n\
+                    <displayepisode>4096</displayepisode> \n\
+                    </episodedetails>" % airdate
+
+                    nfof = open(tvshow_file_nfo_dest, 'w')
+                    nfof.write(nfo_content)
+                    nfof.close()
+                    self.log('Wrote NFO file %s' % tvshow_file_nfo_dest)
+
+                    #Lets do the move..
+                    if os.path.isfile(tvshow_file_dest):
+                        common.delete(tvshow_file_dest)
+
+                    common.move_file(tvshow_file, tvshow_file_dest)
+                    self.log('Moving file: %s to %s' % (tvshow_file, tvshow_file_dest))
+                    return
+
+                #NOW FOR NORMAL SHOWS
+                if not tvdbcache_obj:
+                    self.error(RenameException("Unable to find show on tvdb"))
+
+                if None is tvshow_file_ep:
+                    self.error(RenameException("Unable to figure out the epsiode number"))
+
+                if None is tvshow_file_season:
+                    self.error(RenameException("Unable to figure out the season number"))
+
+                #Lets try convert via thexem
+                if 'episodeList' not in tvshow_file_metaparser.details:
+                    xem_season, xem_ep = self.tvdbapi.get_xem_show_convert(tvdbcache_obj.id, tvshow_file_season, tvshow_file_ep)
+
+                    if xem_season is not None and xem_ep is not None:
+                        self.log("Found entry on thexem, converted the season and ep to %s x %s" % (xem_season, xem_ep))
+                        tvshow_file_season = int(xem_season)
+                        tvshow_file_ep = int(xem_ep)
+
+                tvshow_file_ep_name = None
+
+                #lets get the ep name from tvdb
+                try:
+                    show_obj_season = self.tvdbapi[tvdbcache_obj.id][int(tvshow_file_season)]
+                    if show_obj_season:
+                        try:
+                            tvshow_file_ep_name = show_obj_season[int(tvshow_file_ep)]['episodename'].encode('ascii', 'ignore')
+                            tvshow_file_ep_name = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", tvshow_file_ep_name).strip()
+                            tvshow_file_ep_name = tvshow_file_ep_name.replace("/", ".")
+                            tvshow_file_ep_name = tvshow_file_ep_name.replace("\\", ".")
+                        except:
+
+                            if 'title' in tvshow_file_metaparser and tvshow_file_metaparser['title'] != "":
+                                self.log("Found the season but not the ep title on thetvdb.. will use title from the release name")
+                                tvshow_file_ep_name = tvshow_file_metaparser['title']
+                                tvshow_file_ep_name = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", tvshow_file_ep_name).strip()
+                            else:
+                                self.log("Found the season but not the ep.. will fake the ep name")
+                                tvshow_file_ep_name = 'Episode %s' % tvshow_file_ep
+                except:
+                    pass
+
+                #Lets figure out the series name
+                if None is tvshow_file_ep_name:
+                    self.error(Exception('Could not find tvshow (TVDB) %s x %s' % (tvshow_file_season, tvshow_file_ep)))
+
+                # Now lets move the file
+                self.log("Found season %s episode %s title: %s" % (tvshow_file_season, tvshow_file_ep, tvshow_file_ep_name))
+
+                #figure out ep/season name
+                tvshow_file_ep_id = ''
+
+                if 'episodeList' in tvshow_file_metaparser.details:
+                    for ep_num in tvshow_file_metaparser.details['episodeList']:
+                        tvshow_file_ep_id += "E" + str(ep_num).zfill(2)
+                else:
+                    tvshow_file_ep_id = "S%sE%s" % (str(tvshow_file_season).zfill(2), str(tvshow_file_ep).zfill(2))
+
+                #Now lets figure out the dest_folder
+                if tvdbcache_obj.localpath:
+                    #we already have a set path..
+                    dest_folder = tvdbcache_obj.localpath
+                else:
+                    dest_folder = os.path.join(self.dest_folder_base, common.strip_illegal_chars(tvdbcache_obj.title))
+                    tvdbcache_obj.localpath = dest_folder
+                    tvdbcache_obj.save()
+
+                season_folder = common.find_season_folder(dest_folder, int(tvshow_file_season))
+
+                if season_folder:
+                    dest_folder = season_folder
+                else:
+                    if tvshow_file_season == 0:
+                        dest_folder = os.path.join(dest_folder, "Specials")
+                    else:
+                        name = "Season%s" % tvshow_file_season
+                        dest_folder = os.path.join(dest_folder, name)
+
+                dest_folder = dest_folder.strip()
+                common.create_path(dest_folder)
+
+                tvshow_file_dest = "%s - %s - %s.%s" % (common.strip_illegal_chars(tvdbcache_obj.title), tvshow_file_ep_id, common.strip_illegal_chars(tvshow_file_ep_name), ext)
+                tvshow_file_dest = os.path.join(dest_folder, tvshow_file_dest)
+
+                self.move_file(tvshow_file, tvshow_file_dest, tvshow_file_season, tvshow_file_ep)
+            except ExtractException:
+                pass
+
+        if self.last_error and self.download_item:
+            raise self.last_error
 
     def move_file(self, src, dest, season, ep):
 

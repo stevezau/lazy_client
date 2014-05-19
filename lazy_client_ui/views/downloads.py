@@ -222,16 +222,21 @@ def ignore(items):
     for item in items:
         try:
             dlitem = DownloadItem.objects.get(pk=item)
-            series_data = MetaParser(dlitem.title, type=MetaParser.TYPE_TVSHOW)
 
-            if series_data:
-                ignoretitle = series_data.details['series'].replace(" ", ".")
-                commoncore.ignore_show(ignoretitle)
-                dlitem.delete()
-                response.write("Deleted and ignored %s\n" % ignoretitle)
+            if dlitem.get_type() == MetaParser.TYPE_TVSHOW:
+
+                series_data = MetaParser(dlitem.title, type=MetaParser.TYPE_TVSHOW)
+
+                if series_data:
+                    ignoretitle = series_data.details['series'].replace(" ", ".")
+                    commoncore.ignore_show(ignoretitle)
+                    dlitem.delete()
+                    response.write("Deleted and ignored %s\n" % ignoretitle)
+                else:
+                    dlitem.delete()
+                    response.write("Unable to figure out the series name, DELETED BUT NOT IGNORED (DO IT MANUALLY)\n")
             else:
-                dlitem.delete()
-                response.write("Unable to figure out the series name, DELETED BUT NOT IGNORED (DO IT MANUALLY)\n")
+                response.write("Unable to ignore %s as its a movie\n" % dlitem.title)
 
         except ObjectDoesNotExist:
             status = 210

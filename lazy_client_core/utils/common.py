@@ -280,10 +280,11 @@ def get_video_files(path):
 
     for root, __, files in os.walk(path):
         for f in files:
-            if os.path.getsize(f) < 5242880:
+            fullpath = os.path.join(root, f)
+
+            if os.path.getsize(fullpath) < 5242880:
                 continue
 
-            fullpath = os.path.join(root, f)
             name, ext = os.path.splitext(f)
             parser = MetaParser(f)
 

@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 LOCK_EXPIRE = 60 * 20 # Lock expires in 20 minutes
 
-def extract_others(path, type):
+def extract_others(path, parser_type=MetaParser.TYPE_UNKNOWN):
     for f in os.listdir(path):
         #Is this from lazy?
 
@@ -34,7 +34,7 @@ def extract_others(path, type):
                     common.delete(full_path)
                     continue
 
-                extractor = Extractor(full_path, type=type)
+                extractor = Extractor(full_path, type=parser_type)
                 extractor.extract()
             except Exception as e:
                 logger.error("Error extracting %s" % e)
@@ -52,6 +52,10 @@ class Command(BaseCommand):
                             dest='extract_all',
                             default=False,
                             help='Try to rename files that lazy didnt download'),
+                        make_option('--path', action='store',
+                            dest='extract_path',
+                            default=False,
+                            help='Extract Specific folder'),
                   )
 
     @periodic_task(bind=True, run_every=timedelta(seconds=600))
@@ -72,13 +76,13 @@ class Command(BaseCommand):
         else:
             extract_all = False
 
-        #raise CommandError('Only the default is supported')
+        extract_path = options['extract_path']
 
         if not QueueManager.queue_running():
             logger.info("Queue is stopped, exiting")
             return
 
-        lock_id = "%s-lock" % self.__class__.__name__
+        lock_id = "extract_command-lock"
         acquire_lock = lambda: cache.add(lock_id, "true", LOCK_EXPIRE)
         release_lock = lambda: cache.delete(lock_id)
 
@@ -90,19 +94,33 @@ class Command(BaseCommand):
         logger.info('Performing Extraction')
 
         try:
-            for dlitem in DownloadItem.objects.all().filter(status=DownloadItem.MOVE):
 
-                if dlitem.retries > 3:
-                    dlitem.status = DownloadItem.ERROR
-                    dlitem.save()
-                    logger.error("Tried to extract 3 times already but failed.. will skip: %s" % dlitem.title)
-                    continue
+            if extract_path:
+                #Ok, is this part of a downloaditem?
+                try:
+                    dlitem = DownloadItem.objects.get(localpath=extract_path)
+                    logger.info("Processing: %s" % dlitem.localpath)
+                    extractor = DownloadItemExtractor(dlitem)
+                    extractor.extract()
+                except:
+                    #Nope its not, lets do manual extract
+                    extract_others(extract_path)
 
-                logger.info("Processing: %s" % dlitem.localpath)
 
-                #offload processing to the DownloadItemExtractor
-                extractor = DownloadItemExtractor(dlitem)
-                extractor.extract()
+            else:
+                for dlitem in DownloadItem.objects.all().filter(status=DownloadItem.MOVE):
+
+                    if dlitem.retries > 3:
+                        dlitem.status = DownloadItem.ERROR
+                        dlitem.save()
+                        logger.error("Tried to extract 3 times already but failed.. will skip: %s" % dlitem.title)
+                        continue
+
+                    logger.info("Processing: %s" % dlitem.localpath)
+
+                    #offload processing to the DownloadItemExtractor
+                    extractor = DownloadItemExtractor(dlitem)
+                    extractor.extract()
 
             #Lets rename stuff that didnt come from lazy
             if extract_all:
