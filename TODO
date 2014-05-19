@@ -16,3 +16,7 @@ CLEANUP SECTION
 ---cleanup empty movie folders
 
 
+
+-Remove MYSQL Requirement
+-Look at removing celery
+-Look at removing requirement for apache

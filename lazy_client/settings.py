@@ -353,10 +353,6 @@ REST_FRAMEWORK = {
 
 
 
-
-from lazysettings import *
-
-
 # Database
 # https://docs.djangoproject.com/en/1.6/ref/settings/#databases
 
@@ -370,6 +366,8 @@ DATABASES = {
         'PORT': MYSQL_PORT,                      # Set to empty string for default. Not used with sqlite3.
     }
 }
+
+from lazysettings import *
 
 #########################
 ### CHECK LAZY PATHTS ###
