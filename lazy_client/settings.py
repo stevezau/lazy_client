@@ -351,6 +351,7 @@ REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'lazy_client_api.utils.custom_exception_handler'
 }
 
+from lazysettings import *
 
 
 # Database
@@ -366,8 +367,6 @@ DATABASES = {
         'PORT': MYSQL_PORT,                      # Set to empty string for default. Not used with sqlite3.
     }
 }
-
-from lazysettings import *
 
 #########################
 ### CHECK LAZY PATHTS ###
