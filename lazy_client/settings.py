@@ -350,23 +350,25 @@ TEMPLATE_LOADERS = (
 REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'lazy_client_api.utils.custom_exception_handler'
 }
-
-from lazysettings import *
-
-
 # Database
 # https://docs.djangoproject.com/en/1.6/ref/settings/#databases
+import lazysettings
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'lazy',                      # Or path to database file if using sqlite3.
-        'USER': MYSQL_USER,                      # Not used with sqlite3.
-        'PASSWORD': MYSQL_PASS,                  # Not used with sqlite3.
-        'HOST': MYSQL_IP,                      # Set to empty string for localhost. Not used with sqlite3.
-        'PORT': MYSQL_PORT,                      # Set to empty string for default. Not used with sqlite3.
+try:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': 'lazy',                      # Or path to database file if using sqlite3.
+            'USER': lazysettings.MYSQL_USER,                      # Not used with sqlite3.
+            'PASSWORD': lazysettings.MYSQL_PASS,                  # Not used with sqlite3.
+            'HOST': lazysettings.MYSQL_IP,                      # Set to empty string for localhost. Not used with sqlite3.
+            'PORT': lazysettings.MYSQL_PORT,                      # Set to empty string for default. Not used with sqlite3.
+        }
     }
-}
+except:
+    pass
+
+from lazysettings import *
 
 #########################
 ### CHECK LAZY PATHTS ###
