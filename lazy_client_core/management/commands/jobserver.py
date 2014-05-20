@@ -87,9 +87,9 @@ class Command(BaseCommand):
                 except:
                     pass
 
-                print "Stopped job server"
+                print "Stopped celery beat server"
             else:
-                print "job server was not running"
+                print "celery beat server was not running"
 
         if "stop" in args:
 
@@ -117,9 +117,9 @@ class Command(BaseCommand):
                 except:
                     pass
 
-                print "Stopped job server"
+                print "Stopped celeryd server"
             else:
-                print "job server was not running"
+                print "celeryd server was not running"
 
     def usage(self, subcommand):
         return HELP

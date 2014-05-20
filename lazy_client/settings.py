@@ -418,6 +418,7 @@ if QUEUE == "db":
     CELERY_ACKS_LATE = False
     CELERY_TRACK_STARTED = True
     CELERYD_PREFETCH_MULTIPLIER = 1
+    INSTALLED_APPS = INSTALLED_APPS + ('django.contrib.session')
 else:
     BROKER_URL = "amqp://"
     CELERY_RESULT_BACKEND = "amqp://"
