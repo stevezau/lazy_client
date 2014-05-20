@@ -76,7 +76,10 @@ class Command(BaseCommand):
         else:
             extract_all = False
 
-        extract_path = options['extract_path']
+        if 'extract_path' in options:
+            extract_path = options['extract_path']
+        else:
+            extract_path = None
 
         if not QueueManager.queue_running():
             logger.info("Queue is stopped, exiting")
