@@ -64,6 +64,33 @@ class Command(BaseCommand):
             print HELP
             return
 
+        if "stop_beat" in args:
+
+            pidfile = settings.CELERY_BEAT_PID_FILE
+
+            if os.path.exists(pidfile):
+                pid = int(open(pidfile).read())
+                try:
+                    os.kill(pid, signal.SIGTERM)
+                except OSError: #process does not exist
+                    os.remove(pidfile)
+                    return
+                if poll_process(pid):
+                    #process didn't exit cleanly, make one last effort to kill it
+                    os.kill(pid, signal.SIGKILL)
+                    if poll_process(pid):
+                        print "Error stopping web server"
+                        return
+
+                try:
+                    os.remove(pidfile)
+                except:
+                    pass
+
+                print "Stopped job server"
+            else:
+                print "job server was not running"
+
         if "stop" in args:
 
             from lazy_client_core.utils.queuemanager import QueueManager
