@@ -14,7 +14,7 @@ from django.core.files.temp import NamedTemporaryFile
 import urllib2
 from lazy_client_core.utils import ftpmanager
 import inspect
-from celery.result import AsyncResult
+from celery.contrib.abortable import AbortableAsyncResult
 from lazy_client_core.exceptions import DownloadException
 import time
 from lazy_client_core.utils.jsonfield.fields import JSONField
@@ -298,7 +298,7 @@ class DownloadItem(models.Model):
             logger.debug("No taskid found for %s" % self.title)
             return None
 
-        return AsyncResult(self.taskid)
+        return AbortableAsyncResult(self.taskid)
 
 
     def add_download(self, add_season, add_ep):
@@ -379,18 +379,14 @@ class DownloadItem(models.Model):
         if None is task:
             return
 
-        if task.state == "PENDING":
-            revoke(self.taskid, terminate=True, signal='SIGKILL')
-            return
-
         if task.ready():
             return
 
         #lets try kill it
-        for i in range(0, 6):
-            task = self.get_task()
-            revoke(self.taskid, terminate=True, signal='SIGKILL')
+        revoke(task.id)
+        task.abort()
 
+        for i in range(0, 4):
             if task.ready():
                 return
 

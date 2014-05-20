@@ -18,6 +18,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 __VERSION__ = 3
 
 QUEUE = "rabbitmq"
+DB_TYPE = "mysql"
 
 # MYSQL Details
 MYSQL_USER = 'root'
@@ -359,7 +360,7 @@ REST_FRAMEWORK = {
 # https://docs.djangoproject.com/en/1.6/ref/settings/#databases
 import lazysettings
 
-try:
+if DB_TYPE == "mysql":
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
@@ -370,8 +371,14 @@ try:
             'PORT': lazysettings.MYSQL_PORT,                      # Set to empty string for default. Not used with sqlite3.
         }
     }
-except:
-    pass
+else:
+    # MYSQL Details
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': 'lazy.db',
+        }
+    }
 
 from lazysettings import *
 

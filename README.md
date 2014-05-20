@@ -7,18 +7,14 @@ Lazy is designed to run under a user called media (this could be changed but not
 1. Create a new user on your os called media with the home directory of /home/media
 
 
-Install Ubuntu Packages
+Install Packages
 =====
 Execute the following on server
 
-	$ sudo apt-get install apache2 libapache2-mod-wsgi git python-pip supervisor unrar mysql-server phpmyadmin python-mysqldb  python-dev libpython-dev python-pycurl
+	$ sudo apt-get install git python-pip unrar mysql-server phpmyadmin python-mysqldb  python-dev libpython-dev python-pycurl
 
-Setup Mysql
-=====
 
-1) Create database in mysql called lazy
 
-	
 Configure flexget
 =====
 Flexget will watch the FTP site for new releases. It will tell lazy about any releases which meets certain criteria.
@@ -34,22 +30,6 @@ Flexget will watch the FTP site for new releases. It will tell lazy about any re
 	$ /home/media/.flexget/config.yml
 	$ /home/media/.flexget/config-xvid.yml
 
-
-
-	
-Install RabbitMQ for the Backgound processor queue 
-=====
-
-	edit /etc/apt/sources.list and add following line to the bottom
-	
-	deb http://www.rabbitmq.com/debian/ testing main
-
-	Then type in..
-	
-	$ wget http://www.rabbitmq.com/rabbitmq-signing-key-public.asc
-	$ sudo apt-key add rabbitmq-signing-key-public.asc
-	$ sudo apt-get update
-	$ sudo apt-get install rabbitmq-server
 
 	
 Setup storage folders

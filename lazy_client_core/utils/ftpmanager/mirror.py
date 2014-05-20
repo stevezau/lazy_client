@@ -11,6 +11,7 @@ from datetime import datetime
 from celery import current_task
 from lazy_client_core import utils
 from lazy_client_core.utils import common
+from celery.contrib.abortable import AbortableTask
 
 
 logger = logging.getLogger(__name__)
@@ -136,10 +137,10 @@ class FTPMirror:
         signal.signal(signal.SIGPIPE, signal.SIG_IGN)
 
 
-    @task(bind=True)
+    @task(bind=True, base=AbortableTask)
     def mirror_ftp_folder(self, urls, dlitem):
 
-        update_interval = 3 #seconds
+        update_interval = 2 #seconds
 
         if not utils.queuemanager.QueueManager.queue_running():
             logger.debug("Queue is stopped, exiting")
@@ -405,6 +406,20 @@ class FTPMirror:
 
             #should we update?
             if not self.timer.isAlive():
+
+                if self.is_aborted():
+                    dlitem.log("Aborting task!")
+
+                    # Cleanup
+                    for c in self.m.handles:
+                        if c.fp is not None:
+                            common.close_file(c.fp)
+                            c.fp = None
+                        c.close()
+                    self.m.close()
+
+                    return
+
                 #Lets get speed
                 speed = 0
 

@@ -1,10 +1,11 @@
 -mobile ui
 
 -multip _1 image files
-
 -fix nfo file.. check all docs for nfo files
 
 -ensure right show when adding to favs
+
+-kill jobs not working when using db
 
 
 CLEANUP SECTION
@@ -16,9 +17,3 @@ CLEANUP SECTION
 ---update and Remove duplicate tv shows
 ---Cleanup empty tvshow folders
 ---cleanup empty movie folders
-
-
-
--Remove MYSQL Requirement
--Look at removing celery
--Look at removing requirement for apache
