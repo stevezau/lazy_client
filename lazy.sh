@@ -97,6 +97,10 @@ function check_running {
 }
 
 case $1 in
+    restart)
+        stop_all
+        start_all
+        ;;
     check)
         check_running
         ;;

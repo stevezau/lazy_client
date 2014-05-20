@@ -9,6 +9,7 @@ from optparse import make_option
 import os
 from importlib import import_module
 import pkgutil
+from django.core import management
 from fabric.api import settings
 from lazy_client_core.models import Version
 from django.conf import settings as djangosettings
@@ -20,7 +21,14 @@ LOCK_EXPIRE = 60 * 5 # Lock expires in 5 minutes
 
 class Command(BaseCommand):
 
+    base_dir = djangosettings.BASE_DIR
+
     queue_running = QueueManager.queue_running()
+    lazysettings_file = os.path.join(base_dir, "lazysettings.py")
+    lazysettings_file_bk = os.path.join(os.getenv("HOME"), "lazysettings.bk")
+
+    manage_file = os.path.join(base_dir, "manage.py")
+    lazysh_file = os.path.join(base_dir, "lazy.sh")
 
     # Displayed from 'manage.py help mycommand'
     help = "Lazy Auto Updater"
@@ -63,7 +71,7 @@ class Command(BaseCommand):
 
     def remove_old_pyc(self):
         print(green("Deleting old python files..."))
-        local("find /home/media/lazy -name \"*.pyc\" -exec rm -rf {} \;")
+        local("find %s -name \"*.pyc\" -exec rm -rf {} \;" % self.base_dir)
 
     def update_version(self, version=djangosettings.__VERSION__):
         try:
@@ -106,11 +114,17 @@ class Command(BaseCommand):
     def stop_all(self):
         print(green("Stopping services..."))
 
+        #Stop the queue
         if self.queue_running:
             QueueManager.stop_queue()
 
-        local("sudo service supervisor stop")
-        local("sudo service apache2 stop")
+        #Stop web_Server
+        management.call_command('webui', 'stop', interactive=False)
+
+        #Stop celery
+        management.call_command('jobserver', 'stop', interactive=False)
+        management.call_command('jobserver', 'stop_beat', interactive=False)
+
 
     def git_pull(self):
 
@@ -122,17 +136,17 @@ class Command(BaseCommand):
 
             for i in range(retries):
 
-                up_to = retries - i
-
                 if replace:
-                    local("mv lazysettings.py lazysettings.bk")
-                    local("git stash")
-                    local("git stash drop")
-                    local("mv lazysettings.bk lazysettings.py")
-                    local("chmod +x manage.py")
-                    result = local('git pull', capture=True)
+
+                    local("mv %s %s" % (self.lazysettings_file, self.lazysettings_file_bk))
+                    local("cd %s; git stash" % self.base_dir)
+                    local("cd %s; git stash drop" % self.base_dir)
+                    local("mv %s %s" % (self.lazysettings_file_bk, self.lazysettings_file))
+                    local("chmod +x %s" % self.manage_file)
+                    local("chmod +x %s" % self.lazysh_file)
+                    result = local('cd %s; git pull' % self.base_dir, capture=True)
                 else:
-                    result = local('git pull', capture=True)
+                    result = local('cd %s; git pull' % self.base_dir, capture=True)
 
 
                 if "Invalid username or password" in result.stderr:
@@ -158,7 +172,11 @@ class Command(BaseCommand):
 
     def install_reqs(self):
         print(green("Installing requirements..."))
-        local("sudo pip install -r requirements.txt")
+
+        if os.getuid() == 0:
+            local("cd %s; pip install -r requirements.txt" % self.base_dir)
+        else:
+            local("cd %s; sudo pip install -r requirements.txt" % self.base_dir)
 
     def reload_data(self):
         from django.core.cache import cache
@@ -167,7 +185,10 @@ class Command(BaseCommand):
         print(green("Collecting static files..."))
         local("python manage.py collectstatic --noinput")
         print(green("Loading menu data..."))
-        local('python manage.py sitetreeload --mode=replace /home/media/lazy/lazy_client_ui/fixtures/lazyui_initialdata.json')
+
+        initialdata = os.path.join(self.base_dir, "lazy_client_ui/fixtures/lazyui_initialdata.json")
+
+        local('python manage.py sitetreeload --mode=replace %s' % initialdata)
 
     def sync_db(self):
         print(green("Syncing the database..."))
@@ -177,8 +198,7 @@ class Command(BaseCommand):
 
     def start_all(self):
         print(green("Starting services"))
-        local("sudo service apache2 restart")
-        local("sudo service supervisor start")
+        local("%s restart" % self.lazysh_file)
 
         if self.queue_running:
             QueueManager.start_queue()
