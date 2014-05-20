@@ -21,6 +21,18 @@ logger = logging.getLogger(__name__)
 class QueueManager():
 
     @staticmethod
+    def stop_jobs():
+        #reset all downloading
+        dlitems = DownloadItem.objects.all().filter(status=DownloadItem.DOWNLOADING)
+
+        for dlitem in dlitems:
+            dlitem.reset(force=True)
+
+        #now purge the queue
+        control = Control(app=current_app)
+        control.discard_all()
+
+    @staticmethod
     def start_queue():
         #Start the queue and trigger a queue process job
         cache.delete("stop_queue")
@@ -39,15 +51,7 @@ class QueueManager():
         else:
             cache.set("stop_queue", "true", None)
 
-        #reset all downloading
-        dlitems = DownloadItem.objects.all().filter(status=DownloadItem.DOWNLOADING)
-
-        for dlitem in dlitems:
-            dlitem.reset(force=True)
-
-        #now purge the queue
-        control = Control(app=current_app)
-        control.discard_all()
+        QueueManager.stop_jobs()
 
     @staticmethod
     def queue_running():

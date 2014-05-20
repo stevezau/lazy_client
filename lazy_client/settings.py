@@ -9,6 +9,9 @@ https://docs.djangoproject.com/en/1.6/ref/settings/
 """
 import os
 
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+CELERYD_PID_FILE = os.path.join(BASE_DIR, "celeryd.pid")
+
 ###################
 ###Lazy settings###
 ###################
@@ -51,8 +54,8 @@ FTP_USER = "XXXXXX"
 FTP_PASS = "XXXXX"
 
 # Shouldnt need to change these
-MEDIA_ROOT = "/home/media/lazy/static/media"
-MEDIA_URL = "/lazy/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "static/media")
+MEDIA_URL = "/media/"
 
 FLEXGET_APPROVED = "/home/media/.flexget/approve.yml"
 FLEXGET_IGNORE = "/home/media/.flexget/ignore.yml"
@@ -71,6 +74,12 @@ ALLOWED_IPS = [
 #############################################
 #### !!!!DO NOT CHANGE ANYTHING BELOW!!!! ###
 #############################################
+
+WEBSERVER_IP = "0.0.0.0"
+WEBSERVER_PORT = 8000
+WEBSERVER_ERROR_LOG = os.path.join(BASE_DIR, "logs/web_access.log")
+WEBSERVER_ACCESS_LOG = os.path.join(BASE_DIR, "logs/web_error.log")
+WEBSERVER_PIDFILE = os.path.join(BASE_DIR, "lazy_web_server.pid")
 
 FTP_TIMEOUT_RETRY_COUNT = 3
 FTP_TIMEOUT_RETRY_DELAY = 10  #Seconds
@@ -153,9 +162,7 @@ TVSHOW_AUTOFIX_REPLACEMENTS = {
 ILLEGAL_CHARS_REGEX = '[:\"*?<>|]+'
 
 
-# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.6/howto/deployment/checklist/
@@ -210,13 +217,13 @@ LOGGING = {
         'logfile': {
             'level':'DEBUG',
             'class':'logging.handlers.RotatingFileHandler',
-            'filename': BASE_DIR + "/logfile",
+            'filename': BASE_DIR + "/logs/web_server.log",
             'maxBytes': 50000,
-            'backupCount': 2,
+            'backupCount': 4,
             'formatter': 'standard',
         },
         'console':{
-            'level':'DEBUG',
+            'level':'INFO',
             'class':'logging.StreamHandler',
             'formatter': 'standard'
         },
@@ -324,8 +331,7 @@ PWD_PROTECT = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.6/howto/static-files/
-
-STATIC_URL = '/lazy/static/'
+STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 
@@ -398,13 +404,15 @@ if not os.path.exists(MEDIA_ROOT):
     #create it
     os.mkdir(MEDIA_ROOT)
 
+if not os.path.exists(os.path.join(BASE_DIR, "logs")):
+    os.mkdir(os.path.join(BASE_DIR, "logs"))
+
 
 
 
 ##############
 ### CELERY ###
 ##############
-
 if QUEUE == "db":
     CELERY_RESULT_BACKEND='djcelery.backends.database:DatabaseBackend',
     CELERY_ACKS_LATE = False
@@ -416,3 +424,5 @@ else:
     CELERY_ACKS_LATE = False
     CELERY_TRACK_STARTED = True
     CELERYD_PREFETCH_MULTIPLIER = 1
+
+CELERYD_PID_FILE = os.path.join(BASE_DIR, "celeryd.pid")

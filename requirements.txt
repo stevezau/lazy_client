@@ -1,4 +1,5 @@
 flexget
+cherrypy
 django
 south
 djangorestframework
