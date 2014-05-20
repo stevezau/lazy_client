@@ -70,7 +70,7 @@ def start_server():
     # Check for a pidfile to see if the daemon already runs
     try:
         pidf = file(settings.WEBSERVER_PIDFILE)
-        pid = int(pidfile.read().strip())
+        pid = int(pidf.read().strip())
         pidf.close()
     except IOError:
         pid = None
@@ -85,7 +85,7 @@ def start_server():
 
     # before mounting anything
     from django.utils.daemonize import become_daemon
-    become_daemon(our_home_dir=settings.BASE_DIR)
+    #become_daemon(our_home_dir=settings.BASE_DIR)
 
     #cherrypy.config.update({
     #    'log.error_file': settings.WEBSERVER_ERROR_LOG,
