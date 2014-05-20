@@ -1,7 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
 SCRIPT=$(readlink -f $0)
 BASE_PATH=`dirname $SCRIPT`
 MANAGE_SCRIPT="$BASE_PATH/manage.py"
+
+WEBUI_PID_FILE="$BASE_PATH/lazy_web_server.pid"
+CELERYD_PID_FILE="$BASE_PATH/celeryd.pid"
+CELERYBEAT_PID_FILE="$BASE_PATH/celeryd_beat.pid"
 
 chmod +x $MANAGE_SCRIPT
 
@@ -49,7 +53,51 @@ function stop_celerybeat {
 	$MANAGE_SCRIPT jobserver stop_beat
 }
 
+function check_pid() {
+    PID_FILE=$1
+
+    if [ -f $PID_FILE ]; then
+        PID=`cat $PID_FILE`
+        if [ -f /proc/$PID/exe ]; then
+            PID_RUNNING="true"
+        else
+            PID_RUNNING="false"
+        fi
+    else
+        PID_RUNNING="false"
+    fi
+}
+
+
+function check_running {
+    #First lets check if WebUI is running
+    check_pid $WEBUI_PID_FILE
+    if [ "$PID_RUNNING" == "false" ]; then
+        echo "WebUI was not running"
+        start_lazy_webui
+    fi
+
+    #second lets check if celerybeat is running
+    check_pid $CELERYBEAT_PID_FILE
+    if [ "$PID_RUNNING" == "false" ]; then
+        echo "Celery Beat was not running"
+        start_celerybeat
+    fi
+
+
+    #third lets check if celeryd is running
+    check_pid $CELERYD_PID_FILE
+    if [ "$PID_RUNNING" == "false" ]; then
+        echo "CeleryD was not running"
+        start_celeryd
+    fi
+
+}
+
 case $1 in
+    check)
+        check_running
+        ;;
 	start)
 		case $2 in
 			celeryd)
@@ -83,7 +131,7 @@ case $1 in
 		esac
 	;;
     *)
-      echo "usage: start|stop [celeryd|celerybeat|webui]"
+      echo "usage: start|stop|check [celeryd|celerybeat|webui]"
 	;;
 esac
 
