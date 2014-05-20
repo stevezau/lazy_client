@@ -359,6 +359,7 @@ REST_FRAMEWORK = {
 # Database
 # https://docs.djangoproject.com/en/1.6/ref/settings/#databases
 import lazysettings
+from lazysettings import *
 
 if DB_TYPE == "mysql":
     DATABASES = {
@@ -372,15 +373,12 @@ if DB_TYPE == "mysql":
         }
     }
 else:
-    # MYSQL Details
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': 'lazy.db',
         }
     }
-
-from lazysettings import *
 
 #########################
 ### CHECK LAZY PATHTS ###
