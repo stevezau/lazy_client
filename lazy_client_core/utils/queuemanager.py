@@ -30,7 +30,10 @@ class QueueManager():
 
         #now purge the queue
         control = Control(app=current_app)
-        control.discard_all()
+        try:
+            control.discard_all()
+        except:
+            pass
 
     @staticmethod
     def start_queue():

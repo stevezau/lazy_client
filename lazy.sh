@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-SCRIPT=$(readlink -f $0)
+SCRIPT=$0
 BASE_PATH=`dirname $SCRIPT`
 MANAGE_SCRIPT="$BASE_PATH/manage.py"
 
 WEBUI_PID_FILE="$BASE_PATH/lazy_web_server.pid"
 CELERYD_PID_FILE="$BASE_PATH/celeryd.pid"
 CELERYBEAT_PID_FILE="$BASE_PATH/celeryd_beat.pid"
+
+export C_FORCE_ROOT="true"
 
 chmod +x $MANAGE_SCRIPT
 
