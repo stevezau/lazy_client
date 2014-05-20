@@ -11,6 +11,10 @@ export C_FORCE_ROOT="true"
 
 chmod +x $MANAGE_SCRIPT
 
+function upgrade {
+    $MANAGE_SCRIPT upgrade
+}
+
 function start_all {
 	start_lazy_webui
 	start_celeryd
