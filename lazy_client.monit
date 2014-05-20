@@ -18,5 +18,5 @@ check process lazy-celery-beat with pidfile /home/media/lazy/celeryd_beat.pid
   start program = "/home/media/lazy/manage.py celerybeat --schedule=/home/media/lazy/celerybeat-schedule --pidfile=/home/media/lazy/celeryd_beat.pid -f /home/media/lazy/logs/celery_beat.log"
     as uid media and gid media
 
-  stop program = "/home/media/lazy/manage.py jobserver stop"
+  stop program = "/home/media/lazy/manage.py jobserver stop_beat"
     as uid media and gid media

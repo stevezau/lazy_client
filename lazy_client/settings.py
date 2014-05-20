@@ -426,4 +426,4 @@ else:
     CELERYD_PREFETCH_MULTIPLIER = 1
 
 CELERYD_PID_FILE = os.path.join(BASE_DIR, "celeryd.pid")
-CELERY_BEAT_PID_FILE = os.path.join(BASE_DIR, "celery_beat.pid")
+CELERY_BEAT_PID_FILE = os.path.join(BASE_DIR, "celeryd_beat.pid")
