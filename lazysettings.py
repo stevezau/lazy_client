@@ -3,19 +3,19 @@ import os
 ## DATABASE Settings ##
 
 # SQLITE Setup (DEFAULT)
-#DB_TYPE = "sqlite3"
+DB_TYPE = "sqlite3"
 
 # MySQL Setup
-DB_TYPE = "mysql"
 
+#DB_TYPE = "mysql"
 #MYSQL Details
-MYSQL_USER = 'root'
-MYSQL_PASS = 'drift990'
-MYSQL_IP = 'localhost'
-MYSQL_PORT = '3389'
+#MYSQL_USER = 'root'
+#MYSQL_PASS = 'password'
+#MYSQL_IP = 'localhost'
+#MYSQL_PORT = '3389'
 
 # Account ID on thetvdb.com
-TVDB_ACCOUNTID = "289F895955772DE3"
+TVDB_ACCOUNTID = "XXXXXXXXXXXXXX"
 
 # Your Timezone
 TIME_ZONE = "Australia/Sydney"
@@ -25,9 +25,6 @@ MAX_SIM_DOWNLOAD_JOBS = 1
 
 # Threads per download
 THREADS_PER_DOWNLOAD = 3
-
-# Speed per download in KBS, 0 for unlimited
-MAX_SPEED_PER_DOWNLOAD = 0
 
 # Path to media folder
 DATA_PATH = "/data/Videos"
@@ -48,8 +45,8 @@ XVID = os.path.join(DATA_PATH, "Movies")
 # FTP Details
 FTP_IP = "66.90.73.180"
 FTP_PORT = 32245
-FTP_USER = "steve"
-FTP_PASS = "site990"
+FTP_USER = "XXXX"
+FTP_PASS = "XXXX"
 
 
 # Flexget get files
@@ -63,5 +60,5 @@ XBMC_API_URLS = [
 ]
 
 # Default Queue
-#QUEUE = "db"
-QUEUE = "rabbitmq"
+QUEUE = "db"
+#QUEUE = "rabbitmq"
