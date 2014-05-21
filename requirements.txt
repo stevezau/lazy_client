@@ -2,6 +2,7 @@ flexget
 cherrypy
 django
 south
+pycurl
 djangorestframework
 django-sitetree
 django-jquery
@@ -12,4 +13,5 @@ easy_extract
 django-celery-transactions
 fabric
 guessit
+pillow
 netaddr

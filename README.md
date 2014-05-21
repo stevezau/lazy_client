@@ -68,20 +68,13 @@ Lazy Install
 
 5) Load menu data
 
-	$ python manage.py sitetreeload --mode=replace /home/media/lazy/lazyui/fixtures/lazyui_initialdata.json
+	$ python manage.py sitetreeload --mode=replace lazy_client_ui/fixtures/lazyui_initialdata.json
 
 6) Collect static files
 
 	$ python manage.py collectstatic
 
-	
-7) Setup background processor for autostartup (as media)
 
-	$ sudo mkdir /var/log/celery
-	$ sudo chown media:media /var/log/celery
-	$ sudo ln -s /home/media/lazy/serverconf/lazy-supervisor.conf /etc/supervisor/conf.d/lazy.conf 
-	$ sudo service supervisor restart
-	
 8) Restarts service
 
 	$ sudo service supervisor stop
@@ -89,15 +82,7 @@ Lazy Install
 	$ sudo service supervisor start
 
 
-Setup Apache
-=====
-
-	$ sudo ln -s /home/media/lazy/serverconf/lazy-apache.conf /etc/apache2/sites-available/lazy.conf
-	$ sudo a2ensite lazy
-	$ sudo service apache2 restart
-
-
-Conjob for Flexget
+Conjob for Flexget & Auto Lazy Startup
 =====
 
 Add the following cron jobs

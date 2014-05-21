@@ -2,11 +2,11 @@
 
 -multip _1 image files
 -fix nfo file.. check all docs for nfo files
-
+-look at /share/CACHEDEV1_DATA/Multimedia/TV/Archer and archer 2008
 -ensure right show when adding to favs
 
 -kill jobs not working when using db
-
+-enhance find missing ui to show the show it matches on
 
 CLEANUP SECTION
 --delete via watcehd flag
