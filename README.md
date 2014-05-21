@@ -55,12 +55,13 @@ Lazy Install
 
 3) !!IMPORTANT!! Copy lazysettings.py.example to lazysettings.py and edit the settings
 
+
 4) Initial setup
 
 	$ ./lazy.sh setup
 
 
-8) Start service
+5) Start service
 
 	$ ./lazy.sh start
 
@@ -77,4 +78,4 @@ Add the following cron jobs
 
 
 
-Thats it.. go to http://serverip/lazy
+Thats it.. go to http://serverip:8000
