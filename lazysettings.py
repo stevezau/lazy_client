@@ -10,12 +10,12 @@ DB_TYPE = "sqlite3"
 #DB_TYPE = "mysql"
 #MYSQL Details
 #MYSQL_USER = 'root'
-#MYSQL_PASS = 'drift990'
+#MYSQL_PASS = 'password'
 #MYSQL_IP = 'localhost'
 #MYSQL_PORT = '3389'
 
 # Account ID on thetvdb.com
-TVDB_ACCOUNTID = "289F895955772DE3"
+TVDB_ACCOUNTID = "XXXXXXXXXXXXXX"
 
 # Your Timezone
 TIME_ZONE = "Australia/Sydney"
@@ -45,8 +45,8 @@ XVID = os.path.join(DATA_PATH, "Movies")
 # FTP Details
 FTP_IP = "66.90.73.180"
 FTP_PORT = 32245
-FTP_USER = "steve"
-FTP_PASS = "site990"
+FTP_USER = "XXXX"
+FTP_PASS = "XXXX"
 
 
 # Flexget get files
