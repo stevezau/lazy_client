@@ -15,6 +15,24 @@ function upgrade {
     $MANAGE_SCRIPT upgrade
 }
 
+function setup {
+    #First we need to install all the requirements
+    if [ "$UID" == "0" ]; then
+        /usr/bin/env pip install -r "$BASE_PATH/requirements.txt"
+    else
+        /usr/bin/env sudo /usr/bin/env pip install -r "$BASE_PATH/requirements.txt"
+    fi
+
+    if [ "$?" == "0" ]; then
+        echo "Installed requirements"
+    else
+        echo "Error installing requirements"
+        exit 1
+    fi
+
+    $MANAGE_SCRIPT setup
+}
+
 function start_all {
 	start_lazy_webui
 	start_celeryd
@@ -101,6 +119,9 @@ function check_running {
 }
 
 case $1 in
+    setup)
+        setup
+        ;;
     restart)
         stop_all
         start_all
