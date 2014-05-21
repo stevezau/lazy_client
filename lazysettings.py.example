@@ -26,6 +26,9 @@ MAX_SIM_DOWNLOAD_JOBS = 1
 # Threads per download
 THREADS_PER_DOWNLOAD = 3
 
+# Speed per download in KBS, 0 for unlimited
+MAX_SPEED_PER_DOWNLOAD = 0
+
 # Path to media folder
 DATA_PATH = "/data/Videos"
 
