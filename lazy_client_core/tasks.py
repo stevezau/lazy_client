@@ -1,8 +1,27 @@
 __author__ = 'Steve'
-from celery.task.base import periodic_task
+from django.core.management import call_command
 from datetime import timedelta
+from celery.contrib.abortable import AbortableTask
+from djcelery_transactions import task
+from celery.task.base import periodic_task
+
 
 from lazy_client_core.utils.missingscanner import MissingScanner
-from lazy_client_core.management.commands.extract import Command as ExtractCommand
-from lazy_client_core.management.commands.queue import Command as QueueCommand
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+@periodic_task(run_every=timedelta(days=1))
+def daily_task():
+    call_command('daily', interactive=False)
+
+@periodic_task(run_every=timedelta(seconds=60))
+def queue():
+    call_command('queue', interactive=False)
+
+@periodic_task(run_every=timedelta(seconds=600))
+def extract():
+    call_command('extract', interactive=False)
+
+from lazy_client_core.utils.ftpmanager.mirror import FTPMirror

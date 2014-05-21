@@ -3,15 +3,14 @@ import logging
 import os
 import re
 from django.conf import settings
-from djcelery_transactions import task
 import pycurl
 import time
 from threading import Timer
 from datetime import datetime
 from celery import current_task
-from lazy_client_core import utils
-from lazy_client_core.utils import common
 from celery.contrib.abortable import AbortableTask
+from djcelery_transactions import task
+from lazy_client_core.utils import common
 
 
 logger = logging.getLogger(__name__)
@@ -27,38 +26,17 @@ retry_on_errors = [
     28,  #CURLE_OPERATION_TIMEDOUT (28) Operation timeout. The specified time-out period was reached according to the conditions.
 ]
 
-def timer_fn():
+def dummy_timer_fn():
     return
 
-def signal_term_handler(signal, frame):
-
-    import inspect
-
-    mod = inspect.getmodule(frame)
-
-    caller = mod.__name__
-    line = inspect.currentframe().f_back.f_lineno
-
-    print "Working on line numner %s %s" % (caller, line)
-
-    for key, value in frame.f_locals.items():
-
-        try:
-            if key == "self":
-
-                for c in value.m.handles:
-                    print "Effective url %s:" % c.getinfo(pycurl.EFFECTIVE_URL)
-                    print "CURLINFO_TOTAL_TIME:%s" % c.getinfo(pycurl.TOTAL_TIME)
-                    print "CURLINFO_CONNECT_TIME:%s" % c.getinfo(pycurl.CONNECT_TIME)
-                    print "CURLINFO_STARTTRANSFER_TIME:%s" % c.getinfo(pycurl.STARTTRANSFER_TIME)
-                    print "CURLINFO_SIZE_DOWNLOAD:%s" % c.getinfo(pycurl.SIZE_DOWNLOAD)
-                    print "CURLINFO_SPEED_DOWNLOAD:%s" % c.getinfo(pycurl.SPEED_DOWNLOAD)
-                    print "CURLINFO_CONTENT_LENGTH_DOWNLOAD:%s" % c.getinfo(pycurl.CONTENT_LENGTH_DOWNLOAD)
-
-        except Exception as e:
-            logger.exception(e)
-
-        print "key: %s | val %s" % (key, value)
+def cleanup(m):
+    # Cleanup
+    for c in m.handles:
+        if c.fp is not None:
+            common.close_file(c.fp)
+            c.fp = None
+        c.close()
+    m.close()
 
 class FTPChecker:
 
@@ -126,23 +104,15 @@ class FTPChecker:
 
 class FTPMirror:
 
-    def __init__(self):
-        # We should ignore SIGPIPE when using pycurl.NOSIGNAL - see
-        # the libcurl tutorial for more info.
-
-        import signal
-        SIGUSR1 = 10
-
-        signal.signal(SIGUSR1, signal_term_handler)
-        signal.signal(signal.SIGPIPE, signal.SIG_IGN)
-
-
     @task(bind=True, base=AbortableTask)
     def mirror_ftp_folder(self, urls, dlitem):
 
-        update_interval = 2 #seconds
+        from lazy_client_core.utils.queuemanager import QueueManager
 
-        if not utils.queuemanager.QueueManager.queue_running():
+        max_speed_kb = settings.MAX_SPEED_PER_DOWNLOAD
+        speed_delay = 0.0
+
+        if not QueueManager.queue_running():
             logger.debug("Queue is stopped, exiting")
             return
 
@@ -152,7 +122,8 @@ class FTPMirror:
 
         dlitem.log("Starting Download")
 
-        self.timer = Timer(update_interval, timer_fn)
+        update_interval = 1
+        self.timer = Timer(update_interval, dummy_timer_fn)
         self.timer.start()
 
         self.m = pycurl.CurlMulti()
@@ -246,6 +217,10 @@ class FTPMirror:
 
         last_err = ""
 
+        if self.is_aborted():
+            dlitem.log("Aborting")
+            return
+
         while num_processed < num_urls:
             # If there is an url to process and a free curl object, add to multi stack
             while queue and freelist:
@@ -275,7 +250,6 @@ class FTPMirror:
 
                 url, filename, remote_size, ___ = queue.pop(pop_key)
                 c = freelist.pop()
-
 
                 c.checker.reset()
                 logger.debug("CREATE NEW Thread %s  sec: %s      OTHER: %s" % (c.checker.thread_num, c.checker.last_check, c.checker))
@@ -404,20 +378,12 @@ class FTPMirror:
                 if num_q == 0:
                     break
 
-            #should we update?
+            #lets do checks
             if not self.timer.isAlive():
 
                 if self.is_aborted():
                     dlitem.log("Aborting task!")
-
-                    # Cleanup
-                    for c in self.m.handles:
-                        if c.fp is not None:
-                            common.close_file(c.fp)
-                            c.fp = None
-                        c.close()
-                    self.m.close()
-
+                    cleanup(self.m)
                     return
 
                 #Lets get speed
@@ -431,22 +397,45 @@ class FTPMirror:
 
                 current_task.update_state(state='RUNNING', meta={'updated': time.mktime(datetime.now().timetuple()), 'speed': speed, 'last_error': last_err})
 
-                self.timer = Timer(update_interval, timer_fn)
+                current_speed_kb = speed / 1024
+
+                #Are we over our limit??
+                if max_speed_kb >= 0:
+                    if current_speed_kb > max_speed_kb:
+                        #Throttle down
+                        over_by = current_speed_kb - max_speed_kb
+
+                        if over_by > 5:
+                            delay_by = over_by / 2000
+
+                            speed_delay += delay_by
+
+                    #Are we under the limit
+                    if current_speed_kb < max_speed_kb:
+
+                        if speed_delay > 0:
+                            #Throttle up
+                            under_by = max_speed_kb - current_speed_kb
+                            delay_by = under_by / 2000
+
+                            if under_by > 5:
+                                speed_delay -= delay_by
+
+                                if speed_delay < 0:
+                                    speed_delay = 0
+
+                #Lets restart the timer for updates..
+                self.timer = Timer(update_interval, dummy_timer_fn)
                 self.timer.start()
 
             # Currently no more I/O is pending, could do something in the meantime
             # (display a progress bar, etc.).
             # We just call select() to sleep until some more data is available.
+            time.sleep(speed_delay)
             self.m.select(1.0)
 
         # Cleanup
-        for c in self.m.handles:
-            if c.fp is not None:
-                common.close_file(c.fp)
-                c.fp = None
-            c.close()
-        self.m.close()
+        cleanup(self.m)
 
-        from lazy_client_core.management.commands.queue import Command
-        cmd = Command()
-        cmd.handle.delay(seconds=5)
+        from lazy_client_core.tasks import queue
+        queue.delay()

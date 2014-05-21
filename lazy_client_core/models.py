@@ -4,7 +4,10 @@ from django.dispatch import receiver
 from django.db.models.signals import pre_save, post_save
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
-import logging, os, re
+import logging
+import shutil
+import os
+import re
 from lazy_client_core.utils.tvdb_api import Tvdb
 from datetime import datetime
 from flexget.utils.imdb import ImdbSearch, ImdbParser
@@ -18,12 +21,7 @@ from celery.contrib.abortable import AbortableAsyncResult
 from lazy_client_core.exceptions import DownloadException
 import time
 from lazy_client_core.utils.jsonfield.fields import JSONField
-from celery.task.control import revoke
-from lazy_client_core.utils.ftpmanager.mirror import FTPMirror
-from django.core.cache import cache
-
 from django.db.models import Q
-from flexget.utils import qualities
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +29,34 @@ from south.modelsinspector import add_introspection_rules
 
 add_introspection_rules([], ["^lazy_client_core\.utils\.jsonfield\.fields\.JSONField"])
 
+from django.core.files.storage import FileSystemStorage
+from django.conf import settings
+import os
+
+class OverwriteStorage(FileSystemStorage):
+
+    def get_available_name(self, name):
+        """Returns a filename that's free on the target storage system, and
+        available for new content to be written to.
+
+        Found at http://djangosnippets.org/snippets/976/
+
+        This file storage solves overwrite on upload problem. Another
+        proposed solution was to override the save method on the model
+        like so (from https://code.djangoproject.com/ticket/11663):
+
+        def save(self, *args, **kwargs):
+            try:
+                this = MyModelName.objects.get(id=self.id)
+                if this.MyImageFieldName != self.MyImageFieldName:
+                    this.MyImageFieldName.delete()
+            except: pass
+            super(MyModelName, self).save(*args, **kwargs)
+        """
+        # If the filename already exists, remove it as if it was a true file system
+        if self.exists(name):
+            os.remove(os.path.join(settings.MEDIA_ROOT, name))
+        return name
 
 class TVShowMappings(models.Model):
     class Meta:
@@ -174,8 +200,8 @@ class DownloadItem(models.Model):
 
         if None is task:
             pass
-        elif task.state == "REVOKED":
-            logger.info("%s was revoked. ignore" % self.ftppath)
+        elif task.state == "ABORTED":
+            logger.error("%s was aborted." % self.ftppath)
             return
         elif task.state == "SUCCESS" or task.state == "FAILURE":
             pass
@@ -194,6 +220,7 @@ class DownloadItem(models.Model):
             raise DownloadException("Unable to get size and files on the FTP")
 
         #Time to start.
+        from lazy_client_core.utils.ftpmanager.mirror import FTPMirror
         mirror = FTPMirror()
         task = mirror.mirror_ftp_folder.delay(files, self)
         self.taskid = task.task_id
@@ -335,7 +362,6 @@ class DownloadItem(models.Model):
         self.save()
 
     def delete(self):
-        import os, shutil
 
         try:
             self.killtask()
@@ -383,14 +409,13 @@ class DownloadItem(models.Model):
             return
 
         #lets try kill it
-        revoke(task.id)
         task.abort()
 
-        for i in range(0, 4):
+        for i in range(0, 20):
             if task.ready():
                 return
 
-            time.sleep(5)
+            time.sleep(1)
 
         raise Exception("Unable to kill download task/job")
 
@@ -459,7 +484,7 @@ class Imdbcache(models.Model):
     votes = models.IntegerField(default=0, blank=True, null=True)
     year = models.IntegerField(default=0, blank=True, null=True)
     genres = models.CharField(max_length=200, blank=True, null=True)
-    posterimg = models.ImageField(upload_to=".", blank=True, null=True)
+    posterimg = models.ImageField(upload_to=".", storage=OverwriteStorage(), blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     updated = models.DateTimeField(blank=True, null=True)
     localpath = models.CharField(max_length=255, blank=True, null=True)
@@ -526,7 +551,7 @@ class Tvdbcache(models.Model):
         return self.title
 
     title = models.CharField(max_length=200, db_index=True)
-    posterimg = models.ImageField(upload_to=".", blank=True, null=True)
+    posterimg = models.ImageField(upload_to=".", storage=OverwriteStorage(), blank=True, null=True)
     networks = models.CharField(max_length=50, blank=True, null=True)
     genres = models.CharField(max_length=200, blank=True, null=True)
     description = models.TextField(max_length=255, blank=True, null=True)
@@ -729,19 +754,19 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
             else:
                 #lets update it with the new downloaded eps
                 if instance.onlyget is not None:
-                    for get_season , get_eps in instance.onlyget.iteritems():
+                    for get_season, get_eps in instance.onlyget.iteritems():
                         for get_ep in get_eps:
                             existing_obj.add_download(get_season, get_ep)
 
                     existing_obj.reset()
                     existing_obj.save()
                     raise AlradyExists_Updated(existing_obj)
-                else:
-                    logger.debug("download already exists.. ignore this")
                 raise AlradyExists_Updated(existing_obj)
+
         except ObjectDoesNotExist:
             pass
 
+        #Set default status as download queue
         if instance.status is None:
             instance.status = 1
 
@@ -773,9 +798,7 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
             except:
                 raise Exception("Unable to find section path in config: %s" % section)
 
-
         parser = instance.metaparser()
-
         title = None
 
         if 'title' in parser.details:
@@ -801,7 +824,6 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
                 if type == MetaParser.TYPE_MOVIE and dlitem.imdbid_id and instance.imdbid_id:
                     if instance.imdbid_id != dlitem.imdbid_id:
                         continue
-
 
                 dlitem_title = None
                 dlitem_parser = dlitem.metaparser()
@@ -835,9 +857,9 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
                             logger.info("Deleting %s from queue as it has a lower quality" % dlitem.title)
                             dlitem.delete()
 
+        #Ok now we know its a valid downloaditem lets add it to the db
 
         tvdbapi = Tvdb()
-
         type = instance.metaparser().type
 
         from lazy_client_core.utils.metaparser import MetaParser
@@ -852,8 +874,6 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
 
                 if parser.details:
                     series_name = parser.details['series']
-
-                    logger.info(series_name)
 
                     try:
                         match = tvdbapi[series_name]
@@ -923,12 +943,8 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
         except ObjectDoesNotExist as e:
             logger.debug("Getting tvdb data for release")
 
-            #Get latest tvdb DATA
-            tvdb_obj = tvdbapi[int(instance.tvdbid_id)]
-
             new_tvdb_item = Tvdbcache()
-            new_tvdb_item.title = tvdb_obj['seriesname'].replace(".", " ").strip()
-            new_tvdb_item.id = int(tvdb_obj['id'])
+            new_tvdb_item.id = instance.tvdbid_id
             new_tvdb_item.save()
 
     #If we have a imdbid do we need to add it to the db or does it exist
@@ -954,22 +970,10 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
 
             logger.debug("Getting IMDB data for release")
 
-            #Get latest IMDB DATA
-            imdbobj = ImdbParser()
-            try:
-                imdbobj.parse("tt" + str(instance.imdbid_id))
-
-                if imdbobj.name:
-                    #insert into db
-                    new_imdb = Imdbcache()
-                    new_imdb.title = imdbobj.name
-                    new_imdb.id = int(imdbobj.imdb_id.lstrip("tt"))
-                    new_imdb.save()
-            except Exception as e:
-                logger.exception("error gettig imdb %s information.. from website %s" %  (instance.imdbid_id, e.message))
-                instance.imdbid_id = None
+            new_imdb = Imdbcache()
+            new_imdb.id = instance.imdbid_id
+            new_imdb.save()
 
         except Exception as e:
             logger.exception("error gettig imdb %s information.. from website %s" %  (instance.imdbid_id, e.message))
-            instance.imdbid_id = None
 

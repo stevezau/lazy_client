@@ -41,9 +41,8 @@ class QueueManager():
         cache.delete("stop_queue")
         cache.delete("stop_queue_errors")
 
-        from lazy_client_core.management.commands.queue import Command
-        cmd = Command()
-        cmd.handle.delay()
+        from lazy_client_core.tasks import queue
+        queue.delay()
 
     @staticmethod
     def stop_queue(errors=False):
@@ -222,10 +221,10 @@ class QueueManager():
                             dlItem.download()
 
                         except ftplib.error_perm as e:
-                            logger.exception(e)
+                            resp = e.args[0]
 
                             #It does not exist?
-                            if "FileNotFound" in e.message:
+                            if "FileNotFound" in resp or "file not found" in resp:
                                 if dlItem.requested:
                                     logger.debug("Unable to get size and files for %s" % dlItem.ftppath)
                                     dlItem.message = 'Waiting for item to appear on ftp'
@@ -242,9 +241,9 @@ class QueueManager():
                         except DownloadException as e:
                             logger.exception(e)
 
-                            if dlItem.requested and e.message == "Unable to get size and files on the FTP":
+                            if dlItem.requested and str(e) == "Unable to get size and files on the FTP":
                                 logger.debug(e)
-                                dlItem.message = 'Waiting for item to appear on ftp'
+                                dlItem.rmessage = 'Waiting for item to appear on ftp'
                                 dlItem.save()
                             else:
                                 dlItem.log(e)

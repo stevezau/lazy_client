@@ -1,12 +1,9 @@
 -mobile ui
 
--multip _1 image files
 -fix nfo file.. check all docs for nfo files
-
 -ensure right show when adding to favs
 
--kill jobs not working when using db
-
+-enhance find missing ui to show the show it matches on
 
 CLEANUP SECTION
 --delete via watcehd flag
