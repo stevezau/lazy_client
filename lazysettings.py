@@ -1,29 +1,38 @@
-#DONT THIS THESES IMPORTS
 import os
 
-# MYSQL Details
-MYSQL_USER = 'root'
-MYSQL_PASS = 'drift990'
-MYSQL_IP = 'localhost'
-MYSQL_PORT = '3389'
+## DATABASE Settings ##
 
-# TMP folder to store temp files
-TMPFOLDER = "/tmp"
+# SQLITE Setup (DEFAULT)
+DB_TYPE = "sqlite3"
 
-#Account ID on thetvdb.com
+# MySQL Setup
+
+#DB_TYPE = "mysql"
+#MYSQL Details
+#MYSQL_USER = 'root'
+#MYSQL_PASS = 'drift990'
+#MYSQL_IP = 'localhost'
+#MYSQL_PORT = '3389'
+
+# Account ID on thetvdb.com
 TVDB_ACCOUNTID = "289F895955772DE3"
 
+# Your Timezone
 TIME_ZONE = "Australia/Sydney"
 
+# Max downloads
 MAX_SIM_DOWNLOAD_JOBS = 1
+
+# Threads per download
 THREADS_PER_DOWNLOAD = 3
 
-# Where is your data path
+# Path to media folder
 DATA_PATH = "/data/Videos"
+
+# Where to store incoming downloads
 INCOMING_PATH = os.path.join(DATA_PATH, "_incoming")
 
-# Folders, shouldnt need to edit this
-
+# Download folders, shouldnt need to edit this
 TVHD_TEMP = os.path.join(INCOMING_PATH, "TVShows")
 HD_TEMP = os.path.join(INCOMING_PATH, "Movies")
 XVID_TEMP = os.path.join(INCOMING_PATH, "Movies")
@@ -40,15 +49,16 @@ FTP_USER = "steve"
 FTP_PASS = "site990"
 
 
-# Shouldnt need to change these
-MEDIA_ROOT = "/home/media/lazy/static/media"
-MEDIA_URL = "/lazy/media/"
-
+# Flexget get files
 FLEXGET_APPROVED = "/home/media/.flexget/approve.yml"
 FLEXGET_IGNORE = "/home/media/.flexget/ignore.yml"
+
+# XBMC API (Auto library updates)
 
 XBMC_API_URLS = [
     'http://192.168.0.190:8080/jsonrpc'
 ]
 
-QUEUE = "rabbitmq"
+# Default Queue
+QUEUE = "db"
+#QUEUE = "rabbitmq"
