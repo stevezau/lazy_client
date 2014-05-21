@@ -400,7 +400,7 @@ class FTPMirror:
                 current_speed_kb = speed / 1024
 
                 #Are we over our limit??
-                if max_speed_kb >= 0:
+                if max_speed_kb > 0:
                     if current_speed_kb > max_speed_kb:
                         #Throttle down
                         over_by = current_speed_kb - max_speed_kb
