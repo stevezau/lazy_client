@@ -33,7 +33,6 @@ def get_lazy_errors():
 
     #Firte lets check if it should be running..
     for path in [
-        settings.TMPFOLDER,
         settings.MEDIA_ROOT,
         settings.DATA_PATH,
         settings.INCOMING_PATH,

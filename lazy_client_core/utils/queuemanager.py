@@ -41,9 +41,8 @@ class QueueManager():
         cache.delete("stop_queue")
         cache.delete("stop_queue_errors")
 
-        from lazy_client_core.management.commands.queue import Command
-        cmd = Command()
-        cmd.handle.delay()
+        from lazy_client_core.tasks import queue
+        queue.delay()
 
     @staticmethod
     def stop_queue(errors=False):

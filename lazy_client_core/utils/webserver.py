@@ -65,7 +65,6 @@ def start_server():
     """
     import cherrypy
     from django.core.handlers.wsgi import WSGIHandler as app
-    from django.utils.daemonize import become_daemon
 
     # Check for a pidfile to see if the daemon already runs
     try:
@@ -76,12 +75,16 @@ def start_server():
         pid = None
 
     if pid:
-        if check_pid(pid):
-            print "pidfile %s already exists. Web server already running?" % pidfile
-            sys.exit(1)
+        #If its the same pid, then we are re-spawning
+        if pid == os.getpid():
+            pass
         else:
-            print "pidfile %s already exists. Web server was not found to be running, deleting pid file." % pidfile
-            delpid()
+            if check_pid(pid):
+                print "pidfile %s already exists. Web server already running?" % pidfile
+                sys.exit(1)
+            else:
+                print "pidfile %s already exists. Web server was not found to be running, deleting pid file." % pidfile
+                delpid()
 
     # before mounting anything
     from django.utils.daemonize import become_daemon

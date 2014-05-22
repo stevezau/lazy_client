@@ -3,6 +3,7 @@
 import os
 from django.core.management.base import BaseCommand
 from lazy_client_core.utils.webserver import start_server, stop_server
+import atexit
 
 CPSERVER_HELP = r"""
   Run webui

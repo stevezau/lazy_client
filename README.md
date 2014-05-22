@@ -53,33 +53,17 @@ Lazy Install
 
 	$ sudo pip install -U -r /home/media/lazy/requirements.txt
 
-3) !!IMPORTANT!! Edit the settings in file /home/media/lazy/lazysettings.py
+3) !!IMPORTANT!! Copy lazysettings.py.example to lazysettings.py and edit the settings
 
 
-4) Initial setup of database
+4) Initial setup
 
-	$ cd /home/media/lazy
-	$ mkdir -p static/media
-	$ python manage.py syncdb
-	$ python manage.py createcachetable lazy_cache
-	$ python manage.py migrate
-
-	(Create a superuser for the admin section of the site when it asks)
-
-5) Load menu data
-
-	$ python manage.py sitetreeload --mode=replace lazy_client_ui/fixtures/lazyui_initialdata.json
-
-6) Collect static files
-
-	$ python manage.py collectstatic
+	$ ./lazy.sh setup
 
 
-8) Restarts service
+5) Start service
 
-	$ sudo service supervisor stop
-	<wait 10 seconds>
-	$ sudo service supervisor start
+	$ ./lazy.sh start
 
 
 Conjob for Flexget & Auto Lazy Startup
@@ -89,8 +73,9 @@ Add the following cron jobs
 
 	$ */15 * * * * /usr/local/bin/flexget -c /home/media/.flexget/config-xvid.yml  execute --cron
 	$ */15 * * * * /usr/local/bin/flexget execute --cron --disable-advancement
+	$ */5 * * * * /home/media/lazy/lazy.sh check
 
 
 
 
-Thats it.. go to http://serverip/lazy
+Thats it.. go to http://serverip:8000

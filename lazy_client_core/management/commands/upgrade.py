@@ -14,6 +14,7 @@ from fabric.api import settings
 from lazy_client_core.models import Version
 from django.conf import settings as djangosettings
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.management import call_command
 
 logger = logging.getLogger(__name__)
 
@@ -63,10 +64,13 @@ class Command(BaseCommand):
 
         #now lets run any upgrade scripts
         self.install_reqs()
-        self.reload_data()
-        self.sync_db()
+
+        # Run the setup command to sync the db etc
+        call_command('setup', interactive=False)
+
         self.upgrade_scripts()
         self.start_all()
+
         self.update_version()
 
     def remove_old_pyc(self):

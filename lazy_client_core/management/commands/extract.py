@@ -4,10 +4,8 @@ from django.core.management.base import BaseCommand
 from lazy_client_core.models import DownloadItem
 import logging
 from lazy_client_core.utils.extractor import DownloadItemExtractor, Extractor
-from celery.task.base import periodic_task
 from django.core.cache import cache
 from django.conf import settings
-from datetime import timedelta
 from lazy_client_core.utils.metaparser import MetaParser
 from lazy_client_core.utils.queuemanager import QueueManager
 import os
@@ -58,7 +56,6 @@ class Command(BaseCommand):
                             help='Extract Specific folder'),
                   )
 
-    @periodic_task(bind=True, run_every=timedelta(seconds=600))
     def handle(self, *app_labels, **options):
 
         """
