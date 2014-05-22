@@ -31,7 +31,10 @@ def dummy_timer_fn():
 
 def cleanup(m):
     # Cleanup
+<<<<<<< HEAD
     logger.debug("Cleaning up curl threads")
+=======
+>>>>>>> 6d1153b8acd1d043ec59913f299106c700c0543c
     for c in m.handles:
         if c.fp is not None:
             common.close_file(c.fp)
@@ -111,7 +114,11 @@ class FTPMirror:
         from lazy_client_core.utils.queuemanager import QueueManager
 
         max_speed_kb = settings.MAX_SPEED_PER_DOWNLOAD
+<<<<<<< HEAD
         speed_delay = 0
+=======
+        speed_delay = 0.0
+>>>>>>> 6d1153b8acd1d043ec59913f299106c700c0543c
 
         if not QueueManager.queue_running():
             logger.debug("Queue is stopped, exiting")
@@ -123,7 +130,11 @@ class FTPMirror:
 
         dlitem.log("Starting Download")
 
+<<<<<<< HEAD
         update_interval = 2
+=======
+        update_interval = 1
+>>>>>>> 6d1153b8acd1d043ec59913f299106c700c0543c
         self.timer = Timer(update_interval, dummy_timer_fn)
         self.timer.start()
 
@@ -406,6 +417,17 @@ class FTPMirror:
                         #Throttle down
                         over_by = current_speed_kb - max_speed_kb
 
+<<<<<<< HEAD
+=======
+                current_speed_kb = speed / 1024
+
+                #Are we over our limit??
+                if max_speed_kb > 0:
+                    if current_speed_kb > max_speed_kb:
+                        #Throttle down
+                        over_by = current_speed_kb - max_speed_kb
+
+>>>>>>> 6d1153b8acd1d043ec59913f299106c700c0543c
                         if over_by > 5:
                             delay_by = over_by / 2000
 
@@ -430,9 +452,13 @@ class FTPMirror:
                 self.timer.start()
 
             # We just call select() to sleep until some more data is available.
+<<<<<<< HEAD
             if speed_delay > 0:
                 time.sleep(speed_delay)
 
+=======
+            time.sleep(speed_delay)
+>>>>>>> 6d1153b8acd1d043ec59913f299106c700c0543c
             self.m.select(1.0)
 
         # Cleanup
