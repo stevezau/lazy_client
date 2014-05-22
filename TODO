@@ -1,5 +1,8 @@
 -mobile ui
 
+
+-Extracting season packs when one fails.. split out error
+
 -fix nfo file.. check all docs for nfo files
 -ensure right show when adding to favs
 

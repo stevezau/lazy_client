@@ -15,6 +15,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.management import call_command
 from lazy_client_core.utils.common import green_color, fail_color, blue_color
 import shutil
+from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +52,9 @@ class Command(BaseCommand):
 
         if os.path.exists(self.lazysettings_file_bk):
             shutil.move(self.lazysettings_file_bk, self.lazysettings_file)
+
+        #Clear cache
+        cache.clear()
 
         #First stop all
         self.stop_all()

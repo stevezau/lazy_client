@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 from lazy_client_core.utils.common import blue_color, fail_color, green_color
 from django.conf import settings
 
+
 class Command(BaseCommand):
 
     # Displayed from 'manage.py help mycommand'
@@ -21,7 +22,6 @@ class Command(BaseCommand):
 
     def handle(self, *app_labels, **options):
         base_dir = settings.BASE_DIR
-
         print green_color("Running Syncdb")
         call_command('syncdb', interactive=True)
 

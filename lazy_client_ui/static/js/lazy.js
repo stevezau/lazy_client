@@ -4,7 +4,7 @@ String.prototype.startsWith = function (str)
    return this.indexOf(str) == 0;
 };
 
-lazyapi_url = "/lazy/api"
+lazyapi_url = "/api"
 
 $( document ).ready(function() {
 	//$( "#dialog" ).dialog();
