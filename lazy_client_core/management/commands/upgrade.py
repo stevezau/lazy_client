@@ -1,20 +1,20 @@
 from __future__ import division
 from django.core.management.base import BaseCommand
 import logging
-from fabric.api import *
-from fabric.colors import green, red
-from fabric.operations import prompt
 from lazy_client_core.utils.queuemanager import QueueManager
 from optparse import make_option
+import subprocess
 import os
 from importlib import import_module
+import fnmatch
 import pkgutil
 from django.core import management
-from fabric.api import settings
 from lazy_client_core.models import Version
 from django.conf import settings as djangosettings
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.management import call_command
+from lazy_client_core.utils.common import green_color, fail_color, blue_color
+import shutil
 
 logger = logging.getLogger(__name__)
 
@@ -49,8 +49,8 @@ class Command(BaseCommand):
 
     def do_upgrade(self, git=True):
 
-        if os.path.exists("lazysettings.bk"):
-            local("mv lazysettings.bk lazysettings.py")
+        if os.path.exists(self.lazysettings_file_bk):
+            shutil.move(self.lazysettings_file_bk, self.lazysettings_file)
 
         #First stop all
         self.stop_all()
@@ -62,8 +62,8 @@ class Command(BaseCommand):
         if git:
             self.git_pull()
 
-        #now lets run any upgrade scripts
-        self.install_reqs()
+        # Setup any new requirements
+        self.install_requirements()
 
         # Run the setup command to sync the db etc
         call_command('setup', interactive=False)
@@ -73,9 +73,22 @@ class Command(BaseCommand):
 
         self.update_version()
 
+        print blue_color("Upgrade success")
+
     def remove_old_pyc(self):
-        print(green("Deleting old python files..."))
-        local("find %s -name \"*.pyc\" -exec rm -rf {} \;" % self.base_dir)
+        print(green_color("Deleting old python files..."))
+
+        matches = []
+        for root, dirnames, filenames in os.walk(self.base_dir):
+            for filename in fnmatch.filter(filenames, '*.pyc'):
+                matches.append(os.path.join(root, filename))
+
+        for f in matches:
+            try:
+                os.remove(f)
+            except:
+                pass
+
 
     def update_version(self, version=djangosettings.__VERSION__):
         try:
@@ -107,7 +120,7 @@ class Command(BaseCommand):
                     upgrade_scripts.append(version)
 
         for ver in sorted(upgrade_scripts):
-            print(green("Running upgrade script from version %s..." % ver))
+            print(green_color("Running upgrade script from version %s..." % ver))
             mod = import_module("lazy_client.upgrade.lazyver_%s" % ver)
             upgrade_fn = getattr(mod, "upgrade")
             upgrade_fn()
@@ -116,7 +129,7 @@ class Command(BaseCommand):
             self.update_version(ver)
 
     def stop_all(self):
-        print(green("Stopping services..."))
+        print(green_color("Stopping services..."))
 
         #Stop the queue
         if self.queue_running:
@@ -129,80 +142,86 @@ class Command(BaseCommand):
         management.call_command('jobserver', 'stop', interactive=False)
         management.call_command('jobserver', 'stop_beat', interactive=False)
 
+    def run_command(self, cmd, check=False):
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = p.communicate()
+        return_code = p.returncode
+
+        if check:
+            if return_code != 0:
+                print out
+                print err
+                print fail_color("Error running command %s" % cmd)
+                exit(1)
+
+        return return_code, out, err
 
     def git_pull(self):
+        import stat
 
         replace = False
 
-        with settings(warn_only=True):
+        retries = 5
 
-            retries = 5
+        for i in range(retries):
 
-            for i in range(retries):
+            if replace:
+                shutil.move(self.lazysettings_file, self.lazysettings_file_bk)
+                self.run_command(['/usr/bin/env', 'git', 'stash'])
+                self.run_command(['/usr/bin/env', 'git', 'stash', 'drop'])
+                shutil.move(self.lazysettings_file_bk, self.lazysettings_file)
 
-                if replace:
+                os.chmod(self.manage_file, stat.S_IEXEC)
+                os.chmod(self.lazysh_file, stat.S_IEXEC)
 
-                    local("mv %s %s" % (self.lazysettings_file, self.lazysettings_file_bk))
-                    local("cd %s; git stash" % self.base_dir)
-                    local("cd %s; git stash drop" % self.base_dir)
-                    local("mv %s %s" % (self.lazysettings_file_bk, self.lazysettings_file))
-                    local("chmod +x %s" % self.manage_file)
-                    local("chmod +x %s" % self.lazysh_file)
-                    result = local('cd %s; git pull' % self.base_dir, capture=True)
-                else:
-                    result = local('cd %s; git pull' % self.base_dir, capture=True)
+            return_code, stdout, stderr = self.run_command(['/usr/bin/env', 'git', 'pull'])
 
+            if "Invalid username or password" in stderr:
+                print(fail_color("Invalid user/pass for Git, try again!..."))
+                continue
 
-                if "Invalid username or password" in result.stderr:
-                    print(red("Invalid user/pass for Git, try again!..."))
-                    continue
+            if "Your local changes to the following files would be overwritten by merge:" in stderr:
+                print(fail_color("Appears you have edited files locally, shall i replace them?"))
+                print stderr
 
-                if "Your local changes to the following files would be overwritten by merge:" in result.stderr:
-                    print(red("Appears you have edited files locally, shall i replace them?"))
-                    print result.stderr
-                    replace = prompt("Replace locally edit files?", default="yes", validate=r'yes|no')
+                replace = None
 
-                    if replace == "yes":
-                        replace == True
+                while None is replace:
+                    yesno = raw_input("Replace locally edit files? [yes/no]")
 
-                    continue
+                    if yesno.lower() == "yes":
+                        replace = True
 
-                if result.return_code == 0:
-                    return
-                else:
-                   print(red("Invalid return code, lets try again"))
+                    if yesno.lower() == "no":
+                        replace = False
 
-            raise SystemExit("ERROR: Unable to get latest files from GitHub")
+                continue
 
-    def install_reqs(self):
-        print(green("Installing requirements..."))
+            if "fatal: Not a git repository" in stderr:
+                return
 
-        if os.getuid() == 0:
-            local("cd %s; pip install -r requirements.txt" % self.base_dir)
+            if return_code == 0:
+                return
+            else:
+                print fail_color("Invalid return code, lets try again")
+
+        print fail_color("Error unable to get latest files from GitHub")
+        exit(1)
+
+    def install_requirements(self):
+
+        print green_color("Installing requirements")
+
+        req_file = os.path.join(self.base_dir, 'requirements.txt')
+
+        if os.getpid() == 0:
+            self.run_command(['/usr/bin/env', 'pip', 'install', '-r', req_file], check=True)
         else:
-            local("cd %s; sudo pip install -r requirements.txt" % self.base_dir)
-
-    def reload_data(self):
-        from django.core.cache import cache
-        cache.clear()
-
-        print(green("Collecting static files..."))
-        local("python manage.py collectstatic --noinput")
-        print(green("Loading menu data..."))
-
-        initialdata = os.path.join(self.base_dir, "lazy_client_ui/fixtures/lazyui_initialdata.json")
-
-        local('python manage.py sitetreeload --mode=replace %s' % initialdata)
-
-    def sync_db(self):
-        print(green("Syncing the database..."))
-        local("python manage.py syncdb")
-        print(green("Migrating the database..."))
-        local("python manage.py migrate")
+            self.run_command(['/usr/bin/env', 'sudo', 'pip', 'install', '-r', req_file], check=True)
 
     def start_all(self):
-        print(green("Starting services"))
-        local("%s restart" % self.lazysh_file)
+        print(green_color("Starting services"))
+        self.run_command([self.lazysh_file, 'restart'], check=True)
 
         if self.queue_running:
             QueueManager.start_queue()

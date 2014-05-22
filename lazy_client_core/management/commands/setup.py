@@ -8,7 +8,7 @@ import datetime
 from django.core.management import call_command
 from django.core.management.base import CommandError
 logger = logging.getLogger(__name__)
-from fabric.colors import green, red
+from lazy_client_core.utils.common import blue_color, fail_color, green_color
 from django.conf import settings
 
 class Command(BaseCommand):
@@ -22,10 +22,10 @@ class Command(BaseCommand):
     def handle(self, *app_labels, **options):
         base_dir = settings.BASE_DIR
 
-        print green("Running Syncdb")
+        print green_color("Running Syncdb")
         call_command('syncdb', interactive=True)
 
-        print green("Create Cache db")
+        print green_color("Create Cache db")
         try:
             call_command('createcachetable', 'lazy_cache', interactive=True)
         except CommandError as e:
@@ -34,13 +34,13 @@ class Command(BaseCommand):
             else:
                 raise e
 
-        print green("Running Migrate")
+        print green_color("Running Migrate")
         call_command('migrate', interactive=True)
 
-        print green("Loading menu data")
+        print green_color("Loading menu data")
         call_command('sitetreeload', 'lazy_client_ui/fixtures/lazyui_initialdata.json', mode="replace", interactive=True)
 
-        print green("Running Syncdb")
+        print green_color("Running Syncdb")
         call_command('collectstatic',  interactive=False)
 
-        print green("Setup success!")
+        print blue_color("Setup success")

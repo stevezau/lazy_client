@@ -1,26 +1,29 @@
 #!/usr/bin/env bash
+ARGS="$@"
 SCRIPT=$0
 BASE_PATH=`dirname $SCRIPT`
-MANAGE_SCRIPT="$BASE_PATH/manage.py"
 
-WEBUI_PID_FILE="$BASE_PATH/lazy_web_server.pid"
-CELERYD_PID_FILE="$BASE_PATH/celeryd.pid"
-CELERYBEAT_PID_FILE="$BASE_PATH/celeryd_beat.pid"
+cd $BASE_PATH
+
+MANAGE_SCRIPT="$BASE_PATH/manage.py"
+WEBUI_PID_FILE="lazy_web_server.pid"
+CELERYD_PID_FILE="celeryd.pid"
+CELERYBEAT_PID_FILE="celeryd_beat.pid"
 
 export C_FORCE_ROOT="true"
 
 chmod +x $MANAGE_SCRIPT
 
 function upgrade {
-    $MANAGE_SCRIPT upgrade
+    $MANAGE_SCRIPT $ARGS
 }
 
-function setup {
+function upgrade_reqs() {
     #First we need to install all the requirements
     if [ "$UID" == "0" ]; then
-        /usr/bin/env pip install -r "$BASE_PATH/requirements.txt"
+        /usr/bin/env pip install -r "requirements.txt"
     else
-        /usr/bin/env sudo /usr/bin/env pip install -r "$BASE_PATH/requirements.txt"
+        /usr/bin/env sudo /usr/bin/env pip install -r "requirements.txt"
     fi
 
     if [ "$?" == "0" ]; then
@@ -30,6 +33,10 @@ function setup {
         exit 1
     fi
 
+}
+
+function setup {
+    upgrade_reqs
     $MANAGE_SCRIPT setup
 }
 
@@ -56,8 +63,8 @@ function stop_lazy_webui {
 
 function start_celeryd {
 	echo "Starting Celeryd"
-	PID_FILE="$BASE_PATH/celeryd.pid"
-	LOG_FILE="$BASE_PATH/logs/celeryd.log"
+	PID_FILE="celeryd.pid"
+	LOG_FILE="logs/celeryd.log"
 	$MANAGE_SCRIPT celeryd --loglevel=DEBUG --concurrency=4 -Ofair --pidfile=$PID_FILE  -f $LOG_FILE > /dev/null 2>&1 &
 }
 
@@ -67,9 +74,9 @@ function stop_celeryd {
 
 function start_celerybeat {
 	echo "Starting Celery Beat"
-	PID_FILE="$BASE_PATH/celeryd_beat.pid"
-	LOG_FILE="$BASE_PATH/logs/celery_beat.log"
-	SCHEDULE_FILE="$BASE_PATH/celerybeat-schedule"
+	PID_FILE="celeryd_beat.pid"
+	LOG_FILE="logs/celery_beat.log"
+	SCHEDULE_FILE="celerybeat-schedule"
 	$MANAGE_SCRIPT celerybeat --pidfile=$PID_FILE  -f $LOG_FILE --schedule=$SCHEDULE_FILE > /dev/null 2>&1 &
 }
 
@@ -165,7 +172,7 @@ case $1 in
 		esac
 	;;
     *)
-      echo "usage: start|stop|check [celeryd|celerybeat|webui]"
+      echo "usage: start|stop|check|upgrade [celeryd|celerybeat|webui]"
 	;;
 esac
 
