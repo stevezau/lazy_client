@@ -214,7 +214,7 @@ class Command(BaseCommand):
 
         req_file = os.path.join(self.base_dir, 'requirements.txt')
 
-        if os.getpid() == 0:
+        if os.getuid() == 0:
             self.run_command(['/usr/bin/env', 'pip', 'install', '-r', req_file], check=True)
         else:
             self.run_command(['/usr/bin/env', 'sudo', 'pip', 'install', '-r', req_file], check=True)
