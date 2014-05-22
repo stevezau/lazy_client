@@ -3,11 +3,8 @@
 -fix nfo file.. check all docs for nfo files
 -ensure right show when adding to favs
 
-<<<<<<< HEAD
 --update upgradre script to include setup command
 
-=======
->>>>>>> 6d1153b8acd1d043ec59913f299106c700c0543c
 -enhance find missing ui to show the show it matches on
 
 CLEANUP SECTION
