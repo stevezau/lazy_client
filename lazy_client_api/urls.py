@@ -10,6 +10,8 @@ urlpatterns = patterns('',
     url(r'^tvdb/(?P<pk>[0-9]+)/$', TvdbDetail.as_view(), name="tvdb_api_detail"),
     url(r'^tvdb/(?P<pk>[0-9]+)/$', ImdbDetail.as_view(), name="tvdb_api_detail"),
 
+    #Search imdb.com
+    url(r'^search_imdb/$', 'lazy_client_api.views.search_imdb', name='search_imdb'),
 
     #Search TVShow via thetvdb.com
     url(r'^search_tvdb/$', 'lazy_client_api.views.search_tvdb', name='search_tvdb'),

@@ -1,14 +1,21 @@
--mobile ui
+###########
+### NOW ###
+###########
 
+-Test Cases
+-Add ignore to errors page..
 
--Extracting season packs when one fails.. split out error
-
--fix nfo file.. check all docs for nfo files
 -ensure right show when adding to favs
-
---update upgradre script to include setup command
-
 -enhance find missing ui to show the show it matches on
+
+-rotate celeryd and celerybeat logs
+
+-download fails as torrent already exists..
+
+##############
+### Future ###
+##############
+-mobile ui
 
 CLEANUP SECTION
 --delete via watcehd flag
@@ -19,3 +26,6 @@ CLEANUP SECTION
 ---update and Remove duplicate tv shows
 ---Cleanup empty tvshow folders
 ---cleanup empty movie folders
+
+
+

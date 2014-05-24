@@ -9,6 +9,7 @@ from lazy_client_core.utils.tvdb_api import Tvdb
 from django.core.exceptions import ObjectDoesNotExist
 from lazy_client_core.utils import common
 from datetime import datetime
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,10 @@ class Command(BaseCommand):
                             dest='updateimgs',
                             default=False,
                             help='Remove duplicate movies'),
+                        make_option('--fixdocos', action='store_true',
+                            dest='fixdocos',
+                            default=False,
+                            help='Fix doco channels'),
                   )
 
     def handle(self, *app_labels, **options):
@@ -53,6 +58,42 @@ class Command(BaseCommand):
         #Find jobs running and if they are finished or not
 
         tvdbapi = Tvdb()
+
+        if options['all'] or options['fixdocos']:
+            logger.info('Performing doco fix')
+
+            for doco_dict in settings.DOCO_REGEX:
+                doco_folder = os.path.join(settings.TVHD, doco_dict['name'])
+
+                if os.path.exists(doco_folder):
+
+                    #Get all media files
+                    for video_file in common.get_video_files(doco_folder):
+                        #Lets check for a nfo file
+                        video_file_name, ext = os.path.splitext(os.path.basename(video_file))
+
+                        nfo_file = os.path.join(doco_folder, "%s.nfo" % video_file_name)
+
+                        if not os.path.exists(nfo_file):
+                            airdate = time.strftime('%Y-%m-%d', time.localtime(os.path.getmtime(video_file)))
+
+                            nfo_content = "<episodedetails> \n\
+                            <title>" + os.path.splitext(video_file_name)[0] + "</title> \n\
+                            <season>0</season> \n\
+                            <episode>1</episode> \n\
+                            <aired>%s</aired> \n\
+                            <displayseason>0</displayseason>  <!-- For TV show specials, determines how the episode is sorted in the series  --> \n\
+                            <displayepisode>4096</displayepisode> \n\
+                            </episodedetails>" % airdate
+
+                            nfof = open(nfo_file, 'w')
+                            nfof.write(nfo_content)
+                            nfof.close()
+                            print 'Wrote NFO file %s' % nfo_file
+
+                else:
+                    logger.info("Doco folder does not exist, skipping")
+
 
         if options['updateimgs']:
             for tvdb_obj in Tvdbcache.objects.all():
@@ -128,7 +169,7 @@ class Command(BaseCommand):
                             new_tvdbcache.save()
 
                     except Exception as e:
-                        logger.error("DIR: %s Failed while searching via tvdb.com %s" % (path, e.message))
+                        logger.info("DIR: %s Failed while searching via tvdb.com %s" % (path, e.message))
                 except Exception as e:
                     logger.exception("DIR: %s Failed %s" % (path, e.message))
 
@@ -154,7 +195,7 @@ class Command(BaseCommand):
                         tvdbobj = Tvdbcache.objects.get(id=int(showobj['id']))
 
                         if tvdbobj:
-                            logger.error("%s: Found a duplicate entry %s:%s" % (dir, tvdbobj.title, tvdbobj.id))
+                            logger.info("%s: Found a duplicate entry %s:%s" % (dir, tvdbobj.title, tvdbobj.id))
                             continue
 
                             logger.info("%s was not found on tvdb.com" % dir)

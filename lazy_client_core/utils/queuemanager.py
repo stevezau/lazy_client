@@ -6,6 +6,7 @@ from lazy_client_core.exceptions import DownloadException
 from decimal import Decimal
 from datetime import datetime
 from django.conf import settings
+from django.db.models import Q
 import ftplib
 from djcelery.app import current_app
 from celery.app.control import Control
@@ -104,7 +105,7 @@ class QueueManager():
         logger.info('Performing queue update')
 
         try:
-            for dlItem in DownloadItem.objects.all().filter(status=DownloadItem.DOWNLOADING):
+            for dlItem in DownloadItem.objects.all().filter(status=DownloadItem.DOWNLOADING, retries__lte=settings.DOWNLOAD_RETRY_COUNT):
                 status = dlItem.download_status()
 
                 logger.info('Checking job: %s status: %s' % (dlItem.title, status))
@@ -152,20 +153,20 @@ class QueueManager():
 
                     if percent > 99.3:
                         #Change status to extract
-                        dlItem.log("Job actually finished, moving release to move status")
-                        dlItem.status = DownloadItem.MOVE
+                        dlItem.log("Job actually finished, moving release to extract status")
+                        dlItem.status = DownloadItem.EXTRACT
                         dlItem.retries = 0
                         dlItem.message = None
                         dlItem.save()
 
                     else:
                         #Didnt finish properly
-                        if dlItem.retries > settings.DOWNLOAD_RETRY_COUNT:
+                        if dlItem.retries >= settings.DOWNLOAD_RETRY_COUNT:
                             #Failed download
                             msg = "didn't download properly after %s retries" % settings.DOWNLOAD_RETRY_COUNT
                             dlItem.log(msg)
+                            dlItem.retries += 1
                             dlItem.message = str(msg)
-                            dlItem.status = DownloadItem.ERROR
                             dlItem.save()
                         else:
                             #Didnt download properly, put it back in the queue and let others try download first.
@@ -189,7 +190,7 @@ class QueueManager():
 
             #If jobs running is smaller then the config then start new jobs
             if startnew > 0:
-                items = DownloadItem.objects.all().filter(status=DownloadItem.QUEUE).order_by("priority", "dateadded")
+                items = DownloadItem.objects.all().filter(status=DownloadItem.QUEUE, retries__lte=settings.DOWNLOAD_RETRY_COUNT).order_by("priority", "dateadded")
 
                 if items.count() == 0:
                     logger.info("No outstanding jobs found to start")
@@ -214,7 +215,7 @@ class QueueManager():
 
                         if dlItem.retries > settings.DOWNLOAD_RETRY_COUNT:
                             dlItem.log("Job hit too many retires, setting to failed")
-                            dlItem.status = DownloadItem.ERROR
+                            dlItem.retries += 1
                             dlItem.save()
 
                         try:
@@ -231,7 +232,7 @@ class QueueManager():
                                     dlItem.save()
                                     continue
 
-                            logger.error(e.message)
+                            logger.info(e.message)
                             dlItem.message = e.message
                             dlItem.log(e.message)
                             dlItem.retries += 1

@@ -15,7 +15,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 ###Lazy settings###
 ###################
 
-__VERSION__ = 3
+__VERSION__ = 4
 
 QUEUE = "rabbitmq"
 DB_TYPE = "mysql"
@@ -163,8 +163,6 @@ TVSHOW_AUTOFIX_REPLACEMENTS = {
 ILLEGAL_CHARS_REGEX = '[:\"*?<>|]+'
 
 
-
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.6/howto/deployment/checklist/
 
@@ -172,7 +170,8 @@ ILLEGAL_CHARS_REGEX = '[:\"*?<>|]+'
 SECRET_KEY = 'afizuu0e=b50x8!eu7n3-7e+0yv*u$mpxrdoi%@9f9^h)!q3)c'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
+#DEBUG = True
 
 TEMPLATE_DEBUG = True
 TEMPLATE_DIRS = [os.path.join(BASE_DIR, 'templates')]
@@ -199,8 +198,6 @@ INSTALLED_APPS = (
     'lazy_client_ui',
 )
 
-# Application definition
-
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': True,
@@ -211,6 +208,10 @@ LOGGING = {
         },
     },
     'handlers': {
+        'mail_admins': {
+            'level': 'ERROR',
+            'class': 'django.utils.log.AdminEmailHandler'
+        },
         'null': {
             'level':'DEBUG',
             'class':'django.utils.log.NullHandler',
@@ -224,16 +225,16 @@ LOGGING = {
             'formatter': 'standard',
         },
         'console':{
-            'level':'INFO',
+            'level':'DEBUG',
             'class':'logging.StreamHandler',
             'formatter': 'standard'
         },
     },
     'loggers': {
         'django': {
-            'handlers':['console'],
+            'handlers':['console', 'mail_admins'],
             'propagate': True,
-            'level':'INFO',
+            'level':'DEBUG',
         },
         'guessit': {
             'handlers':['console'],
@@ -255,7 +256,6 @@ LOGGING = {
             'propagate': True,
             'level':'INFO',
         },
-
         'south': {
             'handlers':['console'],
             'propagate': True,
@@ -272,7 +272,7 @@ LOGGING = {
             'propagate': False,
         },
         '': {
-            'handlers': ['console', 'logfile'],
+            'handlers': ['console', 'logfile', 'mail_admins'],
             'level': 'DEBUG',
         },
 
@@ -359,6 +359,10 @@ REST_FRAMEWORK = {
 }
 # Database
 # https://docs.djangoproject.com/en/1.6/ref/settings/#databases
+
+EMAIL_ON_ERROR = False
+ALLOWED_HOSTS = ['*']
+
 import lazysettings
 from lazysettings import *
 

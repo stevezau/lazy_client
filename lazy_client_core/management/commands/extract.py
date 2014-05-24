@@ -2,42 +2,22 @@ from __future__ import division
 from optparse import make_option
 from django.core.management.base import BaseCommand
 from lazy_client_core.models import DownloadItem
+from django.db.models import Q
 import logging
-from lazy_client_core.utils.extractor import DownloadItemExtractor, Extractor
+from lazy_client_core.utils import extractor
+from lazy_client_core.utils import renamer
+from lazy_client_core.exceptions import *
 from django.core.cache import cache
 from django.conf import settings
 from lazy_client_core.utils.metaparser import MetaParser
 from lazy_client_core.utils.queuemanager import QueueManager
 import os
+from django.core.exceptions import ObjectDoesNotExist
 from lazy_client_core.utils import common
 
 logger = logging.getLogger(__name__)
 
 LOCK_EXPIRE = 60 * 20 # Lock expires in 20 minutes
-
-def extract_others(path, parser_type=MetaParser.TYPE_UNKNOWN):
-    for f in os.listdir(path):
-        #Is this from lazy?
-
-        full_path = os.path.join(path, f)
-
-        try:
-            DownloadItem.objects.get(localpath=full_path)
-        except:
-            logger.debug("Will try rename %s" % full_path)
-
-            try:
-                if common.get_size(full_path) == 0:
-                    logger.info("Empty folder %s, will delete" % full_path)
-                    common.delete(full_path)
-                    continue
-
-                extractor = Extractor(full_path, type=parser_type)
-                extractor.extract()
-            except Exception as e:
-                logger.error("Error extracting %s" % e)
-
-
 
 class Command(BaseCommand):
 
@@ -56,17 +36,129 @@ class Command(BaseCommand):
                             help='Extract Specific folder'),
                   )
 
+    def _extract_others(self, path, parser_type=MetaParser.TYPE_UNKNOWN):
+        for f in os.listdir(path):
+            full_path = os.path.join(path, f)
+
+            #Is this from lazy?
+            try:
+                DownloadItem.objects.get(localpath=full_path)
+                #we dont want to process so pass
+                pass
+            except ObjectDoesNotExist:
+                logger.info("Will try extract %s" % full_path)
+
+                if common.get_size(full_path) == 0:
+                    logger.info("Empty folder %s, will delete" % full_path)
+                    common.delete(full_path)
+                    continue
+
+                try:
+                    extractor.extract(full_path)
+                except ExtractException as e:
+                    logger.debug("Error extracting %s %s" % (str(e), full_path))
+                except ExtractCRCException as e:
+                    logger.debug("Error extracting %s %s" % (str(e), full_path))
+
+
+                logger.info("Will try rename %s" % full_path)
+
+                try:
+                    renamer.rename(full_path, type=parser_type)
+                except RenameException as e:
+                    logger.info("Error renaming %s %s" % (full_path, str(e)))
+                except ManuallyFixException as e:
+                    for f in e.fix_files:
+                        logger.info("Unable to rename %s rename, please manually fix" % f)
+
+                if common.get_size(self.path) < 5000:
+                    logger.info("deleting %s" % self.path)
+                    common.delete(self.path)
+
+    def _process_dlitem(self, dlitem):
+        logger.info("Processing Download Item: %s" % dlitem.localpath)
+
+        if dlitem.status == DownloadItem.EXTRACT:
+            self._extract_dlitem(dlitem)
+
+        if dlitem.status == DownloadItem.RENAME:
+            logger.info("Renaming download item")
+
+            try:
+                renamer.rename(dlitem.localpath, dlitem=dlitem)
+                logger.info("Renaming done")
+
+                dlitem.status = DownloadItem.COMPLETE
+                dlitem.retries = 0
+                dlitem.save()
+
+                logger.info("Deleting temp folder")
+                common.delete(dlitem.localpath)
+
+            except NoMediaFilesFoundException as e:
+                self._fail_dlitem(dlitem, error=str(e))
+                return
+            except RenameException as e:
+                self._fail_dlitem(dlitem, error=str(e))
+                return
+            except ManuallyFixException as e:
+                msg = "Unable to auto rename the below files, please manually fix"
+
+                for f in e.fix_files:
+                    msg += "\n File: %s Error: %s" % (f['file'], f['error'])
+
+                    if dlitem.video_files:
+                        already_there = False
+
+                        for video_file in dlitem.video_files:
+                            if video_file['file'] == f['file']:
+                                already_there = True
+
+                        if not already_there:
+                            dlitem.video_files.append(f)
+                    else:
+                        dlitem.video_files = []
+                        dlitem.video_files.append(f)
+
+
+                self._fail_dlitem(dlitem, error=msg)
+
+
+    def _extract_dlitem(self, dlitem):
+        logger.info("Extracting download item")
+
+        if dlitem.retries >= settings.DOWNLOAD_RETRY_COUNT:
+            logger.info("Tried to extract %s times already but failed.. will skip: %s" % (dlitem.retries, dlitem.title))
+            self._fail_dlitem(dlitem)
+            return
+
+        if not os.path.exists(dlitem.localpath):
+            #Does not exist??
+            self._fail_dlitem(dlitem, error="Local download folder does not exist", backto=DownloadItem.QUEUE)
+
+        #Only need to extract folders, not files
+        if os.path.isdir(dlitem.localpath):
+            try:
+                extractor.extract(dlitem.localpath)
+            except ExtractException as e:
+                self._fail_dlitem(dlitem, error=str(e), backto=DownloadItem.QUEUE)
+                return
+            except ExtractCRCException as e:
+                self._fail_dlitem(dlitem, error=str(e), backto=DownloadItem.QUEUE)
+                return
+
+        logger.info("Extraction passed")
+        dlitem.status = DownloadItem.RENAME
+        dlitem.save()
+
+
+
     def handle(self, *app_labels, **options):
 
         """
         app_labels - app labels (eg. myapp in "manage.py reset myapp")
         options - configurable command line options
         """
-
-        # Return a success message to display to the user on success
-        # or raise a CommandError as a failure condition
-        #if options['myoption'] == 'default':
-        #    return 'Success!'
 
         if 'extract_all' in options:
             extract_all = options['extract_all']
@@ -99,40 +191,35 @@ class Command(BaseCommand):
                 #Ok, is this part of a downloaditem?
                 try:
                     dlitem = DownloadItem.objects.get(localpath=extract_path)
-                    logger.info("Processing: %s" % dlitem.localpath)
-                    extractor = DownloadItemExtractor(dlitem)
-                    extractor.extract()
-                except:
+                    self._process_dlitem(dlitem)
+                except ObjectDoesNotExist:
                     #Nope its not, lets do manual extract
-                    extract_others(extract_path)
-
+                    self._extract_others(extract_path)
 
             else:
-                for dlitem in DownloadItem.objects.all().filter(status=DownloadItem.MOVE):
-
-                    if dlitem.retries > 3:
-                        dlitem.status = DownloadItem.ERROR
-                        dlitem.save()
-                        logger.error("Tried to extract 3 times already but failed.. will skip: %s" % dlitem.title)
-                        continue
-
-                    logger.info("Processing: %s" % dlitem.localpath)
-
-                    #offload processing to the DownloadItemExtractor
-                    extractor = DownloadItemExtractor(dlitem)
-                    extractor.extract()
+                #First we need to do the unrar/extracing..
+                for dlitem in DownloadItem.objects.all().filter(Q(status=DownloadItem.EXTRACT) | Q(status=DownloadItem.RENAME),  retries__lte=settings.DOWNLOAD_RETRY_COUNT):
+                    self._process_dlitem(dlitem)
 
             #Lets rename stuff that didnt come from lazy
             if extract_all:
                 #TVShows
-                extract_others(settings.TVHD_TEMP, MetaParser.TYPE_TVSHOW)
+                self._extract_others(settings.TVHD_TEMP, MetaParser.TYPE_TVSHOW)
 
                 #Movies
-                extract_others(settings.HD_TEMP, MetaParser.TYPE_MOVIE)
-
-                #Other
-                #self.extract_others(settings.REQUESTS_TEMP, MetaParser.TYPE_UNKNOWN)
+                self._extract_others(settings.HD_TEMP, MetaParser.TYPE_MOVIE)
 
         finally:
             release_lock()
 
+
+    def _fail_dlitem(self, dlitem, backto=None, error=None):
+
+        if None is not backto:
+            dlitem.status = backto
+        if None is not error:
+            logger.info(error)
+            dlitem.message = error
+
+        dlitem.retries += 1
+        dlitem.save()

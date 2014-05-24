@@ -74,7 +74,7 @@
         {% endif %}
 
         {% if download.message %}
-            <div class='download-error'>{{ download.message }}</div>
+            <div class='download-error'><pre>{{ download.message }}</pre></div>
         {% endif %}
 
         {% if download.status == 4 %}

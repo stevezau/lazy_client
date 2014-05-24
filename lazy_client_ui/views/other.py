@@ -1,11 +1,13 @@
-from django.views.generic import TemplateView, FormView, ListView, DetailView
 import logging
 import os
+
+from django.views.generic import TemplateView, FormView, ListView, DetailView
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect, HttpResponse
 from django.conf import settings
+
 from lazy_client_ui import common
-from lazy_client.forms import Find, FindMissing
+from lazy_client_ui.forms import Find, FindMissing
 from lazy_client_core.utils import ftpmanager
 from lazy_client_core.exceptions import AlradyExists, AlradyExists_Updated
 from lazy_client_core.models import DownloadItem, Job

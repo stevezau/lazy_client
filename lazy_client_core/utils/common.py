@@ -289,19 +289,16 @@ def get_video_files(path):
 
     logger.debug("finding video files in path %s" % path)
 
-    from lazy_client_core.utils.metaparser import MetaParser
-
     media_files = []
 
     for root, __, files in os.walk(path):
         for f in files:
             fullpath = os.path.join(root, f)
 
-            if os.path.getsize(fullpath) < 5242880:
+            if os.path.getsize(fullpath) < 16777216:
                 continue
 
             name, ext = os.path.splitext(f)
-            parser = MetaParser(f)
 
             #Check its a video file
             if is_video_file(f):

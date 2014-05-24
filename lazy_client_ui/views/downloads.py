@@ -1,16 +1,20 @@
+import logging
+
 from django.utils.translation import ugettext as _
 from django.http import HttpResponse, HttpResponseRedirect
 from django.views.generic import TemplateView, ListView, DetailView, UpdateView
 from django.core.exceptions import ObjectDoesNotExist
 from django.forms import ValidationError
-import logging
 from django.core.urlresolvers import reverse
 from django.core.urlresolvers import reverse_lazy
-from lazy_client_core.models import DownloadItem, Tvdbcache
+from django.conf import settings
+from django.db.models import Q
+from lazy_client_core.models import DownloadItem, Tvdbcache, Imdbcache
 from lazy_client_ui import common
 from lazy_client_core.utils import common as commoncore
 from lazy_client_core.utils.tvdb_api import Tvdb
-from lazy_client.forms import DownloadItemManualFixForm
+from lazy_client_ui.forms import DownloadItemManualFixForm
+from flexget.utils.imdb import ImdbSearch, ImdbParser
 
 
 logger = logging.getLogger(__name__)
@@ -66,6 +70,18 @@ class DownloadsManuallyFixItem(UpdateView):
     model = DownloadItem
     template_name = "downloads/manualfixitem.html"
 
+    def get_context_data(self, **kwargs):
+        context = super(DownloadsManuallyFixItem, self).get_context_data(**kwargs)
+        return context
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        video_files = self.object.video_files
+
+        form = DownloadItemManualFixForm(download_item=self.object)
+
+        return self.render_to_response(self.get_context_data(form=form))
+
     def post(self, request, *args, **kwargs):
 
         if 'skip' in request.POST:
@@ -82,51 +98,101 @@ class DownloadsManuallyFixItem(UpdateView):
 
             return HttpResponseRedirect(reverse('downloads.manualfix'))
 
-        return super(DownloadsManuallyFixItem, self).post(request, *args, **kwargs)
+        self.object = self.get_object()
+        form = DownloadItemManualFixForm(request.POST or None, download_item=self.object)
 
+        #Lets do the validation
+        if form.is_valid():
+            return self.form_valid(form)
+        else:
+            return self.form_invalid(form)
 
     def get_object(self, queryset=None):
         obj = DownloadItem.objects.get(id=self.kwargs['pk'])
         return obj
 
     def form_valid(self, form):
-        #Find tvdb instance
-        tvdbobj = None
+        from lazy_client_core.utils.metaparser import MetaParser
 
-        #TODO: enable enter tvdbid or search by name
+        self.object = self.get_object()
 
-        try:
-            tvdbobj = Tvdbcache.objects.get(id=int(form.cleaned_data['tvdbid_id']))
-        except ObjectDoesNotExist:
-            tvdbobj = Tvdbcache()
-            tvdbobj.id = int(form.cleaned_data['tvdbid_id'])
-            tvdbobj.update_from_tvdb()
-            tvdbobj.save()
+        video_files = self.object.video_files
 
-        if None is tvdbobj:
-            raise ValidationError(
-                _('Unable to find tvdb object: %(value)s'),
-                code='invalid',
-                params={'value':  form.cleaned_data['tvdbid_display']},
-            )
+        i = 0
 
-        form.instance.tvdbid = tvdbobj
+        for vid_fields in form.get_vid_fields():
+            #lets save it
+            type_dict_name = "%i_type" % i
+            video_file_type = int(form.cleaned_data[type_dict_name])
+
+            if video_file_type == MetaParser.TYPE_TVSHOW:
+                tvdbobj = None
+                tvdbid_dict_name = '%s_tvdbid_id' % i
+                tvdb_id = int(form.cleaned_data[tvdbid_dict_name])
+
+                try:
+                    tvdbobj = Tvdbcache.objects.get(id=tvdb_id)
+                except ObjectDoesNotExist:
+                    tvdbobj = Tvdbcache()
+                    tvdbobj.id = tvdb_id
+                    tvdbobj.update_from_tvdb()
+
+                if None is tvdbobj:
+                    raise ValidationError(
+                        _('Unable to find tvdb object: %(value)s'),
+                        code='invalid',
+                        params={'value':  form.cleaned_data['%s_tvdbid_display' % i]},
+                    )
+
+                video_files[i]['season_override'] = form.cleaned_data['%s_tvdbid_season_override' % i]
+                video_files[i]['ep_override'] = form.cleaned_data['%s_tvdbid_ep_override' % i]
+                video_files[i]['tvdbid_id'] = int(form.cleaned_data['%s_tvdbid_id' % i])
+
+                #If this is a single tvshow then lets update the whole download_item
+                parser = self.object.metaparser()
+                if parser.details['type'] == "episode":
+                    self.object.tvdbid = tvdbobj
+
+            if video_file_type == MetaParser.TYPE_MOVIE:
+                imdbobj = None
+                imdbid_dict_name = '%s_imdbid_id' % i
+                imdbid_id = int(form.cleaned_data[imdbid_dict_name])
+
+                try:
+                    imdbobj = Imdbcache.objects.get(id=imdbid_id)
+                except ObjectDoesNotExist:
+                    imdbobj = Imdbcache()
+                    imdbobj.id = imdbid_id
+                    imdbobj.update_from_imdb()
+
+                video_files[i]['imdbid_id'] = imdbid_id
+
+                if None is imdbobj:
+                    raise ValidationError(
+                        _('Unable to find imdb object: %(value)s'),
+                        code='invalid',
+                        params={'value':  form.cleaned_data['%s_tvdbid_display' % i]},
+                    )
+
+                #If this is a single movie then lets update the whole download_item
+                parser = self.object.metaparser()
+                if parser.details['type'] == "movie":
+                    self.object.imdbid = imdbobj
+
+            i += 1
+
 
         #remove from the session
-        try:
-            for idx, val in enumerate(self.request.session["fixitems"]):
-                if val == self.kwargs['pk']:
-                    del self.request.session["fixitems"][idx]
-                    self.request.session.modified = True
-                    break
+        for idx, val in enumerate(self.request.session["fixitems"]):
+            if val == self.kwargs['pk']:
+                del self.request.session["fixitems"][idx]
+                self.request.session.modified = True
+                break
 
-        except Exception as e:
-            logger.exception(e)
+        self.object.retries = 0
+        self.object.save()
 
-        form.instance.status = DownloadItem.MOVE
-        form.instance.retries = 0
-
-        return super(DownloadsManuallyFixItem, self).form_valid(form)
+        return HttpResponseRedirect(self.get_success_url())
 
 
 
@@ -164,16 +230,21 @@ class DownloadsListView(ListView):
 
         self.type = self.kwargs.get('type')
 
-        #convert type to int
-        for dlint in DownloadItem.STATUS_CHOICES:
-            if dlint[1].lower() == self.type.lower():
-                self.dlget = dlint[0]
+        if self.type.lower() == "error":
+            self.dlget = 99
+        else:
+            #convert type to int
+            for dlint in DownloadItem.STATUS_CHOICES:
+                if dlint[1].lower() == self.type.lower():
+                    self.dlget = dlint[0]
 
         #only get a max of 10 for
         if self.dlget == DownloadItem.COMPLETE:
            return DownloadItem.objects.all().filter(status=self.dlget).order_by('-id').filter()[0:30]
         elif self.dlget == DownloadItem.QUEUE:
             return DownloadItem.objects.all().filter(status=self.dlget).order_by('priority','id')
+        elif self.dlget == 99:
+            return DownloadItem.objects.filter(~Q(status=DownloadItem.COMPLETE), retries__gt=settings.DOWNLOAD_RETRY_COUNT).order_by('priority','id')
         else:
             return DownloadItem.objects.all().filter(status=self.dlget)
 
@@ -260,20 +331,8 @@ def retry(items):
             print percent_complete
 
             #TODO: Fix this use dlitem retry
-            if percent_complete > 99:
-                dlitem.status = DownloadItem.MOVE
-                dlitem.message = "Retrying extraction"
-                dlitem.dlstart = None
-                dlitem.retries = 2
-                dlitem.save()
-                response.write("Moved to extraction %s\n" % dlitem.title)
-            else:
-                dlitem.status = DownloadItem.QUEUE
-                dlitem.message = "Retrying download"
-                dlitem.retries = 2
-                dlitem.dlstart = None
-                dlitem.save()
-                response.write("Moved to queue for downloading %s\n" % dlitem.title)
+            dlitem.retry()
+            response.write("Retrying %s\n" % dlitem.title)
 
         except ObjectDoesNotExist:
             status = 210

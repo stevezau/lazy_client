@@ -101,12 +101,12 @@ class DownloadItem(models.Model):
     def __unicode__(self):
         return self.title
 
+    PENDING = 6
     QUEUE = 1
     DOWNLOADING = 2
-    MOVE = 3
+    EXTRACT = 3
+    RENAME = 5
     COMPLETE = 4
-    ERROR = 5
-    PENDING = 6
 
     JOB_NO_RESPONSE = 10
     JOB_RUNNING = 11
@@ -118,11 +118,10 @@ class DownloadItem(models.Model):
     STATUS_CHOICES = (
         (QUEUE, 'Queue'),
         (DOWNLOADING, 'Downloading'),
-        (MOVE, 'Move'),
+        (RENAME, 'Rename'),
         (COMPLETE, 'Complete'),
-        (ERROR, 'Error'),
         (PENDING, 'Pending'),
-
+        (EXTRACT, 'Extract'),
     )
 
     title = models.CharField(max_length=150, db_index=True, blank=True, null=True)
@@ -132,7 +131,7 @@ class DownloadItem(models.Model):
     status = models.IntegerField(choices=STATUS_CHOICES, blank=True, null=True)
     pid = models.IntegerField(default=0, null=True)
     taskid = models.CharField(max_length=255, blank=True, null=True)
-    retries = models.IntegerField(default=0, null=True)
+    retries = models.IntegerField(default=0)
     dateadded = models.DateTimeField(db_index=True, auto_now_add=True, blank=True)
     dlstart = models.DateTimeField(blank=True, null=True)
     remotesize = models.BigIntegerField(default=0, null=True)
@@ -142,11 +141,16 @@ class DownloadItem(models.Model):
     message = models.TextField(blank=True, null=True)
     imdbid = models.ForeignKey('Imdbcache', blank=True, null=True, on_delete=models.DO_NOTHING)
     tvdbid = models.ForeignKey('Tvdbcache', blank=True, null=True, on_delete=models.DO_NOTHING)
-    epoverride = models.IntegerField(default=0, blank=True, null=True)
-    seasonoverride = models.IntegerField(default=0, blank=True, null=True)
     onlyget = JSONField(blank=True, null=True)
+    video_files = JSONField(blank=True, null=True)
 
     parser = None
+
+    def retry(self):
+        self.dlstart = None
+        self.retries = 0
+        self.video_files = None
+        self.save()
 
     def get_type(self):
         from lazy_client_core.utils.metaparser import MetaParser
@@ -201,7 +205,7 @@ class DownloadItem(models.Model):
         if None is task:
             pass
         elif task.state == "ABORTED":
-            logger.error("%s was aborted." % self.ftppath)
+            logger.info("%s was aborted." % self.ftppath)
             return
         elif task.state == "SUCCESS" or task.state == "FAILURE":
             pass
@@ -350,7 +354,7 @@ class DownloadItem(models.Model):
                 self.onlyget[add_season].append(add_ep)
 
         #If we are in a downloading or move state then we must reset it
-        if self.status == DownloadItem.DOWNLOADING or self.status == DownloadItem.MOVE:
+        if self.status == DownloadItem.DOWNLOADING or self.status == DownloadItem.RENAME:
             self.reset()
 
     def increate_priority(self):
@@ -560,9 +564,16 @@ class Tvdbcache(models.Model):
     localpath = models.CharField(max_length=255, blank=True, null=True)
 
     def get_seasons(self):
-        tvdbapi = Tvdb()
-        tvdb_obj = tvdbapi[self.id]
-        return tvdb_obj.keys()
+        season = []
+
+        try:
+            tvdbapi = Tvdb()
+            tvdb_obj = tvdbapi[self.id]
+            season = tvdb_obj.keys()
+        except:
+            pass
+
+        return season
 
     def get_eps(self, season):
         tvdbapi = Tvdb()

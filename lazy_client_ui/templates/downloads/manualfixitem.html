@@ -7,15 +7,48 @@
 {% endblock %}
 
 {% block content %}
-    <h1>Manual Override</h1>
+    <script language="javascript" type="text/javascript">
+        $( document ).ready(function() {
+            $("select[name$='_type']").each(function() {
+                update_fields(this);
+            });
+        })
+    </script>
+
     {% if object %}
         <form id="formID" action="" method="post">
         {% csrf_token %}
 
-            <div class='download-item'>
-                <div class='left'>{{ object.title }}</div>
-                <div class='right'>{{ form }}</div>
-            </div>
+            <h1>Manually Fix {{ object.title }}</h1>
+
+            {% if object.video_files == None %}
+                <div>No video files requiring your attention found</div>
+
+            {% else %}
+                <h3>Video files requiring attention</h3>
+                {{ form.errors }}
+                {% for video_fields in form.get_vid_fields %}
+                    <div class='download-item'>
+                        <div>
+                            {{ video_fields.video_file }}
+                            <div class="left">File: {{ video_fields.video_file.value }}</div>
+                            <div class="right">
+                                Type: {{ video_fields.type }}
+
+                                <span class="tvdbid_id">{{ video_fields.tvdbid_id }}</span>
+                                <span class="tvdbid_display">TVShow: {{ video_fields.tvdbid_display }}</span>
+                                <span class="tvdbid_season_override">Season: {{ video_fields.tvdbid_season_override }}</span>
+                                <span class="tvdbid_ep_override">Episode: {{ video_fields.tvdbid_ep_override }}</span>
+
+                                <span class="imdbid_id">{{ video_fields.imdbid_id }}</span>
+                                <span class="imdbid_display">Movie:{{ video_fields.imdbid_display }}</span>
+
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
 
         <div class="middle"><input type="submit" name="save" value="Save"></div>
         <div class="middle"><input type="submit" name="skip" value="Skip"></div>

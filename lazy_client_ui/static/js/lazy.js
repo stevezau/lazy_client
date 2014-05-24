@@ -9,26 +9,51 @@ lazyapi_url = "/api"
 $( document ).ready(function() {
 	//$( "#dialog" ).dialog();
 
-    $("#id_tvdbid_display").autocomplete({
-        source: lazyapi_url + "/search_tvdb/",
+    /////////////////////////
+    /// Handle Manual Fix ///
+    /////////////////////////
+
+    $("input[id$='_imdbid_display']").autocomplete({
+        source: lazyapi_url + "/search_imdb/",
         minLength: 3,
-        change: function(event, ui) {
-            console.log(this.value);
+        select: function(event, ui) {
+            parent = $(this).parent().parent();
+
             if (ui.item == null) {
-                $("#id_tvdbid_id").val(null)
-                $("#id_epoverride").empty()
-                $("#id_seasonoverride").empty()
+                parent.find("input[name$='_imdbid_id']").val(null);
             } else {
-                $("#id_tvdbid_id").val(ui.item.id)
-                update_season()
+                parent.find("input[name$='_imdbid_id']").val(ui.item.id);
             }
     }
     });
 
+    $("input[id$='_tvdbid_display']").autocomplete({
+        source: lazyapi_url + "/search_tvdb/",
+        minLength: 3,
+        select: function(event, ui) {
+            parent = $(this).parent().parent();
 
-    $('#id_seasonoverride').change(function() {
-        update_ep();
+            if (ui.item == null) {
+                parent.find("input[id$='_tvdbid_id']").val(null)
+                parent.find("select[id$='_tvdbid_season_override']").empty()
+                parent.find("input[id$='_tvdbid_ep_override']").empty()
+            } else {
+                parent.find("input[id$='_tvdbid_id']").val(ui.item.id)
+                update_season(this)
+            }
+    }
     });
+
+    // Update fields when the type is changed..
+    $("select[name$='_type']").change(function() {
+        // We need to change the fields..a
+        update_fields(this)
+    });
+
+    $("select[name$='_tvdbid_season_override']").change(function() {
+        update_ep(this);
+    });
+
 
     /////////////////////////
     /// AJAX DJANGO SEND ////
@@ -304,13 +329,46 @@ $( document ).ready(function() {
 
 });
 
+/////////////////////////
+/// Handle Manual Fix ///
+/////////////////////////
+function update_fields(type_obj) {
 
-function update_season() {
-    showid = $('#id_tvdbid_id').val()
-    $('#id_epoverride').empty();
-    $('#id_seasonoverride').empty();
+    value = $(type_obj).find(":selected").text();
 
-    $('#id_seasonoverride').append("<option value='Select Season'>Select Season</option>");
+    parent = $(type_obj).parent().parent();
+
+    // TVShow
+    if (value == "TVShow") {
+        parent.find(".imdbid_display").hide();
+
+        parent.find(".tvdbid_display").show();
+        parent.find(".tvdbid_season_override").show();
+        parent.find(".tvdbid_ep_override").show();
+    }
+
+    // Movie
+    if (value == "Movie") {
+        parent.find(".tvdbid_display").hide();
+        parent.find(".tvdbid_season_override").hide();
+        parent.find(".tvdbid_ep_override").hide();
+
+        parent.find(".imdbid_display").show();
+    }
+}
+
+
+function update_season(current) {
+
+    parent = $(current).parent().parent();
+    showid = parent.find("input[name$='_tvdbid_id']").val()
+    season_override = parent.find("select[name$='_tvdbid_season_override']");
+    ep_override = parent.find("select[name$='_tvdbid_ep_override']");
+
+    $(season_override).empty();
+    $(ep_override).empty();
+
+    $(season_override).append("<option value='Select Season'>Select Season</option>");
 
     $.ajax({
         url: lazyapi_url + "/get_tvdb_season/" + showid,
@@ -318,25 +376,30 @@ function update_season() {
         dataType: 'json', // or your choice of returned data
         success: function(seasons){
              $.each(seasons, function(i, stt){
-                 $('#id_seasonoverride').append('<option value="'+stt.value+'">'+stt.label+'</option>');
+                 $(season_override).append('<option value="'+stt.value+'">'+stt.label+'</option>');
              });
         }
     });
 }
 
-function update_ep() {
-    season = $('#id_seasonoverride').val();
-    showid = $('#id_tvdbid_id').val()
-    epselect = $('#id_epoverride');
-    epselect.empty();
+function update_ep(current) {
+    parent = $(current).parent().parent();
+
+    season_override_obj = parent.find("select[name$='_tvdbid_season_override']");
+    ep_override_obj = parent.find("select[name$='_tvdbid_ep_override']");
+    tvdb_id_obj = parent.find("input[name$='_tvdbid_id']");
+
+    season = $(season_override_obj).val();
+    tvdb_id = $(tvdb_id_obj).val();
+    ep_override_obj.empty();
 
     $.ajax({
-        url: lazyapi_url + "/get_tvdb_eps/" + showid + "/" + season,
+        url: lazyapi_url + "/get_tvdb_eps/" + tvdb_id + "/" + season,
         type: 'GET',
         dataType: 'json', // or your choice of returned data
         success: function(eps){
              $.each(eps, function(i, stt){
-                 epselect.append('<option value="'+stt.value+'">'+stt.label+'</option>');
+                 ep_override_obj.append('<option value="'+stt.value+'">'+stt.label+'</option>');
              });
         }
     });

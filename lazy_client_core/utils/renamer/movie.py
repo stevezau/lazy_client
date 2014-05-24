@@ -2,9 +2,10 @@ from lazy_client_core.models import Imdbcache
 import re, logging, os
 from django.conf import settings
 from flexget.utils.imdb import ImdbSearch, ImdbParser
+from django.core.exceptions import ObjectDoesNotExist
 from lazy_client_core.utils import common
 from lazy_client_core.utils.metaparser import MetaParser
-from lazy_client_core.exceptions import ExtractException, InvalidFileException, NoMediaFilesFoundException, RenameException
+from lazy_client_core.exceptions import RenameException, ManuallyFixException
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +95,11 @@ class MovieRenamer:
 
     def _move_movies(self, movies):
 
+        self.error_files = []
+
         for movie in movies:
+
+            imdb_obj = None
 
             file_parser = movie['parser']
             files = movie['files']
@@ -103,13 +108,14 @@ class MovieRenamer:
             if len(movies) == 1 and self.download_item and self.download_item.imdbid:
                 #Single movie with 1 file, lets rename it!
                 #Ok lets use the data from IMDB Obj
-                year = self.download_item.imdbid.year
-                title = self.download_item.imdbid.title
+                imdb_obj = self.download_item.imdbid
+                year = imdb_obj.year
+                title = imdb_obj.title
 
                 if (None is year or year == "") and 'year' in file_parser.details:
                     year = file_parser.details['year']
 
-                self._do_rename_movie(title, year, files, imdb_id=self.download_item.imdbid.id)
+                self._do_rename_movie(title, year, files, imdb_id=imdb_obj.id)
 
             else:
                 try:
@@ -121,17 +127,38 @@ class MovieRenamer:
                     if 'title' in file_parser.details:
                         f_title = file_parser.details['title']
 
-                    title, year, imdbid = self.get_imdb_details(f_title, f_year)
-                    #We have all the info we need. Move the files.
-                    self._do_rename_movie(title, year, files, imdb_id=imdbid)
+                    #Look for override
+                    if self.download_item.video_files:
+                        for video_file in self.download_item.video_files:
+                            video_file_path = video_file['file']
+
+                            if video_file_path == os.path.basename(files[0]):
+                                if 'imdbid_id' in video_file:
+                                    try:
+                                        imdb_obj = Imdbcache.objects.get(id=video_file['imdbid_id'])
+                                    except ObjectDoesNotExist:
+                                        imdb_obj = Imdbcache()
+                                        imdb_obj.id = video_file['imdbid_id']
+                                        imdb_obj.update_from_imdb()
+
+                    if imdb_obj:
+                        self._do_rename_movie(title, year, files, imdb_id=imdb_obj.id)
+                    else:
+                        title, year, imdbid = self.get_imdb_details(f_title, f_year)
+                        #We have all the info we need. Move the files.
+                        self._do_rename_movie(title, year, files, imdb_id=imdbid)
                 except RenameException as e:
                     if self.download_item:
-                        raise e
+                        error_file = {'file': movie['files'][0], 'error': str(e)}
+                        self.error_files.append(error_file)
                     else:
                         logger.debug("Unable to move %s as %s" % (movie, e))
+        if len(self.error_files) > 0 and self.download_item:
+            raise ManuallyFixException(fix_files=self.error_files)
 
 
     def get_imdb_details(self, title, year):
+
         imdbS = ImdbSearch()
         results = imdbS.best_match(title, year)
 
@@ -282,7 +309,12 @@ class MovieRenamer:
             imdbcache_obj.save()
 
 
-    def rename(self, files):
+    def rename(self, mov_files):
+
+        if isinstance(mov_files, basestring):
+            files = [mov_files]
+        else:
+            files = mov_files
 
         movies = self._sort_files(files)
 
@@ -293,9 +325,9 @@ class MovieRenamer:
             if download_item_parser.details['type'] == 'movie':
                 #Single Movie
                 if len(movies) == 0:
-                    raise ExtractException("Didn't find any media files?")
+                    raise RenameException("Didn't find any media files?")
 
                 if len(movies) > 1:
-                    raise ExtractException("Detected as a single movie but found multiple media files?")
+                    raise RenameException("Detected as a single movie but found multiple media files?")
 
         self._move_movies(movies)

@@ -183,7 +183,7 @@ class Command(BaseCommand):
                             movie_name = parser.details['title']
 
                         if not movie_name or not movie_year:
-                            logger.error("FOLDER: %s unable to figure out year and movie name" % dir)
+                            logger.info("FOLDER: %s unable to figure out year and movie name" % dir)
                             continue
 
                         imdbS = ImdbSearch()
@@ -196,13 +196,13 @@ class Command(BaseCommand):
                             movieObj.parse(results['url'])
 
                             if not movieObj.name:
-                                logger.error("FOLDER: %s unable to get movie name from imdb" % dir)
+                                logger.info("FOLDER: %s unable to get movie name from imdb" % dir)
                                 continue
 
                             imdb_id = int(movieObj.imdb_id.lstrip("tt"))
 
                         if None is imdb_id:
-                            logger.error("FOLDER: %s unable to find a decent match" % dir)
+                            logger.info("FOLDER: %s unable to find a decent match" % dir)
                             continue
 
                         try:

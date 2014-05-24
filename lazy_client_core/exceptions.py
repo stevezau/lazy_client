@@ -43,12 +43,27 @@ class ExtractCRCException(Exception):
     """
     """
 
+    bad_archives = []
+
+    def __init__(self, bad_archives=[]):
+        self.bad_archives = bad_archives
+
+
 class ManuallyFixException(Exception):
     """
     """
 
+    fix_files = []
+
+    def __init__(self, fix_files=[]):
+        self.fix_files = fix_files
+
 
 class RenameException(Exception):
+    """
+    """
+
+class RenameUnknownException(Exception):
     """
     """
 
