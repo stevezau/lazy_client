@@ -43,12 +43,6 @@ class ExtractCRCException(Exception):
     """
     """
 
-    bad_archives = []
-
-    def __init__(self, bad_archives=[]):
-        self.bad_archives = bad_archives
-
-
 class ManuallyFixException(Exception):
     """
     """

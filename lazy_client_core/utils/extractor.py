@@ -36,7 +36,7 @@ def do_extract(path):
                     pass
 
     if len(found_bad_archives) > 0:
-        raise ExtractCRCException("Failed due to CRC errors in files", found_bad_archives)
+        raise ExtractCRCException("Failed due to CRC errors in files")
 
 def extract(path):
 
