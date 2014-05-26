@@ -122,6 +122,7 @@ class Command(BaseCommand):
 
 
                 self._fail_dlitem(dlitem, error=msg)
+                dlitem.save()
 
 
     def _extract_dlitem(self, dlitem):
@@ -142,9 +143,11 @@ class Command(BaseCommand):
                 extractor.extract(dlitem.localpath)
             except ExtractException as e:
                 self._fail_dlitem(dlitem, error=str(e), backto=DownloadItem.QUEUE)
+                dlitem.reset()
                 return
             except ExtractCRCException as e:
                 self._fail_dlitem(dlitem, error=str(e), backto=DownloadItem.QUEUE)
+                dlitem.reset()
                 return
 
         logger.info("Extraction passed")
@@ -197,7 +200,6 @@ class Command(BaseCommand):
                     self._extract_others(extract_path)
 
             else:
-                #First we need to do the unrar/extracing..
                 for dlitem in DownloadItem.objects.all().filter(Q(status=DownloadItem.EXTRACT) | Q(status=DownloadItem.RENAME),  retries__lte=settings.DOWNLOAD_RETRY_COUNT):
                     self._process_dlitem(dlitem)
 
@@ -222,4 +224,3 @@ class Command(BaseCommand):
             dlitem.message = error
 
         dlitem.retries += 1
-        dlitem.save()

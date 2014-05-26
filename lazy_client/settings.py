@@ -178,6 +178,17 @@ TEMPLATE_DIRS = [os.path.join(BASE_DIR, 'templates')]
 
 #ALLOWED_HOSTS = []
 
+
+DEFAULT_FROM_EMAIL = 'support@drifthost.com'
+EMAIL_HOST = 'aspmx.l.google.com'
+SERVER_EMAIL = 'support@drifthost.com'
+
+ADMINS = (
+    ('Steve Adams', 'support@drifthost.com'),
+)
+
+
+
 INSTALLED_APPS = (
     'django.contrib.admin',
     'django.contrib.auth',
@@ -360,7 +371,6 @@ REST_FRAMEWORK = {
 # Database
 # https://docs.djangoproject.com/en/1.6/ref/settings/#databases
 
-EMAIL_ON_ERROR = False
 ALLOWED_HOSTS = ['*']
 
 import lazysettings

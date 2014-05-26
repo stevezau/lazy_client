@@ -80,10 +80,22 @@ def get_lazy_errors():
 
     return errors
 
+
+def truncate_file(file, size):
+    if os.path.exists(file):
+        fh = open(file, 'rb+')
+        fh.seek(-size, 2)
+        data = fh.read()
+        fh.seek(0) # rewind
+        fh.write(data)
+        fh.truncate()
+        fh.close()
+
 def strip_illegal_chars(s):
     new_s = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", s)
     new_s = re.sub(" +", " ", new_s)
-    return new_s
+
+    return new_s.strip()
 
 
 def open_file(file, options):

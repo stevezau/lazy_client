@@ -5,9 +5,10 @@ import logging
 from datetime import timedelta
 from lazy_client_core.models import DownloadItem
 import datetime
-
+from django.conf import settings
+import os
 logger = logging.getLogger(__name__)
-
+from lazy_client_core.utils import common
 
 
 class Command(BaseCommand):
@@ -24,6 +25,15 @@ class Command(BaseCommand):
         dl_items = DownloadItem.objects.all().filter(dlstart__lt=time_threshold)
 
         for dlitem in dl_items:
-            print dlitem.title
             dlitem.clear_log()
 
+        #Task 2 - Truncate celeryd logs as it does not support log rotate
+        max_bytes = 31457280
+
+        celeryd_log = os.path.join(settings.BASE_DIR, "logs/celeryd.log")
+        if os.path.getsize(celeryd_log) > max_bytes:
+            common.truncate_file(celeryd_log, max_bytes)
+
+        celerybeat_log = os.path.join(settings.BASE_DIR, "logs/celery_beat.log")
+        if os.path.getsize(celerybeat_log) > max_bytes:
+            common.truncate_file(celerybeat_log, max_bytes)

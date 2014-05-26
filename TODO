@@ -3,12 +3,9 @@
 ###########
 
 -Test Cases
--Add ignore to errors page..
 
 -ensure right show when adding to favs
 -enhance find missing ui to show the show it matches on
-
--rotate celeryd and celerybeat logs
 
 -download fails as torrent already exists..
 
