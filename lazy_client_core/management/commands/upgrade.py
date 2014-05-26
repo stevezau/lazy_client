@@ -26,8 +26,6 @@ class Command(BaseCommand):
     base_dir = djangosettings.BASE_DIR
 
     queue_running = QueueManager.queue_running()
-    lazysettings_file = os.path.join(base_dir, "lazysettings.py")
-    lazysettings_file_bk = os.path.join(os.getenv("HOME"), "lazysettings.bk")
 
     manage_file = os.path.join(base_dir, "manage.py")
     lazysh_file = os.path.join(base_dir, "lazy.sh")
@@ -50,13 +48,13 @@ class Command(BaseCommand):
 
     def do_upgrade(self, git=True):
 
-        if os.path.exists(self.lazysettings_file_bk):
-            shutil.move(self.lazysettings_file_bk, self.lazysettings_file)
-
         #Clear cache
         cache.clear()
 
-        #First stop all
+        # Run the setup command to sync the db etc
+        call_command('setup', interactive=False)
+
+        #stop all
         self.stop_all()
 
         #delete all old pyc files
@@ -68,9 +66,6 @@ class Command(BaseCommand):
 
         # Setup any new requirements
         self.install_requirements()
-
-        # Run the setup command to sync the db etc
-        call_command('setup', interactive=False)
 
         self.upgrade_scripts()
         self.start_all()
@@ -170,13 +165,7 @@ class Command(BaseCommand):
         for i in range(retries):
 
             if replace:
-                shutil.move(self.lazysettings_file, self.lazysettings_file_bk)
-                self.run_command(['/usr/bin/env', 'git', 'stash'])
-                self.run_command(['/usr/bin/env', 'git', 'stash', 'drop'])
-                shutil.move(self.lazysettings_file_bk, self.lazysettings_file)
-
-                os.chmod(self.manage_file, stat.S_IEXEC)
-                os.chmod(self.lazysh_file, stat.S_IEXEC)
+                self.run_command(['/usr/bin/env', 'git', 'reset', '--hard'], check=True)
 
             return_code, stdout, stderr = self.run_command(['/usr/bin/env', 'git', 'pull'])
 
@@ -191,7 +180,7 @@ class Command(BaseCommand):
                 replace = None
 
                 while None is replace:
-                    yesno = raw_input("Replace locally edit files? [yes/no]")
+                    yesno = raw_input("Replace locally edited files? [yes/no]: ")
 
                     if yesno.lower() == "yes":
                         replace = True
