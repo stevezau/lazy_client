@@ -140,6 +140,11 @@ class TVRenamer:
                     #we need to figure it out
                     tvdbcache_obj = self.get_tvdb_details(tvshow_file_metaparser.details['series'])
 
+            if not tvdbcache_obj:
+                error_file = {'file': tvshow_file, 'error': "Unable to find show on tvdb, fix it manually"}
+                self.error_files.append(error_file)
+                continue
+
             #Lets figure out the series_ep and series_season
             if 'season' in tvshow_file_metaparser.details:
                 tvshow_file_season = tvshow_file_metaparser.details['season']
@@ -214,11 +219,6 @@ class TVRenamer:
                 return
 
             #NOW FOR NORMAL SHOWS
-            if not tvdbcache_obj:
-                error_file = {'file': tvshow_file, 'error': "Unable to find show on tvdb, fix it manually"}
-                self.error_files.append(error_file)
-                continue
-
             if None is tvshow_file_ep:
                 error_file = {'file': tvshow_file, 'error': "Unable to figure out the epsiode number, fix it manually"}
                 self.error_files.append(error_file)
