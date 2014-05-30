@@ -140,26 +140,22 @@ class TVRenamer:
                     #we need to figure it out
                     tvdbcache_obj = self.get_tvdb_details(tvshow_file_metaparser.details['series'])
 
-            if not tvdbcache_obj:
-                error_file = {'file': tvshow_file, 'error': "Unable to find show on tvdb, fix it manually"}
-                self.error_files.append(error_file)
-                continue
-
             #Lets figure out the series_ep and series_season
             if 'season' in tvshow_file_metaparser.details:
                 tvshow_file_season = tvshow_file_metaparser.details['season']
             if 'episodeNumber' in tvshow_file_metaparser.details:
                 tvshow_file_ep = tvshow_file_metaparser.details['episodeNumber']
 
-            if not season_override and not ep_override:
-                #Lets try convert via thexem
-                if 'episodeList' not in tvshow_file_metaparser.details:
-                    xem_season, xem_ep = self.tvdbapi.get_xem_show_convert(tvdbcache_obj.id, tvshow_file_season, tvshow_file_ep)
+            if tvdbcache_obj:
+                if not season_override and not ep_override:
+                    #Lets try convert via thexem
+                    if 'episodeList' not in tvshow_file_metaparser.details:
+                        xem_season, xem_ep = self.tvdbapi.get_xem_show_convert(tvdbcache_obj.id, tvshow_file_season, tvshow_file_ep)
 
-                    if xem_season is not None and xem_ep is not None:
-                        self.log("Found entry on thexem, converted the season and ep to %s x %s" % (xem_season, xem_ep))
-                        tvshow_file_season = int(xem_season)
-                        tvshow_file_ep = int(xem_ep)
+                        if xem_season is not None and xem_ep is not None:
+                            self.log("Found entry on thexem, converted the season and ep to %s x %s" % (xem_season, xem_ep))
+                            tvshow_file_season = int(xem_season)
+                            tvshow_file_ep = int(xem_ep)
 
             if season_override:
                 tvshow_file_season = season_override
@@ -217,6 +213,11 @@ class TVRenamer:
                 common.move_file(tvshow_file, tvshow_file_dest)
                 self.log('Moving file: %s to %s' % (tvshow_file, tvshow_file_dest))
                 return
+
+            if not tvdbcache_obj:
+                error_file = {'file': tvshow_file, 'error': "Unable to find show on tvdb, fix it manually"}
+                self.error_files.append(error_file)
+                continue
 
             #NOW FOR NORMAL SHOWS
             if None is tvshow_file_ep:
