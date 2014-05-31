@@ -224,3 +224,4 @@ class Command(BaseCommand):
             dlitem.message = error
 
         dlitem.retries += 1
+        dlitem.save()
