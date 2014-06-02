@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 LAZY_HOME="/opt/lazy"
-FLEXGET_BIN="/share/CACHEDEV1_DATA/.qpkg/Python/bin/flexget"
+
+FLEXGET_BIN="/opt/../Python/bin/flexget"
 
 cd $LAZY_HOME
 
