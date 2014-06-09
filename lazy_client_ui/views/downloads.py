@@ -242,11 +242,11 @@ class DownloadsListView(ListView):
         if self.dlget == DownloadItem.COMPLETE:
            return DownloadItem.objects.all().filter(status=self.dlget).order_by('-id').filter()[0:30]
         elif self.dlget == DownloadItem.QUEUE:
-            return DownloadItem.objects.all().filter(status=self.dlget).order_by('priority','id')
+            return DownloadItem.objects.all().filter(retries__lte=settings.DOWNLOAD_RETRY_COUNT, status=self.dlget).order_by('priority','id')
         elif self.dlget == 99:
             return DownloadItem.objects.filter(~Q(status=DownloadItem.COMPLETE), retries__gt=settings.DOWNLOAD_RETRY_COUNT).order_by('priority','id')
         else:
-            return DownloadItem.objects.all().filter(status=self.dlget)
+            return DownloadItem.objects.all().filter(status=self.dlget, retries__lte=settings.DOWNLOAD_RETRY_COUNT)
 
     def key_function(self, dlitem):
         try:

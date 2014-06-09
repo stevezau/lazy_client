@@ -31,8 +31,8 @@ class IndexView(TemplateView):
 
         context['downloading'] = DownloadItem.objects.filter(status=DownloadItem.DOWNLOADING, retries__lte=settings.DOWNLOAD_RETRY_COUNT).count()
         context['extracting'] = DownloadItem.objects.filter(Q(status=DownloadItem.RENAME) | Q(status=DownloadItem.EXTRACT), retries__lte=settings.DOWNLOAD_RETRY_COUNT).count()
-        context['queue'] = DownloadItem.objects.filter(status=DownloadItem.QUEUE, retries__lte=settings.DOWNLOAD_RETRY_COUNT).count()
-        context['pending'] = DownloadItem.objects.filter(status=DownloadItem.PENDING, retries__lte=settings.DOWNLOAD_RETRY_COUNT).count()
+        context['queue'] = DownloadItem.objects.filter(status=DownloadItem.QUEUE, retries__lt=settings.DOWNLOAD_RETRY_COUNT).count()
+        context['pending'] = DownloadItem.objects.filter(status=DownloadItem.PENDING, retries__lt=settings.DOWNLOAD_RETRY_COUNT).count()
         context['errors'] = DownloadItem.objects.filter(~Q(status=DownloadItem.COMPLETE), retries__gt=settings.DOWNLOAD_RETRY_COUNT).count()
 
         context['queue_running'] = QueueManager.queue_running()

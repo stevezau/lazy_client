@@ -118,6 +118,13 @@ class FTPMirror:
             logger.debug("Queue is stopped, exiting")
             return
 
+        if self.is_aborted():
+            dlitem.taskid = None
+            dlitem.save()
+            dlitem.log("Aborting")
+            return
+
+
         savepath = dlitem.localpath
 
         current_task.update_state(state='RUNNING', meta={'updated': time.mktime(datetime.now().timetuple()), 'speed': 0, 'last_error': ""})
@@ -221,6 +228,8 @@ class FTPMirror:
         last_err = ""
 
         if self.is_aborted():
+            dlitem.taskid = None
+            dlitem.save()
             dlitem.log("Aborting")
             return
 

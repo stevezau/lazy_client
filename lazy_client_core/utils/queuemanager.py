@@ -155,6 +155,7 @@ class QueueManager():
                         #Change status to extract
                         dlItem.log("Job actually finished, moving release to extract status")
                         dlItem.status = DownloadItem.EXTRACT
+                        dlItem.taskid = None
                         dlItem.retries = 0
                         dlItem.message = None
                         dlItem.save()
@@ -165,6 +166,7 @@ class QueueManager():
                             #Failed download
                             msg = "didn't download properly after %s retries" % settings.DOWNLOAD_RETRY_COUNT
                             dlItem.log(msg)
+                            dlItem.taskid = None
                             dlItem.retries += 1
                             dlItem.message = str(msg)
                             dlItem.save()

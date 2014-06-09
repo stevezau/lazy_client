@@ -2,10 +2,18 @@
 ### NOW ###
 ###########
 
+request handler
+remove TV/HD etc
+improve QTS azy script
+
+-queue not showing properly when ones have failed
 -Test Cases
 
 -ensure right show when adding to favs
 -enhance find missing ui to show the show it matches on
+
+-multiple files found, allow manual fix
+-manual rename for files not found
 
 -download fails as torrent already exists..
 

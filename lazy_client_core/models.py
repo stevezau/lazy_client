@@ -155,6 +155,9 @@ class DownloadItem(models.Model):
     def get_type(self):
         from lazy_client_core.utils.metaparser import MetaParser
 
+        if self.tvdbid_id:
+            return MetaParser.TYPE_TVSHOW
+
         if self.section == "TVHD":
             return MetaParser.TYPE_TVSHOW
 
@@ -204,11 +207,10 @@ class DownloadItem(models.Model):
 
         if None is task:
             pass
-        elif task.state == "ABORTED":
-            logger.info("%s was aborted." % self.ftppath)
-            return
-        elif task.state == "SUCCESS" or task.state == "FAILURE":
+        elif task.state == "SUCCESS" or task.state == "FAILURE" or task.state == "ABORTED":
             pass
+        elif task.state == "PENDING":
+            self.killtask()
         else:
             raise DownloadException("%s already being downloaded, task status %s" % (self.ftppath, task.state))
 
