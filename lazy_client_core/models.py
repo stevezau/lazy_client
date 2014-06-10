@@ -244,13 +244,17 @@ class DownloadItem(models.Model):
     def download_status(self):
         logger.debug("%s Getting status of download: " % self.title)
 
+        from celery.backends.amqp import BacklogLimitExceeded
         task = self.get_task()
 
         if None is task:
             logger.debug("No job associated with this downloaditem")
             return self.JOB_NOT_FOUND
 
-        state = task.state
+        try:
+            state = task.state
+        except BacklogLimitExceeded:
+            return self.JOB_FAILED
 
         logger.debug("Task state :%s" % state)
 
