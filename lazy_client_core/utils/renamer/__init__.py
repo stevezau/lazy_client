@@ -62,7 +62,7 @@ def rename(path, type=MetaParser.TYPE_UNKNOWN, dlitem=None):
             raise InvalidFileException("Is not a valid video file %s" % path)
     else:
         #Get a list of media files
-        media_files = common.get_video_files(path)
+        media_files = common.get_video_files([path])
 
         if len(media_files) == 0:
             raise NoMediaFilesFoundException("No media files found")
