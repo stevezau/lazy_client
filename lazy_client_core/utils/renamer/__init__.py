@@ -56,7 +56,7 @@ def rename(path, type=MetaParser.TYPE_UNKNOWN, dlitem=None):
     #now lets do the renaming and moving
     if os.path.isfile(path):
         #check if its a video file
-        if common.is_video_filepath:
+        if common.is_video_file(path):
             renamer.rename(path)
         else:
             raise InvalidFileException("Is not a valid video file %s" % path)
