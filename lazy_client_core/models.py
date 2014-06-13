@@ -210,7 +210,7 @@ class DownloadItem(models.Model):
         elif task.state == "SUCCESS" or task.state == "FAILURE" or task.state == "ABORTED":
             pass
         elif task.state == "PENDING":
-            self.killtask()
+            raise DownloadException("%s might of been started already status: %s" % (self.ftppath, task.state))
         else:
             raise DownloadException("%s already being downloaded, task status %s" % (self.ftppath, task.state))
 
