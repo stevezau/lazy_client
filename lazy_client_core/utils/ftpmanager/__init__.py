@@ -23,6 +23,7 @@ def cwd(dir):
     if is_connected():
         ftps.cwd(dir)
 
+
 def is_connected():
     try:
         ftps.voidcmd("noop")
