@@ -6,6 +6,7 @@ from lazy_client_core.models import DownloadItem, TVShowMappings, Tvdbcache
 from lazy_client_core.utils.metaparser import MetaParser
 from lazy_client_core.exceptions import ExtractException, InvalidFileException, ManuallyFixException, RenameException
 from django.core.exceptions import ObjectDoesNotExist
+from lazy_client_core.utils.tvdb_api.tvdb_exceptions import tvdb_seasonnotfound, tvdb_episodenotfound, tvdb_error
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +73,7 @@ class TVRenamer:
             ep_override = None
             season_override = None
             tvdbcache_obj_override = None
+            write_nfo = False
 
             if self.download_item:
                 #This is part of a download item
@@ -164,7 +166,6 @@ class TVRenamer:
 
             #Ok now lets sort out the file names etc
             #Docos first
-
             if 'doco_channel' in tvshow_file_metaparser.details and not tvdbcache_obj:
                 #Ok we have a doco that was not found on thetvdb.. lets shove it into the Docs folder
                 dest_folder = os.path.join(self.dest_folder_base, tvshow_file_metaparser.details['doco_channel'])
@@ -231,27 +232,34 @@ class TVRenamer:
                 continue
 
             tvshow_file_ep_name = None
+            tvshow_file_title = None
 
             #lets get the ep name from tvdb
             try:
                 show_obj_season = self.tvdbapi[tvdbcache_obj.id][int(tvshow_file_season)]
-                if show_obj_season:
-                    try:
-                        tvshow_file_ep_name = show_obj_season[int(tvshow_file_ep)]['episodename'].encode('ascii', 'ignore')
-                        tvshow_file_ep_name = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", tvshow_file_ep_name).strip()
-                        tvshow_file_ep_name = tvshow_file_ep_name.replace("/", ".")
-                        tvshow_file_ep_name = tvshow_file_ep_name.replace("\\", ".")
-                    except:
 
-                        if 'title' in tvshow_file_metaparser and tvshow_file_metaparser['title'] != "":
-                            self.log("Found the season but not the ep title on thetvdb.. will use title from the release name")
-                            tvshow_file_ep_name = tvshow_file_metaparser['title']
-                            tvshow_file_ep_name = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", tvshow_file_ep_name).strip()
-                        else:
-                            self.log("Found the season but not the ep.. will fake the ep name")
-                            tvshow_file_ep_name = 'Episode %s' % tvshow_file_ep
-            except:
-                pass
+                tvshow_file_title = show_obj_season[int(tvshow_file_ep)]['episodename'].encode('ascii', 'ignore')
+
+                tvshow_file_ep_name = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", tvshow_file_title).strip()
+                tvshow_file_ep_name = tvshow_file_ep_name.replace("/", ".")
+                tvshow_file_ep_name = tvshow_file_ep_name.replace("\\", ".")
+
+            except (tvdb_seasonnotfound, tvdb_episodenotfound):
+                if 'title' in tvshow_file_metaparser.details and tvshow_file_metaparser.details['title'] != "":
+                    self.log("Found the season but not the ep title on thetvdb.. will use title from the release name")
+                    tvshow_file_title = tvshow_file_metaparser.details['title']
+                    tvshow_file_ep_name = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", tvshow_file_title).strip()
+                else:
+                    self.log("Found the season but not the ep.. will fake the ep name")
+                    tvshow_file_title = 'Episode %s' % tvshow_file_ep
+                    tvshow_file_ep_name = tvshow_file_title
+
+                write_nfo = True
+            except tvdb_error as e:
+                msg = str(e)
+                error_file = {'file': tvshow_file, 'error': msg}
+                self.error_files.append(error_file)
+                continue
 
             #Lets figure out the series name
             if None is tvshow_file_ep_name:
@@ -299,6 +307,21 @@ class TVRenamer:
             tvshow_file_dest = os.path.join(dest_folder, tvshow_file_dest)
 
             self.move_file(tvshow_file, tvshow_file_dest, tvshow_file_season, tvshow_file_ep)
+
+            if write_nfo:
+                tvshow_file_nfo_dest = "%s.nfo" % os.path.splitext(tvshow_file_dest)[0]
+
+                nfo_content = "<episodedetails> \n\
+                    <title>" + tvshow_file_title + "</title> \n\
+                    <season>" + str(tvshow_file_season) + "</season> \n\
+                    <episode>" + str(tvshow_file_ep) + "</episode> \n\
+                    <aired>" + str(time.strftime('%Y-%m-%d', time.localtime(os.path.getmtime(tvshow_file_dest)))) + "</aired> \n\
+                    </episodedetails>"
+
+                nfof = open(tvshow_file_nfo_dest, 'w')
+                nfof.write(nfo_content)
+                nfof.close()
+                self.log('Wrote NFO file %s' % tvshow_file_nfo_dest)
 
         if self.download_item and len(self.error_files) > 0:
             raise ManuallyFixException(fix_files=self.error_files)
