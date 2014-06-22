@@ -296,7 +296,7 @@ def ignore(items):
 
             if dlitem.get_type() == MetaParser.TYPE_TVSHOW:
 
-                series_data = MetaParser(dlitem.title, type=MetaParser.TYPE_TVSHOW)
+                series_data = dlitem.metaparser()
 
                 if series_data:
                     ignoretitle = series_data.details['series'].replace(" ", ".")
@@ -307,11 +307,12 @@ def ignore(items):
                     dlitem.delete()
                     response.write("Unable to figure out the series name, DELETED BUT NOT IGNORED (DO IT MANUALLY)\n")
             else:
-                response.write("Unable to ignore %s as its a movie\n" % dlitem.title)
+                response.write("Deleted but unable ignore %s as its a movie\n" % dlitem.title)
+                dlitem.delete()
 
         except ObjectDoesNotExist:
             status = 210
-            response.write("Unable to ignore %s as it was not found\n") % item
+            response.write("Unable to ignore %s as it was not found\n" % item)
 
     response.status_code = status
     return response

@@ -352,9 +352,8 @@ def ignore_show(title):
     logger.debug("Need to ignore %s" % title)
     ins = open(settings.FLEXGET_IGNORE, "r+")
 
-
     for line in ins:
-        if title in line:
+        if title == line:
             logger.debug("Show already ignored, not adding %s" % title)
             ins.close()
             return
