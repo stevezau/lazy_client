@@ -2,6 +2,8 @@
 ARGS="$@"
 SCRIPT=$0
 BASE_PATH=`dirname $SCRIPT`
+RED='\e[0;31m'
+NC='\e[0m' # No Color
 
 cd $BASE_PATH
 
@@ -15,21 +17,37 @@ export C_FORCE_ROOT="true"
 chmod +x $MANAGE_SCRIPT
 
 function upgrade {
+    pull_git
+    upgrade_reqs
     $MANAGE_SCRIPT $ARGS
+}
+
+function pull_git() {
+    /usr/bin/env git pull
+
+    if [ "$?" == "0" ]; then
+        echo "Pulled latest from git"
+    else
+        echo -e "${RED}Error pulling from git${NC}"
+        exit 1
+    fi
+
 }
 
 function upgrade_reqs() {
     #First we need to install all the requirements
     if [ "$UID" == "0" ]; then
         /usr/bin/env pip install -r "requirements.txt"
+        /usr/bin/env easy_install --upgrade http://drifthost.com/lazy_common-0.1-py2.7.egg
     else
         /usr/bin/env sudo /usr/bin/env pip install -r "requirements.txt"
+        /usr/bin/env sudo /usr/bin/env easy_install --upgrade http://drifthost.com/lazy_common-0.1-py2.7.egg
     fi
 
     if [ "$?" == "0" ]; then
         echo "Installed requirements"
     else
-        echo "Error installing requirements"
+        echo -e "${RED}Error installing requirements${NC}"
         exit 1
     fi
 
@@ -175,4 +193,5 @@ case $1 in
       echo "usage: start|stop|check|upgrade [celeryd|celerybeat|webui]"
 	;;
 esac
+
 

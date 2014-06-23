@@ -1,27 +1,30 @@
 from __future__ import division
+import logging
+import shutil
+import os
+import re
+from datetime import datetime
+import urllib2
+import inspect
+import time
+
 from django.db import models
 from django.dispatch import receiver
 from django.db.models.signals import pre_save, post_save
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
-import logging
-import shutil
-import os
-import re
-from lazy_client_core.utils.tvdb_api import Tvdb
-from datetime import datetime
 from flexget.utils.imdb import ImdbSearch, ImdbParser
-from lazy_client_core.exceptions import AlradyExists_Updated, AlradyExists
 from django.core.files import File
 from django.core.files.temp import NamedTemporaryFile
-import urllib2
-from lazy_client_core.utils import ftpmanager
-import inspect
 from celery.contrib.abortable import AbortableAsyncResult
-from lazy_client_core.exceptions import DownloadException
-import time
-from lazy_client_core.utils.jsonfield.fields import JSONField
 from django.db.models import Q
+from lazy_common import ftpmanager
+
+from lazy_common.tvdb_api import Tvdb
+from lazy_client_core.exceptions import AlradyExists_Updated, AlradyExists
+from lazy_client_core.exceptions import DownloadException
+from lazy_client_core.utils.jsonfield.fields import JSONField
+
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +33,7 @@ from south.modelsinspector import add_introspection_rules
 add_introspection_rules([], ["^lazy_client_core\.utils\.jsonfield\.fields\.JSONField"])
 
 from django.core.files.storage import FileSystemStorage
-from django.conf import settings
-import os
+
 
 class OverwriteStorage(FileSystemStorage):
 
@@ -226,7 +228,7 @@ class DownloadItem(models.Model):
             raise DownloadException("Unable to get size and files on the FTP")
 
         #Time to start.
-        from lazy_client_core.utils.ftpmanager.mirror import FTPMirror
+        from lazy_common.ftpmanager.mirror import FTPMirror
         mirror = FTPMirror()
         task = mirror.mirror_ftp_folder.delay(files, self)
         self.taskid = task.task_id

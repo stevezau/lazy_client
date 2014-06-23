@@ -8,10 +8,10 @@ from django.conf import settings
 
 from lazy_client_ui import common
 from lazy_client_ui.forms import Find, FindMissing
-from lazy_client_core.utils import ftpmanager
 from lazy_client_core.exceptions import AlradyExists, AlradyExists_Updated
 from lazy_client_core.models import DownloadItem, Job
 from lazy_client_core.utils.missingscanner import MissingScanner
+from lazy_common import ftpmanager
 
 
 logger = logging.getLogger(__name__)

@@ -1,15 +1,16 @@
-from lazy_client_core.models import DownloadItem, Imdbcache, Tvdbcache
-from lazy_client_api.serializers import DownloadItemSerializer, ImdbItemSerializer, TvdbItemSerializer
-from rest_framework import mixins
-from rest_framework import generics
 import json
+import logging
+
+from rest_framework import generics
 from django.http import HttpResponse
-from lazy_client_core.utils.tvdb_api import Tvdb
-from lazy_client_core.exceptions import AlradyExists_Updated
 from rest_framework.response import Response
 from rest_framework import status
-import logging
-from flexget.utils.imdb import ImdbSearch, ImdbParser
+from flexget.utils.imdb import ImdbSearch
+
+from lazy_client_core.models import DownloadItem, Imdbcache, Tvdbcache
+from lazy_client_api.serializers import DownloadItemSerializer, ImdbItemSerializer, TvdbItemSerializer
+from lazy_common.tvdb_api import Tvdb
+from lazy_client_core.exceptions import AlradyExists_Updated
 
 
 logger = logging.getLogger(__name__)
@@ -134,8 +135,6 @@ def search_tvdb(request):
 
 
 def search_imdb(request):
-
-    from lazy_client_core.utils import common
 
     if request.is_ajax():
         q = request.GET.get('term', '')

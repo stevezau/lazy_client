@@ -1,15 +1,18 @@
 from __future__ import division
 from optparse import make_option
-from django.core.management.base import BaseCommand
-from lazy_client_core.models import Tvdbcache
 import logging
 import os
-from django.conf import settings
-from lazy_client_core.utils.tvdb_api import Tvdb
-from django.core.exceptions import ObjectDoesNotExist
-from lazy_client_core.utils import common
 from datetime import datetime
 import time
+
+from django.core.management.base import BaseCommand
+from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
+
+from lazy_client_core.models import Tvdbcache
+from lazy_common.tvdb_api import Tvdb
+from lazy_client_core.utils import common
+
 
 logger = logging.getLogger(__name__)
 

@@ -1,12 +1,13 @@
 from __future__ import division
 from optparse import make_option
-from django.core.management.base import BaseCommand
 import logging
-from lazy_client_core.models import DownloadItem
-from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Q
-from lazy_client_core.utils import ftpmanager
 import ftplib
+
+from django.core.management.base import BaseCommand
+
+from lazy_client_core.models import DownloadItem
+from lazy_client_core.utils import ftpmanager
+
 
 logger = logging.getLogger(__name__)
 

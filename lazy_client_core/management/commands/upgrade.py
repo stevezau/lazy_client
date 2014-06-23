@@ -61,11 +61,8 @@ class Command(BaseCommand):
         self.remove_old_pyc()
 
         #pull down github
-        if git:
-            self.git_pull()
-
-        # Setup any new requirements
-        self.install_requirements()
+        #if git:
+        #    self.git_pull()
 
         self.upgrade_scripts()
         self.start_all()
@@ -200,17 +197,6 @@ class Command(BaseCommand):
 
         print fail_color("Error unable to get latest files from GitHub")
         exit(1)
-
-    def install_requirements(self):
-
-        print green_color("Installing requirements")
-
-        req_file = os.path.join(self.base_dir, 'requirements.txt')
-
-        if os.getuid() == 0:
-            self.run_command(['/usr/bin/env', 'pip', 'install', '-r', req_file], check=True)
-        else:
-            self.run_command(['/usr/bin/env', 'sudo', 'pip', 'install', '-r', req_file], check=True)
 
     def start_all(self):
         print(green_color("Starting services"))

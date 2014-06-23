@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
-from south.utils import datetime_utils as datetime
-from south.db import db
-from south.v2 import DataMigration
-from django.db import models
-from django.conf import settings
-import os, re
-from lazy_client_core.utils.tvdb_api import Tvdb
-from lazy_client_core.models import Tvdbcache
-from django.core.exceptions import ObjectDoesNotExist
+import os
 import logging
+
+from south.v2 import DataMigration
+from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
+
+from lazy_common.tvdb_api import Tvdb
+from lazy_client_core.models import Tvdbcache
+
 
 logger = logging.getLogger(__name__)
 

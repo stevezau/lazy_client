@@ -1,10 +1,10 @@
 from lazy_client_core.utils import common
+from lazy_common import ftpmanager
 
 __author__ = 'Steve'
 import os, logging
 from lazy_client_core.models import Tvdbcache
-from lazy_client_core.utils.tvdb_api import Tvdb
-from lazy_client_core.utils import ftpmanager
+from lazy_common.tvdb_api import Tvdb
 from datetime import datetime, timedelta
 from lazy_client_core.exceptions import *
 from lazy_client_core.models import DownloadItem

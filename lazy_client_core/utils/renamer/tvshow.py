@@ -1,12 +1,18 @@
-import re, os, logging, time
+import re
+import os
+import logging
+import time
+
+from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
+
 from lazy_client_core.utils import common
 from lazy_client_core.utils.tvdb_api import Tvdb
-from django.conf import settings
-from lazy_client_core.models import DownloadItem, TVShowMappings, Tvdbcache
+from lazy_client_core.models import TVShowMappings, Tvdbcache
 from lazy_client_core.utils.metaparser import MetaParser
-from lazy_client_core.exceptions import ExtractException, InvalidFileException, ManuallyFixException, RenameException
-from django.core.exceptions import ObjectDoesNotExist
-from lazy_client_core.utils.tvdb_api.tvdb_exceptions import tvdb_seasonnotfound, tvdb_episodenotfound, tvdb_error
+from lazy_client_core.exceptions import ManuallyFixException, RenameException
+from lazy_common.tvdb_api.tvdb_exceptions import tvdb_seasonnotfound, tvdb_episodenotfound, tvdb_error
+
 
 logger = logging.getLogger(__name__)
 

@@ -12,7 +12,7 @@ from lazy_client_core.utils import common as commoncore
 from lazy_client_ui import common
 from lazy_client_core.models import TVShowMappings, Tvdbcache
 from lazy_client_ui.forms import AddTVMapForm, AddApprovedShow, AddIgnoreShow
-from lazy_client_core.utils.tvdb_api import Tvdb
+from lazy_common.tvdb_api import Tvdb
 
 
 logger = logging.getLogger(__name__)

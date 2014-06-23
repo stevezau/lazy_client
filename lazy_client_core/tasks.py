@@ -1,14 +1,10 @@
 __author__ = 'Steve'
-from django.core.management import call_command
 from datetime import timedelta
-from celery.contrib.abortable import AbortableTask
-from djcelery_transactions import task
+import logging
+
+from django.core.management import call_command
 from celery.task.base import periodic_task
 
-
-from lazy_client_core.utils.missingscanner import MissingScanner
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -24,4 +20,3 @@ def queue():
 def extract():
     call_command('extract', interactive=False)
 
-from lazy_client_core.utils.ftpmanager.mirror import FTPMirror

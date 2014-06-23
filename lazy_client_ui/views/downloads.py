@@ -12,9 +12,8 @@ from django.db.models import Q
 from lazy_client_core.models import DownloadItem, Tvdbcache, Imdbcache
 from lazy_client_ui import common
 from lazy_client_core.utils import common as commoncore
-from lazy_client_core.utils.tvdb_api import Tvdb
+from lazy_common.tvdb_api import Tvdb
 from lazy_client_ui.forms import DownloadItemManualFixForm
-from flexget.utils.imdb import ImdbSearch, ImdbParser
 
 
 logger = logging.getLogger(__name__)
