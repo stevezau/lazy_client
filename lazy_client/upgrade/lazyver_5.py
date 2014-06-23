@@ -5,9 +5,9 @@ from lazy_client_core.utils.common import green_color, fail_color, blue_color
 
 def upgrade():
     if os.getuid() == 0:
-        run_command(['/usr/bin/env', 'easy_install', '/usr/bin/env easy_install http://drifthost.com/lazy_common-0.1-py2.7.egg'], check=True)
+        run_command(['/usr/bin/env', 'easy_install', 'easy_install', 'http://drifthost.com/lazy_common-0.1-py2.7.egg'], check=True)
     else:
-        run_command(['/usr/bin/env', 'sudo', 'easy_install', '/usr/bin/env easy_install http://drifthost.com/lazy_common-0.1-py2.7.egg'], check=True)
+        run_command(['/usr/bin/env', 'sudo', '/usr/bin/env', 'easy_install', 'http://drifthost.com/lazy_common-0.1-py2.7.egg'], check=True)
 
 def run_command(cmd, check=False):
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
