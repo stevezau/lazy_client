@@ -1,30 +1,17 @@
-import difflib
 from genericpath import isfile
-import glob
 import os
 from os.path import join
 import re
 import shutil
 import time
-import zlib
+import logging
+
 from django.conf import settings
 from easy_extract.archive_finder import ArchiveFinder
 from lazy_client_core.utils.rar import RarArchive
-
-
-import logging
+from lazy_common import utils
 
 logger = logging.getLogger(__name__)
-
-# see: http://goo.gl/kTQMs
-SYMBOLS = {
-    'customary': ('B', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y'),
-    'customary_ext': ('byte', 'kilo', 'mega', 'giga', 'tera', 'peta', 'exa',
-                       'zetta', 'iotta'),
-    'iec': ('Bi', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi', 'Yi'),
-    'iec_ext': ('byte', 'kibi', 'mebi', 'gibi', 'tebi', 'pebi', 'exbi',
-                       'zebi', 'yobi'),
-}
 
 class bcolors:
     HEADER = '\033[95m'
@@ -123,23 +110,8 @@ def close_file(file):
     file.close()
 
 
-def bytes2human(n, format='%(value).1f %(symbol)s', symbols='customary'):
-    n = int(n)
-    if n < 0:
-        raise ValueError("n < 0")
-    symbols = SYMBOLS[symbols]
-    prefix = {}
-    for i, s in enumerate(symbols[1:]):
-        prefix[s] = 1 << (i+1)*10
-    for symbol in reversed(symbols[1:]):
-        if n >= prefix[symbol]:
-            value = float(n) / prefix[symbol]
-            return format % locals()
-    return format % dict(symbol=symbols[0], value=n)
-
-
 def compare_torrent_2_show(show, torrent):
-    from lazy_client_core.utils.metaparser import MetaParser
+    from lazy_common.metaparser import MetaParser
 
     torrent = torrent.replace(' ', '.')
 
@@ -154,13 +126,9 @@ def compare_torrent_2_show(show, torrent):
         tor_series_name = parser.details['series']
 
         #now compare them
-        return how_similar(tor_series_name.lower(), show.lower())
+        return utils.how_similar(tor_series_name.lower(), show.lower())
     else:
         return 0
-
-
-def how_similar(s1, s2):
-    return difflib.SequenceMatcher(None, s1, s2).ratio()
 
 
 def remove_ignore(title):
@@ -238,17 +206,12 @@ def find_archives(path):
     return archive_finder.archives
 
 
-def get_regex(string, regex, group):
-    search = re.search(regex, string, re.IGNORECASE)
-
-    if search:
-        return search.group(group)
 def find_season_folder(path, season):
 
     if not os.path.exists(path):
         return
 
-    from lazy_client_core.utils.metaparser import MetaParser
+    from lazy_common.metaparser import MetaParser
 
     folders = [f for f in os.listdir(path) if os.path.isdir(join(path, f))]
 
@@ -265,7 +228,7 @@ def find_season_folder(path, season):
 
 def find_ep_season(folder, season, ep):
 
-    from lazy_client_core.utils.metaparser import MetaParser
+    from lazy_common.metaparser import MetaParser
 
     files = []
 
@@ -313,9 +276,9 @@ def get_video_files(path):
             name, ext = os.path.splitext(f)
 
             #Check its a video file
-            if is_video_file(f):
+            if utils.is_video_file(f):
                 #check if it's a sample.
-                if match_str_regex(settings.SAMPLES_REGEX, name):
+                if utils.match_str_regex(settings.SAMPLES_REGEX, name):
                     continue
 
                 path = os.path.join(root, f)
@@ -335,18 +298,6 @@ def move_file(src, dest):
     xbmc.add_file(dest)
 
 
-def get_size(local):
-    local = local.strip()
-    path_size = 0
-    for path, directories, files in os.walk(local):
-        for filename in files:
-            path_size += os.lstat(os.path.join(path, filename)).st_size
-        for directory in directories:
-            path_size += os.lstat(os.path.join(path, directory)).st_size
-    path_size += os.path.getsize(local)
-    return path_size
-
-
 def ignore_show(title):
 
     logger.debug("Need to ignore %s" % title)
@@ -364,73 +315,7 @@ def ignore_show(title):
     ins.close()
 
 
-def delete(f):
-
-    for i in range(1, 3):
-        try:
-            if os.path.isdir(f):
-                shutil.rmtree(f)
-            elif os.path.isfile(f):
-                os.remove(f)
-            else:
-                if not os.path.exists(f):
-                    return
-        except:
-            pass
-
-        time.sleep(3)
-
-    #Last try
-    if os.path.isdir(file):
-        shutil.rmtree(file)
-    else:
-        os.remove(file)
 
 
-def replace_regex(regex_list, string, replacement):
-
-    for regex in regex_list:
-        string = re.sub(regex, replacement, string)
-
-    return string
 
 
-def is_video_file(f):
-
-    ext = os.path.splitext(f)[1][1:].strip()
-
-    for vid_ext in settings.VIDEO_FILE_EXTS:
-        if ext == vid_ext:
-            return True
-    return False
-
-
-def match_str_regex(regex_list, string):
-    matched = False
-
-    for regex in regex_list:
-        s = re.search(regex, string)
-
-        if s:
-            matched = True
-            break
-
-    return matched
-
-
-def create_path(path):
-
-    paths_to_create = []
-
-    while not os.path.lexists(path):
-
-        paths_to_create.insert(0, path)
-        head,tail = os.path.split(path)
-        if len(tail.strip())==0: # Just incase path ends with a / or \
-            path = head
-            head,tail = os.path.split(path)
-
-        path = head
-
-    for path in paths_to_create:
-        os.mkdir(path)

@@ -1,18 +1,16 @@
 from __future__ import division
-from lazy_client_core.models import DownloadItem
-import logging, os
-import re, shutil
-from django.conf import settings
+import logging
+import os
+
 from django.core.exceptions import ObjectDoesNotExist
-from lazy_client_core.utils.common import match_str_regex
+
 from lazy_client_core.utils.renamer.tvshow import TVRenamer
 from lazy_client_core.utils.renamer.movie import MovieRenamer
-from django.core.cache import cache
-from lazy_client_core.exceptions import ExtractException, ExtractCRCException
 from lazy_client_core.utils import common
-from datetime import datetime
+from lazy_common.utils import is_video_file
 from lazy_client_core.exceptions import *
-from lazy_client_core.utils.metaparser import MetaParser
+from lazy_common.metaparser import MetaParser
+
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +54,7 @@ def rename(path, type=MetaParser.TYPE_UNKNOWN, dlitem=None):
     #now lets do the renaming and moving
     if os.path.isfile(path):
         #check if its a video file
-        if common.is_video_file(path):
+        if is_video_file(path):
             renamer.rename([path])
         else:
             raise InvalidFileException("Is not a valid video file %s" % path)

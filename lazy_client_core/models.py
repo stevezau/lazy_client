@@ -18,6 +18,7 @@ from django.core.files import File
 from django.core.files.temp import NamedTemporaryFile
 from celery.contrib.abortable import AbortableAsyncResult
 from django.db.models import Q
+from lazy_common.utils import bytes2human
 from lazy_common import ftpmanager
 
 from lazy_common.tvdb_api import Tvdb
@@ -155,7 +156,7 @@ class DownloadItem(models.Model):
         self.save()
 
     def get_type(self):
-        from lazy_client_core.utils.metaparser import MetaParser
+        from lazy_common.metaparser import MetaParser
 
         if self.tvdbid_id:
             return MetaParser.TYPE_TVSHOW
@@ -170,7 +171,7 @@ class DownloadItem(models.Model):
 
 
     def metaparser(self):
-        from lazy_client_core.utils.metaparser import MetaParser
+        from lazy_common.metaparser import MetaParser
 
         if None is self.parser:
             type = self.get_type()
@@ -228,7 +229,7 @@ class DownloadItem(models.Model):
             raise DownloadException("Unable to get size and files on the FTP")
 
         #Time to start.
-        from lazy_common.ftpmanager.mirror import FTPMirror
+        from lazy_client_core.utils.mirror import FTPMirror
         mirror = FTPMirror()
         task = mirror.mirror_ftp_folder.delay(files, self)
         self.taskid = task.task_id
@@ -303,7 +304,7 @@ class DownloadItem(models.Model):
                 result = task.result
                 if 'speed' in result:
                     from lazy_client_core.utils import common
-                    speed = common.bytes2human(result['speed'], "%(value).1f %(symbol)s/sec")
+                    speed = bytes2human(result['speed'], "%(value).1f %(symbol)s/sec")
 
 
         return speed
@@ -741,7 +742,7 @@ def add_new_imdbitem(sender, created, instance, **kwargs):
 @receiver(pre_save, sender=DownloadItem)
 def add_new_downloaditem_pre(sender, instance, **kwargs):
 
-    from lazy_client_core.utils.metaparser import MetaParser
+    from lazy_common.metaparser import MetaParser
 
     if instance.id is None:
         logger.debug("Adding a new download %s" % instance.ftppath)
@@ -881,7 +882,7 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
         tvdbapi = Tvdb()
         type = instance.metaparser().type
 
-        from lazy_client_core.utils.metaparser import MetaParser
+        from lazy_common.metaparser import MetaParser
 
         #must be a tvshow
         if type == MetaParser.TYPE_TVSHOW:

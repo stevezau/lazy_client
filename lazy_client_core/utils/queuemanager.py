@@ -12,6 +12,7 @@ from djcelery.app import current_app
 from celery.app.control import Control
 import time
 from lazy_client_core.utils import common
+from lazy_common.utils import get_size
 
 
 LOCK_EXPIRE = 60 * 5  # Lock expires in 5 minutes
@@ -139,7 +140,7 @@ class QueueManager():
                     dlItem.save()
 
                 if status == DownloadItem.JOB_FINISHED:
-                    localsize = common.get_size(dlItem.localpath)
+                    localsize = get_size(dlItem.localpath)
                     dlItem.log("Job has finished")
                     dlItem.log('Local size of folder is: %s' % localsize)
 

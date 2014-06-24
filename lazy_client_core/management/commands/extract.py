@@ -1,19 +1,23 @@
 from __future__ import division
 from optparse import make_option
-from django.core.management.base import BaseCommand
-from lazy_client_core.models import DownloadItem
-from django.db.models import Q
 import logging
-from lazy_client_core.utils import extractor
-from lazy_client_core.utils import renamer
-from lazy_client_core.exceptions import *
+import os
+
+from django.core.management.base import BaseCommand
+from django.db.models import Q
 from django.core.cache import cache
 from django.conf import settings
-from lazy_client_core.utils.metaparser import MetaParser
-from lazy_client_core.utils.queuemanager import QueueManager
-import os
 from django.core.exceptions import ObjectDoesNotExist
+
+from lazy_client_core.models import DownloadItem
+from lazy_client_core.utils import extractor
+from lazy_common.utils import delete, get_size
+from lazy_client_core.utils import renamer
+from lazy_client_core.exceptions import *
+from lazy_common.metaparser import MetaParser
+from lazy_client_core.utils.queuemanager import QueueManager
 from lazy_client_core.utils import common
+
 
 logger = logging.getLogger(__name__)
 
@@ -48,9 +52,9 @@ class Command(BaseCommand):
             except ObjectDoesNotExist:
                 logger.info("Will try extract %s" % full_path)
 
-                if common.get_size(full_path) == 0:
+                if get_size(full_path) == 0:
                     logger.info("Empty folder %s, will delete" % full_path)
-                    common.delete(full_path)
+                    delete(full_path)
                     continue
 
                 try:
@@ -71,9 +75,9 @@ class Command(BaseCommand):
                     for f in e.fix_files:
                         logger.info("Unable to rename %s rename, please manually fix" % f)
 
-                if common.get_size(self.path) < 5000:
+                if get_size(self.path) < 5000:
                     logger.info("deleting %s" % self.path)
-                    common.delete(self.path)
+                    delete(self.path)
 
     def _process_dlitem(self, dlitem):
         logger.info("Processing Download Item: %s" % dlitem.localpath)
@@ -93,7 +97,7 @@ class Command(BaseCommand):
                 dlitem.save()
 
                 logger.info("Deleting temp folder")
-                common.delete(dlitem.localpath)
+                delete(dlitem.localpath)
 
             except NoMediaFilesFoundException as e:
                 self._fail_dlitem(dlitem, error=str(e))

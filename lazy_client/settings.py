@@ -48,12 +48,6 @@ TVHD = os.path.join(DATA_PATH, "TVShows")
 HD = os.path.join(DATA_PATH, "Movies")
 XVID = os.path.join(DATA_PATH, "Movies")
 
-# FTP Details
-FTP_IP = "66.90.113.61"
-FTP_PORT = 32245
-FTP_USER = "XXXXXX"
-FTP_PASS = "XXXXX"
-
 # Shouldnt need to change these
 MEDIA_ROOT = os.path.join(BASE_DIR, "static/media")
 MEDIA_URL = "/media/"
@@ -82,42 +76,9 @@ WEBSERVER_ERROR_LOG = os.path.join(BASE_DIR, "logs/web_access.log")
 WEBSERVER_ACCESS_LOG = os.path.join(BASE_DIR, "logs/web_error.log")
 WEBSERVER_PIDFILE = os.path.join(BASE_DIR, "lazy_web_server.pid")
 
-FTP_TIMEOUT_RETRY_COUNT = 3
-FTP_TIMEOUT_RETRY_DELAY = 10  #Seconds
-FTP_TIMEOUT_CONNECT = 120  #Seconds
-FTP_TIMEOUT_TRANSFER = 30  #Seconds
-FTP_TIMEOUT_MIN_SPEED = 4096 #bytes
 
 DOWNLOAD_RETRY_COUNT = 3
 DOWNLOAD_RETRY_DELAY = 15 #minutes
-
-FTP_IGNORE_FILES = (
-    '.*-MISSING',
-    '^\.$',
-    '^\.\.$',
-    '.+% Complete.+',
-)
-
-TVSHOW_SEASON_MULTI_PACK_REGEX = (
-    '(?i).+S([0-9]+)-S([0-9]+)[\. ].+',
-    '(?i).+S([0-9]+)-([0-9]+)[\. ].+',
-)
-
-
-TVSHOW_SEASON_PACK_REGEX = (
-    "(?i).+\.S[0-9]+\..+",
-)
-
-MOVIE_PACKS_REGEX = (
-    "(?i).+\.(TRiLOGY|PACK|Duology|Pentalogy)\..+",
-)
-
-DOCO_REGEX = (
-    {"regex": "(?i)^(History.Channel).+", "name": "History Channel Docos"},
-    {"regex": "(?i)^(Discovery.Channel).+", "name": "Discovery Channel Docos"},
-    {"regex": "(?i)^(National.Geographic).(?!Wild)", "name": "National Geographic Docos"},
-    {"regex": "(?i)^(National.Geographic.Wild).+", "name": "National Geographic Wild Docos"},
-)
 
 SAMPLES_REGEX = (
     "(?i).*-sample",
@@ -375,6 +336,14 @@ ALLOWED_HOSTS = ['*']
 
 import lazysettings
 from lazysettings import *
+
+# FTP Details
+from lazy_common import ftpmanager
+
+ftpmanager.FTP_IP = lazysettings.FTP_IP
+ftpmanager.FTP_PORT = lazysettings.FTP_PORT
+ftpmanager.FTP_USER = lazysettings.FTP_USER
+ftpmanager.FTP_PASS = lazysettings.FTP_PASS
 
 if DB_TYPE == "mysql":
     DATABASES = {

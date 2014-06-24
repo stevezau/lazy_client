@@ -1,11 +1,16 @@
-from lazy_client_core.models import Imdbcache
-import re, logging, os
+import logging
+import os
+
 from django.conf import settings
 from flexget.utils.imdb import ImdbSearch, ImdbParser
 from django.core.exceptions import ObjectDoesNotExist
+
+from lazy_client_core.models import Imdbcache
 from lazy_client_core.utils import common
-from lazy_client_core.utils.metaparser import MetaParser
+from lazy_common.utils import create_path, delete
+from lazy_common.metaparser import MetaParser
 from lazy_client_core.exceptions import RenameException, ManuallyFixException
+
 
 logger = logging.getLogger(__name__)
 
@@ -242,7 +247,7 @@ class MovieRenamer:
                 self.log("Existing folders but no media files, will delete existing folders")
 
                 for folder in existing_folders:
-                    common.delete(folder)
+                    delete(folder)
 
 
         if len(existing_vid_files) > 0:
@@ -262,7 +267,7 @@ class MovieRenamer:
                 self.log("This download item has the best quality, will delete all other folders/files")
 
                 for folder in existing_folders:
-                    common.delete(folder)
+                    delete(folder)
 
             else:
                 self.log("Better quality already exists.. wont extract this")
@@ -290,13 +295,13 @@ class MovieRenamer:
                 else:
                     raise RenameException('Multiple files but could not locate CD numbering')
 
-            common.create_path(dest_folder)
+            create_path(dest_folder)
 
             for move_file in move_files:
                 self.log("Moving %s to %s" % (move_file['from'], move_file['to']))
                 common.move_file(move_file['from'], move_file['to'])
         else:
-            common.create_path(dest_folder)
+            create_path(dest_folder)
             ext = os.path.splitext(src_media_files[0])[1][1:].strip()
             file_name = "%s.%s" % (os.path.basename(dest_folder), ext)
             dest_file = os.path.join(dest_folder, file_name)

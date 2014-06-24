@@ -1,11 +1,14 @@
+import os
+import logging
+
 from django import forms
-from lazy_client_core.models import TVShowMappings
 from django.conf import settings
-import os, logging
-from lazy_client_core.models import DownloadItem
-from lazy_client_core.utils.metaparser import MetaParser
 from django.core.exceptions import ObjectDoesNotExist
-from lazy_client_core.models import Tvdbcache, Imdbcache
+
+from lazy_client_core.models import TVShowMappings
+from lazy_common.metaparser import MetaParser
+from lazy_client_core.models import Tvdbcache
+
 
 logger = logging.getLogger(__name__)
 

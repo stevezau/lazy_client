@@ -11,7 +11,9 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from lazy_client_core.models import Tvdbcache
 from lazy_common.tvdb_api import Tvdb
+from lazy_common import metaparser
 from lazy_client_core.utils import common
+from lazy_common.utils import delete, get_size
 
 
 logger = logging.getLogger(__name__)
@@ -65,7 +67,7 @@ class Command(BaseCommand):
         if options['all'] or options['fixdocos']:
             logger.info('Performing doco fix')
 
-            for doco_dict in settings.DOCO_REGEX:
+            for doco_dict in metaparser.DOCO_REGEX:
                 doco_folder = os.path.join(settings.TVHD, doco_dict['name'])
 
                 if os.path.exists(doco_folder):
@@ -116,10 +118,10 @@ class Command(BaseCommand):
 
                 #Step 2 - Lets remove all imdbcache objects with path is zero size
                 if os.path.exists(str(tvdb_obj.localpath)):
-                    size = common.get_size(tvdb_obj.localpath)
+                    size = get_size(tvdb_obj.localpath)
                     if size < 204800:
                         logger.info("%s: empty folder, deleteing" % tvdb_obj.localpath)
-                        common.delete(tvdb_obj.localpath)
+                        delete(tvdb_obj.localpath)
                         tvdb_obj.localpath = None
 
                 #Step 3 - Get the latest info

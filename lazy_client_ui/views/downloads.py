@@ -111,7 +111,7 @@ class DownloadsManuallyFixItem(UpdateView):
         return obj
 
     def form_valid(self, form):
-        from lazy_client_core.utils.metaparser import MetaParser
+        from lazy_common.metaparser import MetaParser
 
         self.object = self.get_object()
 
@@ -287,7 +287,7 @@ def ignore(items):
     status = 200
     response = HttpResponse(content_type="text/plain")
 
-    from lazy_client_core.utils.metaparser import MetaParser
+    from lazy_common.metaparser import MetaParser
 
     for item in items:
         try:

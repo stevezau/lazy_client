@@ -4,7 +4,7 @@ import logging
 
 from django.core.management import call_command
 from celery.task.base import periodic_task
-
+from lazy_client_core.utils.mirror import FTPMirror
 
 logger = logging.getLogger(__name__)
 

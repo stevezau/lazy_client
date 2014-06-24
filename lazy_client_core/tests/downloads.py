@@ -1,12 +1,6 @@
-import datetime
 from django.core.urlresolvers import reverse
-from django.utils import timezone
 from django.test import TestCase
 import os
-from django.core.urlresolvers import reverse
-from rest_framework import status
-from rest_framework.test import APITestCase
-from django.conf import settings
 
 from lazy_client_core.models import DownloadItem
 

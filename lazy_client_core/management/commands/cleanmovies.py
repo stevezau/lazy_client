@@ -1,18 +1,20 @@
 from __future__ import division
 from optparse import make_option
-from django.core.management.base import BaseCommand
-from lazy_client_core.models import Imdbcache
 import logging
 import os
-from lazy_client_core.utils import common
+import shutil
+from datetime import datetime
+import re
+
+from django.core.management.base import BaseCommand
 from flexget.utils.imdb import ImdbSearch, ImdbParser
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
-import shutil
 
-from datetime import datetime
-from lazy_client_core.utils.metaparser import MetaParser
-import re
+from lazy_client_core.models import Imdbcache
+from lazy_client_core.utils import common
+from lazy_common.utils import is_video_file, get_size
+from lazy_common.metaparser import MetaParser
 
 
 logger = logging.getLogger(__name__)
@@ -67,7 +69,7 @@ class Command(BaseCommand):
 
                 for file in files:
                     file_path = os.path.join(path, file)
-                    if common.is_video_file(file_path):
+                    if is_video_file(file_path):
                         vid_files.append(file_path)
 
                 if len(vid_files) > 1:
@@ -119,7 +121,7 @@ class Command(BaseCommand):
 
                 #Step 2 - Lets remove all imdbcache objects with path is zero size
                 if os.path.exists(str(imdb_obj.localpath)):
-                    size = common.get_size(imdb_obj.localpath)
+                    size = get_size(imdb_obj.localpath)
                     if size < 204800:
                         logger.info("%s: empty folder, deleteing" % imdb_obj.localpath)
                         shutil.rmtree(imdb_obj.localpath)
@@ -157,7 +159,7 @@ class Command(BaseCommand):
                     continue
 
                 #First, if its empty then delete it
-                size = common.get_size(path)
+                size = get_size(path)
 
                 if size < 204800:
                     logger.info("%s: empty folder, deleteing" % path)

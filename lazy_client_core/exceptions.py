@@ -61,10 +61,6 @@ class RenameUnknownException(Exception):
     """
     """
 
-class FTPException(Exception):
-    """
-
-    """
 
 class DownloadException(Exception):
     """

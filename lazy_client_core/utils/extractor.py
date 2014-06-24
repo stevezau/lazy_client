@@ -4,6 +4,7 @@ import os
 from django.core.cache import cache
 from lazy_client_core.exceptions import ExtractException, ExtractCRCException
 from lazy_client_core.utils import common
+from lazy_common.utils import delete
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ def do_extract(path):
             for bad_archive in found_bad_archives:
                 try:
                     logger.debug("Deleting bad archive %s" % bad_archive)
-                    common.delete(bad_archive)
+                    delete(bad_archive)
                 except:
                     pass
 

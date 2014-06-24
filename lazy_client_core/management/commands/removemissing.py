@@ -6,7 +6,7 @@ import ftplib
 from django.core.management.base import BaseCommand
 
 from lazy_client_core.models import DownloadItem
-from lazy_client_core.utils import ftpmanager
+from lazy_common import ftpmanager
 
 
 logger = logging.getLogger(__name__)

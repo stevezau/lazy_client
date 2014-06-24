@@ -1,4 +1,5 @@
 from lazy_client_core.utils import common
+from lazy_common.utils import is_video_file
 from lazy_common import ftpmanager
 
 __author__ = 'Steve'
@@ -7,9 +8,10 @@ from lazy_client_core.models import Tvdbcache
 from lazy_common.tvdb_api import Tvdb
 from datetime import datetime, timedelta
 from lazy_client_core.exceptions import *
+from lazy_common.exceptions import FTPException
 from lazy_client_core.models import DownloadItem
 from django.core.exceptions import ObjectDoesNotExist
-from lazy_client_core.utils.metaparser import MetaParser
+from lazy_common.metaparser import MetaParser
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +135,7 @@ class TVShowScanner:
                 for season_dir_file in os.listdir(season_path):
                     ep_file = os.path.join(season_path, season_dir_file)
 
-                    if common.is_video_file(ep_file):
+                    if is_video_file(ep_file):
                         parser = MetaParser(ep_file, type=MetaParser.TYPE_TVSHOW)
                         season = parser.get_season()
                         eps = parser.get_eps()

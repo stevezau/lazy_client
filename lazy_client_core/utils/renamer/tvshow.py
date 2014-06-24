@@ -7,9 +7,10 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 
 from lazy_client_core.utils import common
-from lazy_client_core.utils.tvdb_api import Tvdb
+from lazy_common.utils import create_path, delete
+from lazy_common.tvdb_api import Tvdb
 from lazy_client_core.models import TVShowMappings, Tvdbcache
-from lazy_client_core.utils.metaparser import MetaParser
+from lazy_common.metaparser import MetaParser
 from lazy_client_core.exceptions import ManuallyFixException, RenameException
 from lazy_common.tvdb_api.tvdb_exceptions import tvdb_seasonnotfound, tvdb_episodenotfound, tvdb_error
 
@@ -36,7 +37,7 @@ class TVRenamer:
     def create_docs_folder(self, path):
         if not os.path.exists(path):
             #create path
-            common.create_path(path)
+            create_path(path)
 
         #check for nfo file
         nfo_file = os.path.join(path, "tvshow.nfo")
@@ -215,7 +216,7 @@ class TVRenamer:
 
                 #Lets do the move..
                 if os.path.isfile(tvshow_file_dest):
-                    common.delete(tvshow_file_dest)
+                    delete(tvshow_file_dest)
 
                 common.move_file(tvshow_file, tvshow_file_dest)
                 self.log('Moving file: %s to %s' % (tvshow_file, tvshow_file_dest))
@@ -307,7 +308,7 @@ class TVRenamer:
                     dest_folder = os.path.join(dest_folder, name)
 
             dest_folder = dest_folder.strip()
-            common.create_path(dest_folder)
+            create_path(dest_folder)
 
             tvshow_file_dest = "%s - %s - %s.%s" % (common.strip_illegal_chars(tvdbcache_obj.title), tvshow_file_ep_id, common.strip_illegal_chars(tvshow_file_ep_name), ext)
             tvshow_file_dest = os.path.join(dest_folder, tvshow_file_dest)
@@ -355,14 +356,14 @@ class TVRenamer:
             if src == common.compare_best_vid_file(src, b_file):
                 #This is the best quality, lets remove the others
                 for f in existing_files:
-                    common.delete(f)
+                    delete(f)
             else:
                 #better quality exists..
                 self.log("NOT MOVING FILE AS BETTER QUALITY EXISTS %s" % b_file)
                 return
 
         #now lets do the move
-        common.create_path(os.path.dirname(dest))
+        create_path(os.path.dirname(dest))
         self.log('Moving file: %s to %s' % (src, dest))
         common.move_file(src, dest)
 
