@@ -282,6 +282,7 @@ class TVRenamer:
             tvshow_file_ep_id = ''
 
             if 'episodeList' in tvshow_file_metaparser.details:
+                tvshow_file_ep_id = "S%s" % str(tvshow_file_season)
                 for ep_num in tvshow_file_metaparser.details['episodeList']:
                     tvshow_file_ep_id += "E" + str(ep_num).zfill(2)
             else:
