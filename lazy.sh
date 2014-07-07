@@ -83,7 +83,7 @@ function start_celeryd {
 	echo "Starting Celeryd"
 	PID_FILE="celeryd.pid"
 	LOG_FILE="logs/celeryd.log"
-	$MANAGE_SCRIPT celeryd --loglevel=DEBUG --concurrency=4 -Ofair --pidfile=$PID_FILE  -f $LOG_FILE > /dev/null 2>&1 &
+	$MANAGE_SCRIPT celeryd --loglevel=DEBUG --concurrency=4 -Ofair --pidfile=$PID_FILE  -f $LOG_FILE > /dev/null 2> logs/err_celeryd.log &
 }
 
 function stop_celeryd {
@@ -193,5 +193,6 @@ case $1 in
       echo "usage: start|stop|check|upgrade [celeryd|celerybeat|webui]"
 	;;
 esac
+
 
 

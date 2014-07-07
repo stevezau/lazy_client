@@ -135,7 +135,7 @@ class QueueManager():
 
                 if status == DownloadItem.JOB_PENDING:
                     dlItem.log("Strange the job is set to pending.. will reset")
-                    dlItem.reset(force=True)
+                    dlItem.reset()
                     dlItem.retries += 1
                     dlItem.save()
 

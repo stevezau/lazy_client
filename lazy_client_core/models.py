@@ -246,6 +246,7 @@ class DownloadItem(models.Model):
 
     def download_status(self):
         logger.debug("%s Getting status of download: " % self.title)
+        logger.debug("task id is %s" % self.task)
 
         from celery.backends.amqp import BacklogLimitExceeded
         task = self.get_task()
@@ -271,6 +272,7 @@ class DownloadItem(models.Model):
 
         if state == "RUNNING":
             status = self.JOB_RUNNING
+
 
         return status
 
