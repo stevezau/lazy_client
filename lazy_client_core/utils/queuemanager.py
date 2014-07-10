@@ -261,6 +261,7 @@ class QueueManager():
                         except Exception as e:
                             dlItem.log(e.message)
                             logger.exception(e)
+                            continue
 
                         dlItem.save()
                         count += 1
