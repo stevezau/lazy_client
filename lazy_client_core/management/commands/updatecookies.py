@@ -8,8 +8,8 @@ import datetime
 from django.conf import settings
 import os
 logger = logging.getLogger(__name__)
-from lazy_client_core.utils import common
 from lazy_common import requests
+
 
 class Command(BaseCommand):
 
@@ -20,5 +20,7 @@ class Command(BaseCommand):
     option_list = BaseCommand.option_list
 
     def handle(self, *app_labels, **options):
-        requests.get("http://thetvdb.com/api/4D297D8CFDE0E105/series/200341/en.xml")
+        from django.conf import settings
+
+        requests.get("http://thetvdb.com/api/User_Favorites.php?accountid=%s" % settings.TVDB_ACCOUNTID)
         requests.get("http://www.imdb.com")
