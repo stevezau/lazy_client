@@ -20,5 +20,5 @@ class Command(BaseCommand):
     option_list = BaseCommand.option_list
 
     def handle(self, *app_labels, **options):
-        requests.get("http://www.thetvdb.org")
+        requests.get("http://thetvdb.com/api/4D297D8CFDE0E105/series/200341/en.xml")
         requests.get("http://www.imdb.com")
