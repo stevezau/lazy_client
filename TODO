@@ -1,6 +1,8 @@
 ###########
 ### NOW ###
 ###########
+--Movies and flexget config.. movies for FIX release
+
 when checking pre-scan make it faster as it has to go through alot of the ftp invidual
 already downloaded updated in fix ep/season.. make it display has already been downloaded before
 

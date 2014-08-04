@@ -1,9 +1,9 @@
-from lazy_client_core.utils import common
-from lazy_common.utils import is_video_file
 from lazy_common import ftpmanager
+from lazy_common import utils
 
 __author__ = 'Steve'
-import os, logging
+import os
+import logging
 from lazy_client_core.models import Tvdbcache
 from lazy_common.tvdb_api import Tvdb
 from datetime import datetime, timedelta
@@ -135,7 +135,7 @@ class TVShowScanner:
                 for season_dir_file in os.listdir(season_path):
                     ep_file = os.path.join(season_path, season_dir_file)
 
-                    if is_video_file(ep_file):
+                    if utils.is_video_file(ep_file):
                         parser = MetaParser(ep_file, type=MetaParser.TYPE_TVSHOW)
                         season = parser.get_season()
                         eps = parser.get_eps()
@@ -527,7 +527,7 @@ class TVShowScanner:
             highest_match = 0
 
             for name in self.search_names:
-                similar = common.compare_torrent_2_show(name, ftp_rls_name)
+                similar = utils.compare_torrent_2_show(name, ftp_rls_name)
 
                 if similar > highest_match:
                     highest_match = similar
@@ -566,7 +566,7 @@ class TVShowScanner:
                 highest_match = 0
 
                 for name in self.search_names:
-                    similar = common.compare_torrent_2_show(name, ftp_rls_name)
+                    similar = utils.compare_torrent_2_show(name, ftp_rls_name)
 
                     if similar > highest_match:
                         highest_match = similar
@@ -749,7 +749,7 @@ class TVShowScanner:
             highest_match = 0
 
             for name in self.search_names:
-                similar = common.compare_torrent_2_show(name, entry.title)
+                similar = utils.compare_torrent_2_show(name, entry.title)
 
                 if similar > highest_match:
                     highest_match = similar
@@ -858,7 +858,7 @@ class TVShowScanner:
             highest_match = 0
 
             for name in self.search_names:
-                similar = common.compare_torrent_2_show(name, entry.title)
+                similar = utils.compare_torrent_2_show(name, entry.title)
 
                 if similar > highest_match:
                     highest_match = similar

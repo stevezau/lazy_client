@@ -110,27 +110,6 @@ def close_file(file):
     file.close()
 
 
-def compare_torrent_2_show(show, torrent):
-    from lazy_common.metaparser import MetaParser
-
-    torrent = torrent.replace(' ', '.')
-
-    parser = MetaParser(torrent, type=MetaParser.TYPE_TVSHOW)
-
-    if 'doco_channel' in parser.details:
-        #we have a doco, lets strip the nato geo, doco title out for matching
-        other_title = re.sub("History\.Channel|Discovery\.Channel|National\.Geographic", "", torrent)
-        parser = MetaParser(other_title, type=MetaParser.TYPE_TVSHOW)
-
-    if parser.details and 'series' in parser.details:
-        tor_series_name = parser.details['series']
-
-        #now compare them
-        return utils.how_similar(tor_series_name.lower(), show.lower())
-    else:
-        return 0
-
-
 def remove_ignore(title):
     ins = open(settings.FLEXGET_IGNORE, "r")
     newlines = []

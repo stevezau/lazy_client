@@ -167,6 +167,14 @@ class DownloadItem(models.Model):
         if self.section == "HD" or self.section == "XVID":
             return MetaParser.TYPE_MOVIE
 
+        if self.video_files:
+            first_file = self.video_files[0]
+
+            if 'tvdbid_id' in first_file:
+                return MetaParser.TYPE_TVSHOW
+            if 'imdbid_id' in first_file:
+                return MetaParser.TYPE_MOVIE
+
         return MetaParser.TYPE_UNKNOWN
 
 
@@ -960,6 +968,7 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
                         instance.tvdbid.update_from_tvdb()
                     except Exception as e:
                         logger.exception("Error updating TVDB info %s" % e.message)
+
 
 
         except ObjectDoesNotExist as e:

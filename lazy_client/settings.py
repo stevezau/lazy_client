@@ -243,6 +243,10 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
+        'lazy_common': {
+            'handlers': ['console', 'logfile', 'mail_admins'],
+            'level': 'DEBUG',
+        },
         '': {
             'handlers': ['console', 'logfile', 'mail_admins'],
             'level': 'DEBUG',

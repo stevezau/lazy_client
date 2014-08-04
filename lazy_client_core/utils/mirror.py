@@ -284,6 +284,22 @@ class FTPMirror:
                         f = common.open_file(filename, "wb")
 
                     if local_size > remote_size:
+
+                        f = common.open_file(filename, "wb")
+
+                        #lets retry
+                        if filename in failed_list:
+                            #what count are we at
+                            count = failed_list.get(c.filename)
+
+                            if count >= 2:
+                                dlitem.log("Local size was bigger then remote, max reties reached, setting to failed" % short_filename)
+                                continue
+                            else:
+                                failed_list[filename] += 1
+                        else:
+                            failed_list[filename] = 1
+
                         dlitem.log("Strange, local size was bigger then remote, re-downloading %s" % short_filename)
                         f = common.open_file(filename, "wb")
                     else:

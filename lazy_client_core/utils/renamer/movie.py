@@ -333,6 +333,10 @@ class MovieRenamer:
                     raise RenameException("Didn't find any media files?")
 
                 if len(movies) > 1:
-                    raise RenameException("Detected as a single movie but found multiple media files?")
+                    error_files = []
+                    for movie in movies:
+                        error_file = {'file': movie['files'][0], 'error': "Detected as a single movie but found multiple media files?"}
+                        error_files.append(error_file)
+                    raise ManuallyFixException(fix_files=error_files)
 
         self._move_movies(movies)
