@@ -340,6 +340,7 @@ ALLOWED_HOSTS = ['*']
 
 import lazysettings
 from lazysettings import *
+from lazy_common import utils
 
 # FTP Details
 from lazy_common import ftpmanager
@@ -394,10 +395,11 @@ if not os.path.isfile(FLEXGET_APPROVED):
 
 if not os.path.exists(MEDIA_ROOT):
     #create it
-    os.mkdir(MEDIA_ROOT)
+
+    utils.mkdir(MEDIA_ROOT)
 
 if not os.path.exists(os.path.join(BASE_DIR, "logs")):
-    os.mkdir(os.path.join(BASE_DIR, "logs"))
+    utils.mkdir(os.path.join(BASE_DIR, "logs"))
 
 
 ##############

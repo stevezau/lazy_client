@@ -6,12 +6,12 @@ from django.http import HttpResponse
 from rest_framework.response import Response
 from rest_framework import status
 from flexget.utils.imdb import ImdbSearch
-
 from lazy_client_core.models import DownloadItem, Imdbcache, Tvdbcache
 from lazy_client_api.serializers import DownloadItemSerializer, ImdbItemSerializer, TvdbItemSerializer
 from lazy_common.tvdb_api import Tvdb
 from lazy_client_core.exceptions import AlradyExists_Updated
-
+from rest_framework.decorators import api_view
+from django.core.exceptions import ObjectDoesNotExist
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +65,65 @@ class TvdbItemList(generics.ListCreateAPIView):
 class TvdbDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Tvdbcache.objects.all()
     serializer_class = TvdbItemSerializer
+
+@api_view(['POST'])
+def download_action(request, pk):
+    from rest_framework import status
+
+    if request.method == "POST":
+        if 'action' not in request.DATA:
+            error = {'detail': "invalid action"}
+            return Response(error, status=status.HTTP_400_BAD_REQUEST)
+
+        action = request.DATA['action']
+
+        if action == "ignore":
+            from lazy_common.metaparser import MetaParser
+            from lazy_client_core.utils import common
+
+            try:
+                dlitem = DownloadItem.objects.get(id=pk)
+
+                if dlitem.get_type() == MetaParser.TYPE_TVSHOW:
+
+                    series_data = dlitem.metaparser()
+
+                    if series_data:
+                        ignoretitle = series_data.details['series'].replace(" ", ".")
+                        common.ignore_show(ignoretitle)
+                        dlitem.delete()
+                    else:
+                        dlitem.delete()
+
+                    return Response({'detail': "ignored show %s" % ignoretitle})
+
+            except ObjectDoesNotExist:
+                error = {'detail': "unable to find download item"}
+                return Response(error, status=status.HTTP_400_BAD_REQUEST)
+
+        if action == "approve":
+            try:
+                dlitem = DownloadItem.objects.get(pk=pk)
+                dlitem.status = DownloadItem.QUEUE
+                dlitem.save()
+                return Response({'detail': "approved pk: %s" % pk})
+            except ObjectDoesNotExist as e:
+                error = {'detail': "unable to find download item"}
+                return Response(error, status=status.HTTP_400_BAD_REQUEST)
+
+        if action == "reset":
+            try:
+                dlitem = DownloadItem.objects.get(pk=pk)
+                dlitem.reset()
+                return Response({'detail': "reset pk: %s" % pk})
+            except ObjectDoesNotExist as e:
+                error = {'detail': "unable to find download item"}
+                return Response(error, status=status.HTTP_400_BAD_REQUEST)
+
+
+        #Action not found
+        error = {'detail': "invalid action"}
+        return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
 def get_tvdb_eps(request, showid, season):
     if request.is_ajax():
@@ -131,7 +190,6 @@ def search_tvdb(request):
         data = 'fail'
     mimetype = 'application/json'
     return HttpResponse(data, mimetype)
-
 
 
 def search_imdb(request):

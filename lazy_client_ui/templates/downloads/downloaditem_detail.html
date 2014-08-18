@@ -1,91 +1,110 @@
-<div class='download-item'>
+<div class='download-item' id='item_{{ download.id }}'>
     <div class='left-col'>
-        <div style='float:left'><input role='checkbox' type='checkbox' class='item_{{ download.id }}' name='item' value='{{ download.id }}'></div>
         <div style='float:right'>
             {% if download.tvdbid.posterimg %}
-               <img src="{{ download.tvdbid.posterimg.url }}">
+                <a href="http://thetvdb.com/index.php?tab=series&id={{ download.tvdbid.id }}" target="_blank"><img class="poster" src="{{ download.tvdbid.posterimg.url }}"></a>
             {% else %}
                 {% if download.imdbid.posterimg %}
-                      <img src="{{ download.imdbid.posterimg.url }}">
+                    <a href="http://www.imdb.com/title/tt{{ download.imdbid.id }}/" target="_blank"><img class="poster" src="{{ download.imdbid.posterimg.url }}"></a>
                 {% else %}
-                    <img src="{{ STATIC_URL }}images/noimg.gif">
+                    <img class="poster" src="{{ STATIC_URL }}images/noimg.gif">
                 {% endif %}
             {% endif %}
         </div>
         <div style='clear:both'></div>
     </div>
     <div class='right-col'>
-        {% with percentComlpete=download.get_percent_complete %}
-            <div class="progressbar"><div class="progressbar_{{ download.id }}"></div>{{ percentComlpete|floatformat:2  }}% Complete ({{ download.get_speed }})</div>
-            <script>doProgressbar({{ download.id }}, {{ percentComlpete }})</script>
-        {% endwith %}
+        <div class="right-col-container">
 
-        <b>Title:</b> {{ download.title }} {% if download.imdbid.year %}<b>{{ download.imdbid.year }}</b>{% endif %}
+            {% with percentComlpete=download.get_percent_complete %}
+                <div class="progressbar"><div class="progressbar_{{ download.id }}"></div>{{ percentComlpete|floatformat:2  }}% Complete ({{ download.get_speed }})</div>
+                <script>doProgressbar({{ download.id }}, {{ percentComlpete }})</script>
+            {% endwith %}
 
-        {% if download.imdbid.score %}
-            <br><b>Score:</b> {{ download.imdbid.score }} {% if download.imdbid.votes %}({{ download.imdbid.votes }} votes){% endif %}
-        {% endif %}
+            <div class="download-detail">
 
+                <b>Title:</b> {{ download.title }} {% if download.imdbid.year %}<b>{{ download.imdbid.year }}</b>{% endif %}
 
-        {% if download.tvdbid.genres %}
-            <br><b>Genre:</b> {{ download.tvdbid.genres }}
-        {% else %}
-            {% if download.imdbid.genres %}
-                   <br><b>Genre:</b> {{ download.imdbid.genres }}
-            {% endif %}
-        {% endif %}
-
-        {% if download.tvdbid.networks %}
-            <br><b>Networks:</b> {{ download.tvdbid.networks }}
-        {% endif %}
-
-        <p>
-            {% if download.tvdbid.description %}
-               {{ download.tvdbid.description }}
-            {% else %}
-                {% if download.imdbid.description %}
-                       {{ download.imdbid.description }}
+                {% if download.imdbid.score %}
+                    <br><b>Score:</b> {{ download.imdbid.score }} {% if download.imdbid.votes %}({{ download.imdbid.votes }} votes){% endif %}
                 {% endif %}
-            {% endif %}
-        </p>
 
 
-
-            {% for download in downloadgroup.list %}
-
-            {% endfor %}
-
-
-        {% if download.onlyget %}
-            <b>Only downloading</b>
-            <div class="multi-items">
-            {% for season,eps in download.onlyget.items %}
-                {% for ep in eps %}
-                    <div class="download-item-small">
-                    {% if ep == 0 %}
-                        <span class="inner">S{{ season }} x ALL</span>
-                    {% else %}
-                        <span class="inner">S{{ season }} x E{{ ep }}</span>
+                {% if download.tvdbid.genres %}
+                    <br><b>Genre:</b> {{ download.tvdbid.genres }}
+                {% else %}
+                    {% if download.imdbid.genres %}
+                           <br><b>Genre:</b> {{ download.imdbid.genres }}
                     {% endif %}
-				    </div>
-                {% endfor %}
-            {% endfor %}
+                {% endif %}
+
+                {% if download.tvdbid.networks %}
+                    <br><b>Networks:</b> {{ download.tvdbid.networks }}
+                {% endif %}
+
+                <p>
+                    {% if download.tvdbid.description %}
+                       {{ download.tvdbid.description }}
+                    {% else %}
+                        {% if download.imdbid.description %}
+                               {{ download.imdbid.description }}
+                        {% endif %}
+                    {% endif %}
+                </p>
             </div>
-        {% endif %}
-
-        {% if download.message %}
-            <div class='download-error'><pre>{{ download.message }}</pre></div>
-        {% endif %}
-
-        {% if download.status == 4 %}
-            <div><b>Extracted and Moved: {{ download.dlstart }}</b></div>
-        {% endif %}
 
 
-        <div><a href="{% url "downloads.log" download.id %}">View Log</a></div>
+            {% if download.onlyget %}
+                <b>Only downloading</b>
+                <div class="multi-items">
+                {% for season,eps in download.onlyget.items %}
+                    {% for ep in eps %}
+                        <div class="download-item-small">
+                        {% if ep == 0 %}
+                            <span class="inner">S{{ season }} x ALL</span>
+                        {% else %}
+                            <span class="inner">S{{ season }} x E{{ ep }}</span>
+                        {% endif %}
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+                </div>
+            {% endif %}
 
+            {% if download.message %}
+                <div class='download-error'><pre>{{ download.message }}</pre></div>
+            {% endif %}
 
+            {% if download.status == 4 %}
+                <div><b>Extracted and Moved: {{ download.dlstart }}</b></div>
+            {% endif %}
 
+            <div class="error-container"></div>
+        </div>
+        <div class="item_button_bar">
+            <div class="left">
+                {% if download.status == 2 %}
+                    <a class="item_reset_{{ download.id }}" href="#"><img class="size-25px" src="{{ STATIC_URL }}images/icons/reset.jpg"/>Reset</a>
+                {% endif %}
+
+                {% if download.status == 6 %}
+                    <a class="item_approve_{{ download.id }}" href="#"><img class="size-25px" src="{{ STATIC_URL }}images/icons/approve.jpg"/>Approve</a>
+                {% endif %}
+
+                {% if download.status != 4 %}
+                    <a class="item_delete_{{ download.id }}" href="#"><img class="size-25px" src="{{ STATIC_URL }}images/icons/deny.jpg"/>Delete</a>
+                {% endif %}
+
+                {% if download.status == 6 and download.get_type == 1%}
+                    <a class="item_ignore_{{ download.id }}" href="#"><img class="size-25px" src="{{ STATIC_URL }}images/icons/ignore.jpg"/>Ignore</a>
+                {% endif %}
+            </div>
+
+           <div class="right" style="bottom: 0">
+                <a class="right" href="{% url "downloads.log" download.id %}"><img class="size-25px" src="{{ STATIC_URL }}images/icons/log.jpg"/></a>
+            </div>
+        </div>
     </div>
+
 </div>
 <div style='clear: both;'></div>

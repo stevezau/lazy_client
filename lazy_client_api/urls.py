@@ -5,6 +5,7 @@ from lazy_client_api.views import *
 urlpatterns = patterns('',
     url(r'^downloads/$', DownloadItemList.as_view(), name="download_api"),
     url(r'^downloads/(?P<pk>[0-9]+)/$', DownloadItemDetail.as_view(), name="download_api_detail"),
+    url(r'^downloads/(?P<pk>[0-9]+)/action/$', 'lazy_client_api.views.download_action', name="download_api_detail_ignore"),
     url(r'^imdb/$', ImdbItemList.as_view(), name="imdb_api"),
     url(r'^tvdb/$', TvdbItemList.as_view(), name="tvdb_api"),
     url(r'^tvdb/(?P<pk>[0-9]+)/$', TvdbDetail.as_view(), name="tvdb_api_detail"),

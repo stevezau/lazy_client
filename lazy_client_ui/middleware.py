@@ -30,7 +30,6 @@ class LoginRequiredMiddleware:
             if not request.user.is_authenticated():
                 for ip in settings.ALLOWED_IPS:
                     #Is this an internal ip?
-                    print request.META['REMOTE_ADDR']
                     if IPAddress(request.META['REMOTE_ADDR']) in IPNetwork(ip):
                         return
 

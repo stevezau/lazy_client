@@ -11,7 +11,7 @@ Install Packages
 =====
 Execute the following on server
 
-	$ sudo apt-get install git python-pip unrar python-dev libpython-dev python-pycurl python-sqlite
+	$ sudo apt-get install git python-pip unrar python-dev libpython-dev python-pycurl python-sqlite curl
 
 
 

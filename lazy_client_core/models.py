@@ -391,7 +391,7 @@ class DownloadItem(models.Model):
         except:
             pass
 
-        if os.path.exists(self.localpath):
+        if self.localpath and os.path.exists(self.localpath):
             try:
                 shutil.rmtree(self.localpath)
             except:

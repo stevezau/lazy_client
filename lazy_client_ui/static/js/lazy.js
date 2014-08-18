@@ -6,8 +6,56 @@ String.prototype.startsWith = function (str)
 
 lazyapi_url = "/api"
 
+
+
 $( document ).ready(function() {
 	//$( "#dialog" ).dialog();
+
+    //////////////////////
+    /// Action Buttons ///
+    //////////////////////
+
+    $(document).on('click', '[class^="item_approve_"]', function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        id = $(this).prop("class").replace("item_approve_", "")
+
+        obj_name = "#item_" + id;
+        item_obj = $(obj_name);
+
+        if ($(item_obj).attr("multi") == "yes") {
+
+            multi_obj_id = $(item_obj).attr("id")
+
+            $(item_obj).find("[id^='item_']").each(function(i, obj) {
+                item_id = $(obj).attr("id").replace("item_", "")
+                approve_item(item_id, multi_obj_id)
+            });
+        } else {
+            approve_item(id, false)
+        }
+    });
+
+    $(document).on('click', '[class^="item_delete_"]', function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        id = $(this).prop("class").replace("item_delete_", "")
+        delete_item(id)
+    });
+
+    $(document).on('click', '[class^="item_ignore_"]', function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        id = $(this).prop("class").replace("item_ignore_", "")
+        ignore_item(id)
+    });
+
+    $(document).on('click', '[class^="item_reset_"]', function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        id = $(this).prop("class").replace("item_reset_", "")
+        reset_item(id)
+    });
 
     /////////////////////////
     /// Handle Manual Fix ///
@@ -106,13 +154,13 @@ $( document ).ready(function() {
 		
 	//get Download content
 	if ($('.downloads').size()) {
-		getContent();
+	    getContent();
 	}
 
 	//Hightlight from checkbox click
 	$(document).on('click', 'input:checkbox', function(event) {
 
-		var downloadItem = $(this).closest('.download-item, .selectable');
+		var downloadItem = $(this).closest('.selectable');
 		
 		if (!downloadItem.length) {
 			return;
@@ -166,7 +214,7 @@ $( document ).ready(function() {
 	});
     
 	//Highlight checked items
-	$(document).on('click', '.download-item, .selectable', function(event) {
+	$(document).on('click', '.selectable', function(event) {
 
 		var target = $(event.target);
 	    if (target.is('input:checkbox')) return;
@@ -329,6 +377,116 @@ $( document ).ready(function() {
 
 });
 
+
+/////////////////////////////
+/// Download Item Buttons ///
+/////////////////////////////
+
+function approve_success_handler(data, textStatus, jqXHR)
+{
+    this.custom_data.item_obj.remove()
+
+    //Any left?
+    if (this.custom_data.multi_obj_id) {
+        multi_obj = $("#" + multi_obj_id)
+        if ($(multi_obj).find("[id^='item_']").length == 0){
+            $(multi_obj).remove()
+        }
+    }
+
+};
+
+function approve_error_handler(jqXHR, textStatus, errorThrown)
+{
+    if (this.custom_data.multi_obj_id) {
+        multi_obj = $("#" + multi_obj_id)
+        set_error(multi_obj, "Error ignoring: "+ errorThrown)
+    } else{
+        set_error(this.custom_data.item_obj, "Error: "+ textStatus)
+    }
+
+};
+
+function approve_item(id, multi_obj_id) {
+    obj_name = "#item_" + id;
+    item_obj = $(obj_name);
+
+    $.ajax({
+        url: "/api/downloads/" + id + "/action/",
+        data: {"action": "approve"},
+        dataType : "jsonp",
+        item_obj: item_obj,
+        custom_data: {"item_obj": item_obj, "multi_obj_id": multi_obj_id},
+        success: approve_success_handler,
+        error: approve_error_handler,
+        type: 'POST'});
+}
+
+function ignore_item(id) {
+
+    obj_name = "#item_" + id;
+    item_obj = $(obj_name);
+
+    $.ajax({
+        url: "/api/downloads/" + id + "/action/",
+        dataType: "json",
+        data: {"action": "ignore"},
+        success: function(){
+            item_obj.remove()
+        },
+        error: function(jqXHR, textStatus, errorThrown){
+            set_error(item_obj, "Error ignoring: "+ textStatus)
+        },
+        type: 'POST'});
+
+}
+
+function reset_item(id) {
+
+    obj_name = "#item_" + id;
+    item_obj = $(obj_name);
+
+    $.ajax({
+        url: "/api/downloads/" + id + "/action/",
+        dataType: "json",
+        data: {"action": "reset"},
+        success: function(){
+            item_obj.remove()
+        },
+        error: function(jqXHR, textStatus, errorThrown){
+            set_error(item_obj, "Error resetting: "+ textStatus)
+        },
+        type: 'POST'});
+
+}
+
+
+function delete_item(id) {
+
+    obj_name = "#item_" + id;
+    item_obj = $(obj_name);
+
+
+    $.ajax({
+        url: "/api/downloads/" + id + "/",
+
+        dataType: "json",
+        success: function(){
+            item_obj.remove()
+        },
+        error: function(jqXHR, textStatus, errorThrown){
+            set_error(item_obj, "Error deleteing: "+ textStatus)
+        },
+        type: 'DELETE'});
+
+}
+
+function set_error(item_obj, msg) {
+    error_div = $(item_obj).find(".error-container")
+    error_div.empty()
+    error_div.html("<div class='error'>" + msg + "</div>")
+}
+
 /////////////////////////
 /// Handle Manual Fix ///
 /////////////////////////
@@ -438,21 +596,16 @@ function getContent() {
 	
 	$.get(geturl, function( data ) {
 		$('.downloads').html( data );
-		var action = $('.downloads').attr('action');
-		
-		if (action == 'downloads') {
-			$(".download-item").each(function() {
-				//var lefth = $(this).children(".left-col").height();
-				var righth = $(this).children(".right-col").height();
-				
-				if (righth < 230) {
-					var righth = 230;
-				}
-			
-				$(this).children(".left-col").height(righth);
-			});
-		}
-	});	
+
+        $(".download-item").each(function() {
+            var righth = $(this).children(".right-col").height();
+
+            if (righth > 230) {
+                $(this).children(".left-col").height(righth);
+                $(this).children(".right-col").height(righth);
+            }
+        });
+	});
 }
 
 function doProgressbar(id, percent) {
