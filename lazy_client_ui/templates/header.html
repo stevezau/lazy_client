@@ -1,9 +1,21 @@
 {% load sitetree %}
-<div id="head-panel">
-    <h1>Steve's Media Manager</h1>
-        {% sitetree_menu from "lazymenu" include "trunk"  template "headermenu.html" %}
-    <div style="clear: both;"></div>
-</div>
+<div class="navbar navbar-inverse" role="navigation">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">Steve Download Manager</a>
+        </div>
+
+        <div class="collapse navbar-collapse">
+        {% sitetree_menu from "lazymenu" include "trunk" template "sitetree/menu_bootstrap3.html" %}
+        </div><!--/.nav-collapse -->
+      </div>
+    </div>
 
 {% if errors %}
 

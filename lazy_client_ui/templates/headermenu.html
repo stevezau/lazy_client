@@ -1,18 +1,8 @@
 {% load sitetree %}
-<div id="head-menu">
-    <ul>
+
             {% for item in sitetree_items %}
             <li>
             <a href="{% sitetree_url for item %}" {% if item.hint %}title="{{ item.hint }}"{% endif %} {% if item.is_current or item.in_current_branch %}class="{{ item.is_current|yesno:"current_item ," }}{{ item.in_current_branch|yesno:"cur
     rent_branch," }}"{% endif %}>{{ item.title_resolved }}</a>
             </li>
             {% endfor %}
-    </ul>
-    <div class="right">
-        {% if user.is_authenticated %}
-            <ul><li><a href="{% url "logout" %}?next={{ request.get_full_path|urlencode }}">Logout</a></li></ul>
-        {% else %}
-            <ul><li><a href="{% url "login" %}?next={{ request.get_full_path|urlencode }}">Login</a></li></ul>
-        {% endif %}
-    </div>
-</div>
