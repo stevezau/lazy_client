@@ -1,5 +1,4 @@
 /.idea
 *.pyc
 lazysettings.py
-static
 lazy_common
