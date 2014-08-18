@@ -40,14 +40,43 @@ $( document ).ready(function() {
         event.preventDefault();
         event.stopPropagation();
         id = $(this).prop("class").replace("item_delete_", "")
-        delete_item(id)
+
+        obj_name = "#item_" + id;
+        item_obj = $(obj_name);
+
+        if ($(item_obj).attr("multi") == "yes") {
+
+            multi_obj_id = $(item_obj).attr("id")
+
+            $(item_obj).find("[id^='item_']").each(function(i, obj) {
+                item_id = $(obj).attr("id").replace("item_", "")
+                delete_item(item_id, multi_obj_id)
+            });
+        } else {
+            delete_item(id, false)
+        }
     });
 
     $(document).on('click', '[class^="item_ignore_"]', function(event) {
         event.preventDefault();
         event.stopPropagation();
         id = $(this).prop("class").replace("item_ignore_", "")
-        ignore_item(id)
+
+        obj_name = "#item_" + id;
+        item_obj = $(obj_name);
+
+        if ($(item_obj).attr("multi") == "yes") {
+
+            multi_obj_id = $(item_obj).attr("id")
+
+            $(item_obj).find("[id^='item_']").each(function(i, obj) {
+                item_id = $(obj).attr("id").replace("item_", "")
+                ignore_item(item_id, multi_obj_id)
+            });
+        } else {
+            ignore_item(id, false)
+        }
+
     });
 
     $(document).on('click', '[class^="item_reset_"]', function(event) {
@@ -382,7 +411,7 @@ $( document ).ready(function() {
 /// Download Item Buttons ///
 /////////////////////////////
 
-function approve_success_handler(data, textStatus, jqXHR)
+function success_handler(data, textStatus, jqXHR)
 {
     this.custom_data.item_obj.remove()
 
@@ -396,11 +425,11 @@ function approve_success_handler(data, textStatus, jqXHR)
 
 };
 
-function approve_error_handler(jqXHR, textStatus, errorThrown)
+function error_handler(jqXHR, textStatus, errorThrown)
 {
     if (this.custom_data.multi_obj_id) {
         multi_obj = $("#" + multi_obj_id)
-        set_error(multi_obj, "Error ignoring: "+ errorThrown)
+        set_error(multi_obj, "Error: "+ errorThrown)
     } else{
         set_error(this.custom_data.item_obj, "Error: "+ textStatus)
     }
@@ -414,29 +443,27 @@ function approve_item(id, multi_obj_id) {
     $.ajax({
         url: "/api/downloads/" + id + "/action/",
         data: {"action": "approve"},
-        dataType : "jsonp",
+        dataType : "json",
         item_obj: item_obj,
         custom_data: {"item_obj": item_obj, "multi_obj_id": multi_obj_id},
-        success: approve_success_handler,
-        error: approve_error_handler,
+        success: success_handler,
+        error: error_handler,
         type: 'POST'});
 }
 
-function ignore_item(id) {
+function ignore_item(id, multi_obj_id) {
 
     obj_name = "#item_" + id;
     item_obj = $(obj_name);
 
     $.ajax({
         url: "/api/downloads/" + id + "/action/",
-        dataType: "json",
         data: {"action": "ignore"},
-        success: function(){
-            item_obj.remove()
-        },
-        error: function(jqXHR, textStatus, errorThrown){
-            set_error(item_obj, "Error ignoring: "+ textStatus)
-        },
+        dataType : "json",
+        item_obj: item_obj,
+        custom_data: {"item_obj": item_obj, "multi_obj_id": multi_obj_id},
+        success: success_handler,
+        error: error_handler,
         type: 'POST'});
 
 }
@@ -461,24 +488,18 @@ function reset_item(id) {
 }
 
 
-function delete_item(id) {
-
+function delete_item(id, multi_obj_id) {
     obj_name = "#item_" + id;
     item_obj = $(obj_name);
 
-
     $.ajax({
         url: "/api/downloads/" + id + "/",
-
-        dataType: "json",
-        success: function(){
-            item_obj.remove()
-        },
-        error: function(jqXHR, textStatus, errorThrown){
-            set_error(item_obj, "Error deleteing: "+ textStatus)
-        },
+        dataType : "jsonp",
+        item_obj: item_obj,
+        custom_data: {"item_obj": item_obj, "multi_obj_id": multi_obj_id},
+        success: success_handler,
+        error: error_handler,
         type: 'DELETE'});
-
 }
 
 function set_error(item_obj, msg) {

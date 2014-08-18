@@ -360,6 +360,7 @@ class TVRenamer:
                     delete(f)
             else:
                 #better quality exists..
+                logger.error("NOT MOVING FILE AS BETTER QUALITY EXISTS %s  %s" % (b_file, existing_files))
                 self.log("NOT MOVING FILE AS BETTER QUALITY EXISTS %s" % b_file)
                 return
 

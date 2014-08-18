@@ -143,6 +143,7 @@ def get_file_quality(ext):
 
 
 def compare_best_vid_file(f1, f2):
+    from datetime import datetime
 
     if f1 == f2:
         return f1
@@ -151,31 +152,72 @@ def compare_best_vid_file(f1, f2):
     __, f1_ext = os.path.splitext(f1)
     f1_ext = f1_ext.lower()
     f1_quality = get_file_quality(f1_ext)
+    f1_date = datetime.fromtimestamp(os.path.getmtime(f1))
 
     f2_size = os.path.getsize(f2)
     __, f2_ext = os.path.splitext(f2)
     f2_ext = f2_ext.lower()
     f2_quality = get_file_quality(f2_ext)
+    f2_date = datetime.fromtimestamp(os.path.getmtime(f2))
 
     if f1_quality > f2_quality:
+        logger.info("%s quality better then %s" % (f1, f2))
         return f1
 
     if f2_quality > f1_quality:
+        logger.info("%s quality better then %s" % (f2, f1))
         return f2
 
-    #if the same format, whats bigger?
+    #Same format, whats the difference in percent and date
+    if f1_size > f2_size:
+        difference = 100 * (f1_size - f2_size) / f1_size
+    else:
+        difference = 100 * (f2_size - f1_size) / f2_size
+
+    if f1_date > f2_date:
+        delta = f1_date - f2_date
+    else:
+        delta = f2_date - f1_date
+
+    #if the same format
     if f1_quality == f2_quality:
+
+        #less then 10 days.. lets take the newer one
+        if delta.days < 10:
+            #Look for proper
+            if 'proper' in f1.lower():
+                logger.info("%s is a proper rather then %s" % (f1, f2))
+                return f1
+
+            if 'proper' in f2.lower():
+                logger.info("%s is a proper rather then %s" % (f2, f1))
+                return f2
+
+            #Do it by date
+            if f1_date > f2_date:
+                logger.info("%s is newer then %s" % (f1, f2))
+                return f1
+            else:
+                logger.info("%s is newer then %s" % (f2, f1))
+                return f2
+
+        #whats bigger?
         if f1_size > f2_size:
+            logger.info("%s is same quality but bigger then  %s" % (f1, f2))
             return f1
 
         if f2_size > f1_size:
+            logger.info("%s is same quality but bigger then  %s" % (f2, f1))
             return f2
+
 
     #last resort, return the bigger file
     if f1_size > f2_size:
+        logger.info("%s is bigger then  %s" % (f1, f2))
         return f1
 
     if f2_size > f1_size:
+        logger.info("%s is bigger then  %s" % (f2, f1))
         return f2
 
     return f1
