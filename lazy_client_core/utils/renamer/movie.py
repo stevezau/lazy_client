@@ -271,6 +271,7 @@ class MovieRenamer:
 
             else:
                 self.log("Better quality already exists.. wont extract this")
+                self.error("Better quality already exists.. wont extract this")
                 return
 
         if len(src_media_files) > 1:

@@ -554,6 +554,7 @@ div.button span, div.button span a {
     left: 230px;
     top: 15px;
     bottom: 15px;
+    overflow: auto;
     right: 15px;
 }
 
