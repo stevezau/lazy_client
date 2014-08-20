@@ -39,8 +39,9 @@ $( document ).ready(function() {
     $(document).on('click', '[class^="item_delete_"]', function(event) {
         event.preventDefault();
         event.stopPropagation();
-        id = $(this).prop("class").replace("item_delete_", "")
-        delete_item(id)
+
+        id = $(this).prop("class").match(/item_delete.+[0-9]/).toString().replace("item_delete_", "");
+        delete_item(id);
     });
 
     $(document).on('click', '[class^="item_ignore_"]', function(event) {
