@@ -14,3 +14,4 @@ django-celery-transactions
 guessit
 pillow
 netaddr
+PIL

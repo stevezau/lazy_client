@@ -144,7 +144,10 @@ class MovieRenamer:
                                     except ObjectDoesNotExist:
                                         imdb_obj = Imdbcache()
                                         imdb_obj.id = video_file['imdbid_id']
-                                        imdb_obj.update_from_imdb()
+                                        try:
+                                            imdb_obj.update_from_imdb()
+                                        except ObjectDoesNotExist:
+                                            pass
 
                     if imdb_obj:
                         self._do_rename_movie(title, year, files, imdb_id=imdb_obj.id)

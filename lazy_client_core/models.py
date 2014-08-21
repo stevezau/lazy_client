@@ -8,6 +8,7 @@ import urllib2
 import inspect
 import time
 
+from requests.exceptions import HTTPError
 from django.db import models
 from django.dispatch import receiver
 from django.db.models.signals import pre_save, post_save
@@ -20,6 +21,7 @@ from celery.contrib.abortable import AbortableAsyncResult
 from django.db.models import Q
 from lazy_common.utils import bytes2human
 from lazy_common import ftpmanager
+from PIL import Image
 
 from lazy_common.tvdb_api import Tvdb
 from lazy_client_core.exceptions import AlradyExists_Updated, AlradyExists
@@ -538,17 +540,30 @@ class Imdbcache(models.Model):
             self.genres = sGenres.replace('|', '', 1)
 
             if imdbobj.photo:
-                img_temp = NamedTemporaryFile(delete=True)
-                img_temp.write(urllib2.urlopen(imdbobj.photo).read())
-                img_temp.flush()
+                try:
+                    img_download = NamedTemporaryFile(delete=True)
+                    img_download.write(urllib2.urlopen(imdbobj.photo).read())
+                    img_download.flush()
 
-                self.posterimg.save(str(self.id) + '-imdb.jpg', File(img_temp))
+                    size = 214, 317
+
+                    if os.path.getsize(img_download.name) > 0:
+                        img_tmp = NamedTemporaryFile(delete=True)
+                        im = Image.open(img_download.name)
+                        im = im.resize(size, Image.ANTIALIAS)
+                        im.save(img_tmp, "JPEG", quality=70)
+
+                        self.posterimg.save(str(self.id) + '-imdb.jpg', File(img_tmp))
+                except Exception as e:
+                    logger.error("error saving image: %s" % e.message)
 
             self.save()
             self.updated = datetime.now()
             self.save()
-        except Exception as e:
-            logger.error("Error updating entry %s" % e)
+        except HTTPError as e:
+            if e.errno == 404:
+                logger.error("Error entry was not found in imdn!")
+                raise ObjectDoesNotExist()
 
 class Job(models.Model):
 
@@ -695,11 +710,19 @@ class Tvdbcache(models.Model):
                         posterURL = bannerData['poster'][posterSize][posterID]['_bannerpath']
 
                         try:
-                            img_temp = NamedTemporaryFile(delete=True)
-                            img_temp.write(urllib2.urlopen(posterURL).read())
-                            img_temp.flush()
+                            img_download = NamedTemporaryFile(delete=True)
+                            img_download.write(urllib2.urlopen(posterURL).read())
+                            img_download.flush()
 
-                            self.posterimg.save(str(self.id) + '-tvdb.jpg', File(img_temp))
+                            size = (214, 317)
+
+                            if os.path.getsize(img_download.name) > 0:
+                                img_tmp = NamedTemporaryFile(delete=True)
+                                im = Image.open(img_download.name)
+                                im = im.resize(size, Image.ANTIALIAS)
+                                im.save(img_tmp, "JPEG", quality=70)
+
+                                self.posterimg.save(str(self.id) + '-tvdb.jpg', File(img_tmp))
                         except Exception as e:
                             logger.error("error saving image: %s" % e.message)
                             pass
@@ -711,6 +734,8 @@ class Tvdbcache(models.Model):
             self.save()
         except Exception as e:
             logger.exception("Error updating entry %s" % e)
+
+
 
 @receiver(pre_save, sender=TVShowMappings)
 def create_tvdb_on_add(sender, instance, **kwargs):
@@ -994,8 +1019,8 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
                             instance.imdbid.update_from_imdb()
                     else:
                         instance.imdbid.update_from_imdb()
-                except Exception as e:
-                        logger.exception("Error updating IMDB info %s" % e.message)
+                except ObjectDoesNotExist as e:
+                        logger.info("Error updating IMDB info as it was not found")
 
         except ObjectDoesNotExist as e:
 
@@ -1003,7 +1028,11 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
 
             new_imdb = Imdbcache()
             new_imdb.id = instance.imdbid_id
-            new_imdb.save()
+
+            try:
+                new_imdb.save()
+            except ObjectDoesNotExist:
+                instance.imdbid_id = None
 
         except Exception as e:
             logger.exception("error gettig imdb %s information.. from website %s" %  (instance.imdbid_id, e.message))

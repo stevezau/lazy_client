@@ -2,6 +2,7 @@
 ### NOW ###
 ###########
 -auto scaling on images
+-404 errors on imdb and tvdb
 --Movies and flexget config.. movies for FIX release
 
 when checking pre-scan make it faster as it has to go through alot of the ftp invidual

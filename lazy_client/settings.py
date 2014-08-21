@@ -15,7 +15,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 ###Lazy settings###
 ###################
 
-__VERSION__ = 5
+__VERSION__ = 6
 
 QUEUE = "rabbitmq"
 DB_TYPE = "mysql"
@@ -246,6 +246,10 @@ LOGGING = {
         'lazy_common': {
             'handlers': ['console', 'logfile', 'mail_admins'],
             'level': 'DEBUG',
+        },
+        'tvdb_api': {
+            'handlers': ['console', 'logfile', 'mail_admins'],
+            'level': 'INFO',
         },
         '': {
             'handlers': ['console', 'logfile', 'mail_admins'],

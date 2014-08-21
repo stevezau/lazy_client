@@ -52,7 +52,10 @@ class Command(BaseCommand):
 
         if options['updateimgs']:
             for tvdb_obj in Imdbcache.objects.all():
-                tvdb_obj.update_from_imdb()
+                try:
+                    tvdb_obj.update_from_imdb()
+                except:
+                    pass
 
         if options['removedups'] or options['all']:
             logger.info('Removing duplicate files within movie folder')
@@ -137,9 +140,15 @@ class Command(BaseCommand):
                             diff = curTime - imdb_obj.updated.replace(tzinfo=None)
                             hours = diff.seconds / 60 / 60
                             if hours > 168:
-                                imdb_obj.update_from_imdb()
+                                try:
+                                    imdb_obj.update_from_imdb()
+                                except:
+                                    pass
                     else:
-                        imdb_obj.update_from_imdb()
+                        try:
+                            imdb_obj.update_from_imdb()
+                        except:
+                            pass
 
                 except Exception as e:
                     logger.exception("%s: failed getting latest data from imdb.com %s" % (imdb_obj.title, e.message))
