@@ -13,7 +13,7 @@ def upgrade():
     for tvdb_obj in Tvdbcache.objects.all():
         if tvdb_obj.posterimg:
             try:
-                img_file = tvdb_obj.posterimg.file
+                img_file = str(tvdb_obj.posterimg.file)
                 img_temp = NamedTemporaryFile(delete=True)
 
                 size = 214, 317
@@ -34,7 +34,7 @@ def upgrade():
     for imdb_obj in Imdbcache.objects.all():
         if imdb_obj.posterimg:
             try:
-                img_file = imdb_obj.posterimg.file
+                img_file = str(imdb_obj.posterimg.file)
                 img_temp = NamedTemporaryFile(delete=True)
 
                 size = 214, 317
