@@ -17,7 +17,10 @@ export C_FORCE_ROOT="true"
 chmod +x $MANAGE_SCRIPT
 
 function upgrade {
-    pull_git
+print $2
+    if [ "$2" != "-l" ]; then
+        pull_git
+    fi
     upgrade_reqs
     $MANAGE_SCRIPT $ARGS
 }

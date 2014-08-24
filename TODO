@@ -1,8 +1,7 @@
 ###########
 ### NOW ###
 ###########
--auto scaling on images
--404 errors on imdb and tvdb
+--improve fix select (found s1e1 in queue of the last skip but still did serches?)
 --Movies and flexget config.. movies for FIX release
 
 when checking pre-scan make it faster as it has to go through alot of the ftp invidual

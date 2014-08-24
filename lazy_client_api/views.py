@@ -85,6 +85,7 @@ def download_action(request, pk):
                 dlitem = DownloadItem.objects.get(id=pk)
 
                 if dlitem.get_type() == MetaParser.TYPE_TVSHOW:
+                    return Response({'detail': "ignored show"})
 
                     series_data = dlitem.metaparser()
 
@@ -116,6 +117,15 @@ def download_action(request, pk):
                 dlitem = DownloadItem.objects.get(pk=pk)
                 dlitem.reset()
                 return Response({'detail': "reset pk: %s" % pk})
+            except ObjectDoesNotExist as e:
+                error = {'detail': "unable to find download item"}
+                return Response(error, status=status.HTTP_400_BAD_REQUEST)
+
+        if action == "delete":
+            try:
+                dlitem = DownloadItem.objects.get(pk=pk)
+                dlitem.delete()
+                return Response({'detail': "delete pk: %s" % pk})
             except ObjectDoesNotExist as e:
                 error = {'detail': "unable to find download item"}
                 return Response(error, status=status.HTTP_400_BAD_REQUEST)

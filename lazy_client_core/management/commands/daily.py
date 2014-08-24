@@ -21,7 +21,7 @@ class Command(BaseCommand):
 
     def handle(self, *app_labels, **options):
         #Task 1 - Cleanup downloaditem logs
-        time_threshold = datetime.datetime.now() - datetime.timedelta(days=14)
+        time_threshold = datetime.datetime.now() - datetime.timedelta(days=60)
         dl_items = DownloadItem.objects.all().filter(dlstart__lt=time_threshold)
 
         for dlitem in dl_items:
