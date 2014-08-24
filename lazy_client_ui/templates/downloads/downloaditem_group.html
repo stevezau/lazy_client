@@ -1,69 +1,82 @@
-<div class='download-item' id="item_m{{ forloop.counter }}" multi="yes">
-    <div class='left-col'>
-        <div style='float:right'>
-            {% if downloadgroup.grouper.posterimg %}
-               <img class="poster" src="{{ downloadgroup.grouper.posterimg.url }}">
-            {% else %}
-                    <img class="poster" src="{{ STATIC_URL }}images/noimg.gif">
-            {% endif %}
-        </div>
-        <div style='clear:both'></div>
-    </div>
-    <div class='right-col'>
-    <div class="right-col-container">
-            <div class="download-detail">
-                <b>Title:</b> {{ downloadgroup.grouper.title }} {% if downloadgroup.grouper.imdbid.year %}<b>{{ downloadgroup.grouper.imdbid.year }}</b>{% endif %}
+<div class="row">
+    <div class='download-item' id="item_m{{ forloop.counter }}" multi="yes">
+        <div class='col-md-1'>
 
-                {% if downloadgroup.grouper.imdbid.score %}
-                    <br><b>Score:</b> {{ downloadgroup.grouper.imdbid.score }} {% if downloadgroup.grouper.imdbid.votes %}({{ downloadgroup.grouper.imdbid.votes }} votes){% endif %}
-                {% endif %}
-
-
-                {% if downloadgroup.grouper.genres %}
-                    <br><b>Genre:</b> {{ downloadgroup.grouper.genres }}
+                {% if downloadgroup.grouper.posterimg %}
+                   <img class="poster" src="{{ downloadgroup.grouper.posterimg.url }}" width="180px" height="290px">
                 {% else %}
-                    {% if downloadgroup.grouper.imdbid.genres %}
-                           <br><b>Genre:</b> {{ downloadgroup.grouper.imdbid.genres }}
+                        <img class="poster" src="{{ STATIC_URL }}images/noimg.gif" width="180px" height="290px">
+                {% endif %}
+        </div>
+        <div class='col-md-11'>
+        <div class="right-col-container">
+                <div class="download-detail">
+                    <b>Title:</b> {{ downloadgroup.grouper.title }} {% if downloadgroup.grouper.imdbid.year %}<b>{{ downloadgroup.grouper.imdbid.year }}</b>{% endif %}
+
+                    {% if downloadgroup.grouper.imdbid.score %}
+                        <br><b>Score:</b> {{ downloadgroup.grouper.imdbid.score }} {% if downloadgroup.grouper.imdbid.votes %}({{ downloadgroup.grouper.imdbid.votes }} votes){% endif %}
                     {% endif %}
-                {% endif %}
 
-                {% if downloadgroup.grouper.networks %}
-                    <br><b>Networks:</b> {{ downloadgroup.grouper.networks }}
-                {% endif %}
 
-                <p>
-                    {% if downloadgroup.grouper.description %}
-                       {{ downloadgroup.grouper.description }}
+                    {% if downloadgroup.grouper.genres %}
+                        <br><b>Genre:</b> {{ downloadgroup.grouper.genres }}
                     {% else %}
-                        {% if downloadgroup.grouper.imdbid.description %}
-                               {{ downloadgroup.grouper.imdbid.description }}
+                        {% if downloadgroup.grouper.imdbid.genres %}
+                               <br><b>Genre:</b> {{ downloadgroup.grouper.imdbid.genres }}
                         {% endif %}
                     {% endif %}
-                </p>
 
-                <div class="multi-items">
-                    <b>Episodes to download</b>
-                    {% for download in downloadgroup.list %}
-                        <div class="download-item-small">
-                            <span id='item_{{ download.id }}' class="inner">
-                                <a class="item_approve_{{ download.id }}" href="#"><img class="size-15px" src="{{ STATIC_URL }}images/icons/approve.jpg"/></a>
-                                <a class="item_delete_{{ download.id }}" href="#"><img class="size-15px" src="{{ STATIC_URL }}images/icons/deny.jpg"/></a>
-                                {{ download.title }}
-                            </span>
-                        </div>
-                    {% endfor %}
+                    {% if downloadgroup.grouper.networks %}
+                        <br><b>Networks:</b> {{ downloadgroup.grouper.networks }}
+                    {% endif %}
+
+                    <p>
+                        {% if downloadgroup.grouper.description %}
+                           {{ downloadgroup.grouper.description }}
+                        {% else %}
+                            {% if downloadgroup.grouper.imdbid.description %}
+                                   {{ downloadgroup.grouper.imdbid.description }}
+                            {% endif %}
+                        {% endif %}
+                    </p>
+                    <div class="multi-items">
+                        <b>Episodes to download</b>
+                        {% for download in downloadgroup.list %}
+                            <div class="download-item-small">
+                                <span id='item_{{ download.id }}' class="inner">
+                                    <!--<a class="item_approve_{{ download.id }}" href="#"><img class="size-15px" src="{{ STATIC_URL }}images/icons/approve.jpg"/></a>-->
+                                    <button type="button" class="item_approve_{{ download.id }} btn btn-default btn-xs">
+                                        <span class="glyphicon glyphicon-ok"></span>
+                                    </button>
+                                    <!-- <a class="item_delete_{{ download.id }}" href="#"><img class="size-15px" src="{{ STATIC_URL }}images/icons/deny.jpg"/></a>-->
+                                    <button type="button" class="item_delete_{{ download.id }} btn btn-default btn-xs">
+                                        <span class="glyphicon glyphicon-remove-circle"></span>
+                                    </button>
+                                    {{ download.title }}
+                                </span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="error-container"></div>
                 </div>
-                <div class="error-container"></div>
             </div>
-        </div>
-        <div clas="clear"></div>
-        <div>
-            <div class="item_button_bar left">
-                <a class="item_approve_m{{ forloop.counter }}" href="#"><img class="size-25px" src="{{ STATIC_URL }}images/icons/approve.jpg"/>Approve All</a>
-                <a class="item_delete_m{{ forloop.counter }}" href="#"><img class="size-25px" src="{{ STATIC_URL }}images/icons/deny.jpg"/>Delete All</a>
-                <a class="item_ignore_m{{ forloop.counter }}" href="#"><img class="size-25px" src="{{ STATIC_URL }}images/icons/ignore.jpg"/>Ignore</a>
+            <div clas="clear"></div>
+            <div>
+                <div class="item_button_bar left">
+                    <!-- <a class="item_approve_m{{ forloop.counter }}" href="#"><img class="size-25px" src="{{ STATIC_URL }}images/icons/approve.jpg"/>Approve All</a>-->
+                    <button type="button" class="item_approve_m{{ forloop.counter }} btn btn-default btn-xs">
+                        <span class="glyphicon glyphicon-ok"></span> Approve All
+                    </button>
+                    <!-- <a class="item_delete_m{{ forloop.counter }}" href="#"><img class="size-25px" src="{{ STATIC_URL }}images/icons/deny.jpg"/>Delete All</a>-->
+                    <button type="button" class="item_delete_m{{ forloop.counter }} btn btn-default btn-xs">
+                        <span class="glyphicon glyphicon-remove-circle"></span> Delete All
+                    </button>
+                    <!-- <a class="item_ignore_m{{ forloop.counter }}" href="#"><img class="size-25px" src="{{ STATIC_URL }}images/icons/ignore.jpg"/>Ignore</a>-->
+                    <button type="button" class="item_ignore_m{{ forloop.counter }} btn btn-default btn-xs">
+                        <span class="glyphicon glyphicon-minus"></span> Ignore
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 </div>
-<div style='clear: both;'></div>

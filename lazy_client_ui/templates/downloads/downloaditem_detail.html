@@ -8,7 +8,7 @@
                     {% if download.imdbid.posterimg %}
                         <a href="http://www.imdb.com/title/tt{{ download.imdbid.id }}/" target="_blank"><img class="poster" src="{{ download.imdbid.posterimg.url }}" width="180px" height="290px"></a>
                     {% else %}
-                        <img class="poster" src="{{ STATIC_URL }}images/noimg.gif">
+                        <img class="poster" src="{{ STATIC_URL }}images/noimg.gif"  width="180px" height="290px">
                     {% endif %}
                 {% endif %}
             </div>
@@ -85,26 +85,35 @@
             <div class="item_button_bar">
                 <div class="pull-left">
                     {% if download.status == 2 %}
-                        <a class="item_reset_{{ download.id }}" href="#"><img class="size-25px" src="{{ STATIC_URL }}images/icons/reset.jpg"/>Reset</a>
+                        <!-- <a class="item_reset_{{ download.id }}" href="#"><img class="size-25px" src="{{ STATIC_URL }}images/icons/reset.jpg"/>Reset</a> -->
+                         <button type="button" class="item_reset_{{ download.id }} btn btn-default btn-xs">
+                            <span class="glyphicon glyphicon-retweet"></span> Reset
+                        </button>
                     {% endif %}
 
                     {% if download.status == 6 %}
-                        <a class="item_approve_{{ download.id }}" href="#"><img class="size-25px" src="{{ STATIC_URL }}images/icons/approve.jpg"/>Approve</a>
+                       <!-- <a class="item_approve_{{ download.id }}" href="#"><img class="size-25px" src="{{ STATIC_URL }}images/icons/approve.jpg"/>Approve</a>-->
+                        <button type="button" class="item_approve_{{ download.id }} btn btn-default btn-xs">
+                            <span class="glyphicon glyphicon-ok"></span> Delete
+                        </button>
                     {% endif %}
 
                     {% if download.status != 4 %}
-                        <button type="button" class="item_delete_{{ download.id }} btn btn-default btn-lg">
+                        <button type="button" class="item_delete_{{ download.id }} btn btn-default btn-xs">
                             <span class="glyphicon glyphicon-remove-circle"></span> Delete
                         </button>
                     {% endif %}
 
                     {% if download.status == 6 and download.get_type == 1%}
-                        <a class="item_ignore_{{ download.id }}" href="#"><img class="size-25px" src="{{ STATIC_URL }}images/icons/ignore.jpg"/>Ignore</a>
+                        <!-- <a class="item_ignore_{{ download.id }}" href="#"><img class="size-25px" src="{{ STATIC_URL }}images/icons/ignore.jpg"/>Ignore</a> -->
+                        <button type="button" class="item_ignore_{{ download.id }} btn btn-default btn-xs">
+                            <span class="glyphicon glyphicon-minus"></span> Ignore
+                        </button>
                     {% endif %}
                 </div>
 
                 <div class="pull-left">
-                   <a class="btn btn-default btn-lg" href="{% url "downloads.log" download.id %}"><span class="glyphicon glyphicon-pencil"></span>Log</a>
+                    <a class="btn btn-default btn-xs" href="{% url "downloads.log" download.id %}"><span class="glyphicon glyphicon-pencil"></span>Log</a>
                 </div>
             </div>
         </div>
