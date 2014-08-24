@@ -17,28 +17,28 @@ $( document ).ready(function() {
     $(document).on('click', '[class^="item_approve_"]', function(event) {
         event.preventDefault();
         event.stopPropagation();
-        id = $(this).prop("class").replace("item_approve_", "")
+        id = $(this).prop("class").match(/item_reset.+[0-9]/).toString().replace("item_approve_", "");
         action_item(id, "approve")
     });
 
     $(document).on('click', '[class^="item_delete_"]', function(event) {
         event.preventDefault();
         event.stopPropagation();
-        id = $(this).prop("class").replace("item_delete_", "")
+        id = $(this).prop("class").match(/item_delete_.+[0-9]/).toString().replace("item_delete_", "");
         action_item(id, "delete")
     });
 
     $(document).on('click', '[class^="item_ignore_"]', function(event) {
         event.preventDefault();
         event.stopPropagation();
-        id = $(this).prop("class").replace("item_ignore_", "")
+        id = $(this).prop("class").match(/item_ignore_.+[0-9]/).toString().replace("item_ignore_", "");
         action_item(id, "ignore")
     });
 
     $(document).on('click', '[class^="item_reset_"]', function(event) {
         event.preventDefault();
         event.stopPropagation();
-        id = $(this).prop("class").replace("item_reset_", "")
+        id = $(this).prop("class").match(/item_reset_.+[0-9]/).toString().replace("item_reset_", "");
         action_item(id, "reset")
     });
 
