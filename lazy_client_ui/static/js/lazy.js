@@ -7,7 +7,6 @@ String.prototype.startsWith = function (str)
 lazyapi_url = "/api"
 
 
-
 $( document ).ready(function() {
 	//$( "#dialog" ).dialog();
 
@@ -19,43 +18,28 @@ $( document ).ready(function() {
         event.preventDefault();
         event.stopPropagation();
         id = $(this).prop("class").replace("item_approve_", "")
-
-        obj_name = "#item_" + id;
-        item_obj = $(obj_name);
-
-        if ($(item_obj).attr("multi") == "yes") {
-
-            multi_obj_id = $(item_obj).attr("id")
-
-            $(item_obj).find("[id^='item_']").each(function(i, obj) {
-                item_id = $(obj).attr("id").replace("item_", "")
-                approve_item(item_id, multi_obj_id)
-            });
-        } else {
-            approve_item(id, false)
-        }
+        action_item(id, "approve")
     });
 
     $(document).on('click', '[class^="item_delete_"]', function(event) {
         event.preventDefault();
         event.stopPropagation();
-
-        id = $(this).prop("class").match(/item_delete.+[0-9]/).toString().replace("item_delete_", "");
-        delete_item(id);
+        id = $(this).prop("class").replace("item_delete_", "")
+        action_item(id, "delete")
     });
 
     $(document).on('click', '[class^="item_ignore_"]', function(event) {
         event.preventDefault();
         event.stopPropagation();
         id = $(this).prop("class").replace("item_ignore_", "")
-        ignore_item(id)
+        action_item(id, "ignore")
     });
 
     $(document).on('click', '[class^="item_reset_"]', function(event) {
         event.preventDefault();
         event.stopPropagation();
         id = $(this).prop("class").replace("item_reset_", "")
-        reset_item(id)
+        action_item(id, "reset")
     });
 
     /////////////////////////
@@ -383,13 +367,13 @@ $( document ).ready(function() {
 /// Download Item Buttons ///
 /////////////////////////////
 
-function approve_success_handler(data, textStatus, jqXHR)
+function item_ajax_success_handler(data, textStatus, jqXHR)
 {
     this.custom_data.item_obj.remove()
 
     //Any left?
     if (this.custom_data.multi_obj_id) {
-        multi_obj = $("#" + multi_obj_id)
+        multi_obj = $("#" + this.custom_data.multi_obj_id)
         if ($(multi_obj).find("[id^='item_']").length == 0){
             $(multi_obj).remove()
         }
@@ -397,10 +381,10 @@ function approve_success_handler(data, textStatus, jqXHR)
 
 };
 
-function approve_error_handler(jqXHR, textStatus, errorThrown)
+function item_ajax_error_handler(jqXHR, textStatus, errorThrown)
 {
     if (this.custom_data.multi_obj_id) {
-        multi_obj = $("#" + multi_obj_id)
+        multi_obj = $("#" + this.custom_data.multi_obj_id)
         set_error(multi_obj, "Error ignoring: "+ errorThrown)
     } else{
         set_error(this.custom_data.item_obj, "Error: "+ textStatus)
@@ -408,77 +392,36 @@ function approve_error_handler(jqXHR, textStatus, errorThrown)
 
 };
 
-function approve_item(id, multi_obj_id) {
+function action_item_ajax(id, action, multi_obj_id) {
     obj_name = "#item_" + id;
     item_obj = $(obj_name);
 
     $.ajax({
         url: "/api/downloads/" + id + "/action/",
-        data: {"action": "approve"},
-        dataType : "jsonp",
+        data: {"action": action},
+        dataType : "json",
         item_obj: item_obj,
         custom_data: {"item_obj": item_obj, "multi_obj_id": multi_obj_id},
-        success: approve_success_handler,
-        error: approve_error_handler,
+        success: item_ajax_success_handler,
+        error: item_ajax_error_handler,
         type: 'POST'});
 }
 
-function ignore_item(id) {
+function action_item(id, action) {
 
     obj_name = "#item_" + id;
     item_obj = $(obj_name);
 
-    $.ajax({
-        url: "/api/downloads/" + id + "/action/",
-        dataType: "json",
-        data: {"action": "ignore"},
-        success: function(){
-            item_obj.remove()
-        },
-        error: function(jqXHR, textStatus, errorThrown){
-            set_error(item_obj, "Error ignoring: "+ textStatus)
-        },
-        type: 'POST'});
+    if ($(item_obj).attr("multi") == "yes") {
+        multi_obj_id = $(item_obj).attr("id")
 
-}
-
-function reset_item(id) {
-
-    obj_name = "#item_" + id;
-    item_obj = $(obj_name);
-
-    $.ajax({
-        url: "/api/downloads/" + id + "/action/",
-        dataType: "json",
-        data: {"action": "reset"},
-        success: function(){
-            item_obj.remove()
-        },
-        error: function(jqXHR, textStatus, errorThrown){
-            set_error(item_obj, "Error resetting: "+ textStatus)
-        },
-        type: 'POST'});
-
-}
-
-
-function delete_item(id) {
-
-    obj_name = "#item_" + id;
-    item_obj = $(obj_name);
-
-
-    $.ajax({
-        url: "/api/downloads/" + id + "/",
-
-        dataType: "json",
-        success: function(){
-            item_obj.remove()
-        },
-        error: function(jqXHR, textStatus, errorThrown){
-            set_error(item_obj, "Error deleteing: "+ textStatus)
-        },
-        type: 'DELETE'});
+        $(item_obj).find("[id^='item_']").each(function(i, obj) {
+            item_id = $(obj).attr("id").replace("item_", "")
+            action_item_ajax(item_id, action, multi_obj_id)
+        });
+    } else {
+        action_item_ajax(id, action, false)
+    }
 
 }
 
