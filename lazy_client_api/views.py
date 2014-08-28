@@ -78,13 +78,13 @@ def download_action(request, pk):
         action = request.DATA['action']
 
         if action == "ignore":
-            from lazy_common.metaparser import MetaParser
+            from lazy_common import metaparser
             from lazy_client_core.utils import common
 
             try:
                 dlitem = DownloadItem.objects.get(id=pk)
 
-                if dlitem.get_type() == MetaParser.TYPE_TVSHOW:
+                if dlitem.get_type() == metaparser.TYPE_TVSHOW:
                     return Response({'detail': "ignored show"})
 
                     series_data = dlitem.metaparser()

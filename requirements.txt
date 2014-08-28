@@ -8,6 +8,7 @@ django-sitetree
 django-jquery
 django-jquery-ui
 django-celery
+django-picklefield
 django-mobile
 easy_extract
 django-celery-transactions

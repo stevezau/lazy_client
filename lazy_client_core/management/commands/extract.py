@@ -14,7 +14,7 @@ from lazy_client_core.utils import extractor
 from lazy_common.utils import delete, get_size
 from lazy_client_core.utils import renamer
 from lazy_client_core.exceptions import *
-from lazy_common.metaparser import MetaParser
+from lazy_common import metaparser
 from lazy_client_core.utils.queuemanager import QueueManager
 from lazy_client_core.utils import common
 
@@ -40,7 +40,7 @@ class Command(BaseCommand):
                             help='Extract Specific folder'),
                   )
 
-    def _extract_others(self, path, parser_type=MetaParser.TYPE_UNKNOWN):
+    def _extract_others(self, path, parser_type=metaparser.TYPE_UNKNOWN):
         for f in os.listdir(path):
             full_path = os.path.join(path, f)
 
@@ -210,10 +210,10 @@ class Command(BaseCommand):
             #Lets rename stuff that didnt come from lazy
             if extract_all:
                 #TVShows
-                self._extract_others(settings.TVHD_TEMP, MetaParser.TYPE_TVSHOW)
+                self._extract_others(settings.TVHD_TEMP, metaparser.TYPE_TVSHOW)
 
                 #Movies
-                self._extract_others(settings.HD_TEMP, MetaParser.TYPE_MOVIE)
+                self._extract_others(settings.HD_TEMP, metaparser.TYPE_MOVIE)
 
         finally:
             release_lock()

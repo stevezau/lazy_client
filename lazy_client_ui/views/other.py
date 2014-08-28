@@ -12,6 +12,7 @@ from lazy_client_core.exceptions import AlradyExists, AlradyExists_Updated
 from lazy_client_core.models import DownloadItem, Job
 from lazy_client_core.utils.missingscanner import MissingScanner
 from lazy_common import ftpmanager
+from lazy_client_core.utils import lazyapi
 
 
 logger = logging.getLogger(__name__)
@@ -61,7 +62,7 @@ class FindMissingReportContent(TemplateView):
         context = super(FindMissingReportContent, self).get_context_data(**kwargs)
         context['selectable'] = True
         scanner = MissingScanner()
-        tvshow = search = kwargs.get("tvshow")
+        tvshow = kwargs.get("tvshow")
         tvshow_path = os.path.join(settings.TVHD, tvshow)
 
         report = scanner.show_report(tvshow_path)
@@ -98,14 +99,9 @@ class FindListView(TemplateView):
             if not search or search == "":
                 raise Exception("You didn't enter anything to search!")
 
-            results = ftpmanager.search_torrents(search)
-        except Exception as e:
-            results = {}
-            res_global = {}
-            results['global'] = res_global
-
-            errors = [e]
-            res_global['errors'] = errors
+            results = lazyapi.search_torrents(search)
+        except lazyapi.SearchException as e:
+            results = {'message': str(e)}
 
         context['search_results'] = results
         return context

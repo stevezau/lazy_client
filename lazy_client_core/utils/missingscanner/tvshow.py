@@ -11,7 +11,7 @@ from lazy_client_core.exceptions import *
 from lazy_common.exceptions import FTPException
 from lazy_client_core.models import DownloadItem
 from django.core.exceptions import ObjectDoesNotExist
-from lazy_common.metaparser import MetaParser
+from lazy_common import metaparser
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +136,7 @@ class TVShowScanner:
                     ep_file = os.path.join(season_path, season_dir_file)
 
                     if utils.is_video_file(ep_file):
-                        parser = MetaParser(ep_file, type=MetaParser.TYPE_TVSHOW)
+                        parser = metaparser.get_parser_cache(ep_file, type=metaparser.TYPE_TVSHOW)
                         season = parser.get_season()
                         eps = parser.get_eps()
 
@@ -348,7 +348,7 @@ class TVShowScanner:
                                 for torrent in torrents:
                                     #check season and ep number
                                     try:
-                                        parser = MetaParser(torrent, type=MetaParser.TYPE_TVSHOW)
+                                        parser = metaparser.get_parser_cache(torrent, type=metaparser.TYPE_TVSHOW)
                                         pre_scan_season = parser.get_season()
                                         pre_scan_eps = parser.get_eps()
 
@@ -519,7 +519,7 @@ class TVShowScanner:
 
             ftp_rls_name = os.path.basename(ftp_rls)
 
-            parser = MetaParser(ftp_rls_name, type=MetaParser.TYPE_TVSHOW)
+            parser = metaparser.get_parser_cache(ftp_rls_name, type=metaparser.TYPE_TVSHOW)
 
             if 'special' in parser.details:
                 continue
@@ -557,7 +557,7 @@ class TVShowScanner:
             if ftp_rls.startswith("/TVHD"):
                 continue
 
-            parser = MetaParser(ftp_rls_name, type=MetaParser.TYPE_TVSHOW)
+            parser = metaparser.get_parser_cache(ftp_rls_name, type=metaparser.TYPE_TVSHOW)
 
             if 'special' in parser.details:
                 continue
@@ -643,7 +643,7 @@ class TVShowScanner:
 
                 #TODO FIND THE BEST MATCH HERE..
                 for torrent in torrents:
-                    parser = MetaParser(torrent, type=MetaParser.TYPE_TVSHOW)
+                    parser = metaparser.get_parser_cache(torrent, type=metaparser.TYPE_TVSHOW)
 
                     found_seasons = parser.get_seasons()
 
@@ -691,7 +691,7 @@ class TVShowScanner:
 
                 for torrent in torrentSeasons:
 
-                    parser = MetaParser(torrent, type=MetaParser.TYPE_TVSHOW)
+                    parser = metaparser.get_parser_cache(torrent, type=metaparser.TYPE_TVSHOW)
                     seasons = parser.get_seasons()
 
                     if len(seasons) == 1:
@@ -712,7 +712,7 @@ class TVShowScanner:
 
                     if seasonPath is not False and seasonPath != '':
 
-                        parser = MetaParser(bestMatch, type=MetaParser.TYPE_TVSHOW)
+                        parser = metaparser.get_parser_cache(bestMatch, type=metaparser.TYPE_TVSHOW)
                         got_seasons = parser.get_seasons()
 
                         if len(got_seasons) == 1:

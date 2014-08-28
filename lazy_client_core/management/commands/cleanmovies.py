@@ -14,8 +14,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from lazy_client_core.models import Imdbcache
 from lazy_client_core.utils import common
 from lazy_common.utils import is_video_file, get_size
-from lazy_common.metaparser import MetaParser
-
+from lazy_common import metaparser
 
 logger = logging.getLogger(__name__)
 
@@ -182,7 +181,7 @@ class Command(BaseCommand):
                     #does not exist
                     logger.info("FOLDER: %s is not associated with any imdb object.. lets try fix" % dir)
                     try:
-                        parser = MetaParser(dir, type=MetaParser.TYPE_MOVIE)
+                        parser = metaparser.get_parser_cache(dir, type=metaparser.TYPE_MOVIE)
 
                         movie_year = None
                         movie_name = None

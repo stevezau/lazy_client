@@ -8,7 +8,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from lazy_client_core.models import Imdbcache
 from lazy_client_core.utils import common
 from lazy_common.utils import create_path, delete
-from lazy_common.metaparser import MetaParser
+from lazy_common import metaparser
 from lazy_client_core.exceptions import RenameException, ManuallyFixException
 
 
@@ -43,7 +43,7 @@ class MovieRenamer:
                 continue
 
             file_name = os.path.basename(f)
-            file_parser = MetaParser(file_name, type=MetaParser.TYPE_MOVIE)
+            file_parser = metaparser.get_parser_cache(file_name, type=metaparser.TYPE_MOVIE)
 
             if 'cdNumber' in file_parser.details:
 
@@ -55,7 +55,7 @@ class MovieRenamer:
                 multi_cd_files = []
 
                 for f in files:
-                    other_file_parser = MetaParser(os.path.basename(f), type=MetaParser.TYPE_MOVIE)
+                    other_file_parser = metaparser.get_parser_cache(os.path.basename(f), type=metaparser.TYPE_MOVIE)
 
                     try:
 
@@ -239,7 +239,7 @@ class MovieRenamer:
                 vid_files = common.get_video_files(folder)
 
                 for f in vid_files:
-                    parser = MetaParser(os.path.basename(f), type=MetaParser.TYPE_MOVIE)
+                    parser = metaparser.get_parser_cache(os.path.basename(f), type=metaparser.TYPE_MOVIE)
 
                     if 'cdNumber' in parser.details and parser.details['cdNumber'] != 1:
                         continue
@@ -274,7 +274,7 @@ class MovieRenamer:
 
             else:
                 self.log("Better quality already exists.. wont extract this")
-                self.error("Better quality already exists.. wont extract this")
+                logger.error("Better quality already exists.. wont extract this")
                 return
 
         if len(src_media_files) > 1:
@@ -287,7 +287,7 @@ class MovieRenamer:
             print src_media_files
 
             for f in src_media_files:
-                file_parser = MetaParser(os.path.basename(f), type=MetaParser.TYPE_MOVIE)
+                file_parser = metaparser.get_parser_cache(os.path.basename(f), type=metaparser.TYPE_MOVIE)
 
                 if 'cdNumber' in file_parser.details:
                     ext = os.path.splitext(f)[1][1:].strip()

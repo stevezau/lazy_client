@@ -9,7 +9,7 @@ from lazy_client_core.utils.renamer.movie import MovieRenamer
 from lazy_client_core.utils import common
 from lazy_common.utils import is_video_file
 from lazy_client_core.exceptions import *
-from lazy_common.metaparser import MetaParser
+from lazy_common import metaparser
 
 
 logger = logging.getLogger(__name__)
@@ -20,31 +20,31 @@ def get_renamer_dlitem(download_item):
     #Check what type of download item we are dealing with
     parser = download_item.metaparser()
 
-    if download_item.parser.type == MetaParser.TYPE_UNKNOWN:
+    if download_item.parser.type == metaparser.TYPE_UNKNOWN:
         raise RenameUnknownException("Unable to figure out if this is a movie or tvshow")
 
-    if parser.type == MetaParser.TYPE_MOVIE:
+    if parser.type == metaparser.TYPE_MOVIE:
         return MovieRenamer(dlitem=download_item)
 
-    if parser.type == MetaParser.TYPE_TVSHOW:
+    if parser.type == metaparser.TYPE_TVSHOW:
         return TVRenamer(dlitem=download_item)
 
-def get_renamer(path, type=MetaParser.TYPE_UNKNOWN):
+def get_renamer(path, type=metaparser.TYPE_UNKNOWN):
 
     #Check what type of download item we are dealing with
-    parser = MetaParser(os.path.basename(path), type)
+    parser = metaparser.get_parser_cache(os.path.basename(path), type)
 
-    if parser.type == MetaParser.TYPE_UNKNOWN:
+    if parser.type == metaparser.TYPE_UNKNOWN:
         raise ObjectDoesNotExist("Unable to figure out if this is a movie or tvshow")
 
-    if parser.type == MetaParser.TYPE_MOVIE:
+    if parser.type == metaparser.TYPE_MOVIE:
         return MovieRenamer()
 
-    if parser.type == MetaParser.TYPE_TVSHOW:
+    if parser.type == metaparser.TYPE_TVSHOW:
         return TVRenamer()
 
 
-def rename(path, type=MetaParser.TYPE_UNKNOWN, dlitem=None):
+def rename(path, type=metaparser.TYPE_UNKNOWN, dlitem=None):
 
     if None is dlitem:
         renamer = get_renamer(path)

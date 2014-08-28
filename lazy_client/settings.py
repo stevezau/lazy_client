@@ -148,8 +148,6 @@ ADMINS = (
     ('Steve Adams', 'support@drifthost.com'),
 )
 
-
-
 INSTALLED_APPS = (
     'django.contrib.admin',
     'django.contrib.auth',
@@ -168,6 +166,7 @@ INSTALLED_APPS = (
     'lazy_client_core',
     'lazy_client_api',
     'lazy_client_ui',
+    'lazy_common',
 )
 
 LOGGING = {
@@ -344,15 +343,6 @@ ALLOWED_HOSTS = ['*']
 
 import lazysettings
 from lazysettings import *
-from lazy_common import utils
-
-# FTP Details
-from lazy_common import ftpmanager
-
-ftpmanager.FTP_IP = lazysettings.FTP_IP
-ftpmanager.FTP_PORT = lazysettings.FTP_PORT
-ftpmanager.FTP_USER = lazysettings.FTP_USER
-ftpmanager.FTP_PASS = lazysettings.FTP_PASS
 
 if DB_TYPE == "mysql":
     DATABASES = {
@@ -372,6 +362,15 @@ else:
             'NAME': 'lazy.db',
         }
     }
+
+from lazy_common import utils
+
+# FTP Details
+from lazy_common import ftpmanager
+ftpmanager.FTP_IP = lazysettings.FTP_IP
+ftpmanager.FTP_PORT = lazysettings.FTP_PORT
+ftpmanager.FTP_USER = lazysettings.FTP_USER
+ftpmanager.FTP_PASS = lazysettings.FTP_PASS
 
 #########################
 ### CHECK LAZY PATHTS ###

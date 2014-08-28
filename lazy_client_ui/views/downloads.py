@@ -111,7 +111,7 @@ class DownloadsManuallyFixItem(UpdateView):
         return obj
 
     def form_valid(self, form):
-        from lazy_common.metaparser import MetaParser
+        from lazy_common import metaparser
 
         self.object = self.get_object()
 
@@ -124,7 +124,7 @@ class DownloadsManuallyFixItem(UpdateView):
             type_dict_name = "%i_type" % i
             video_file_type = int(form.cleaned_data[type_dict_name])
 
-            if video_file_type == MetaParser.TYPE_TVSHOW:
+            if video_file_type == metaparser.TYPE_TVSHOW:
                 tvdbobj = None
                 tvdbid_dict_name = '%s_tvdbid_id' % i
                 tvdb_id = int(form.cleaned_data[tvdbid_dict_name])
@@ -152,7 +152,7 @@ class DownloadsManuallyFixItem(UpdateView):
                 if parser.details['type'] == "episode":
                     self.object.tvdbid = tvdbobj
 
-            if video_file_type == MetaParser.TYPE_MOVIE:
+            if video_file_type == metaparser.TYPE_MOVIE:
                 imdbobj = None
                 imdbid_dict_name = '%s_imdbid_id' % i
                 imdbid_id = int(form.cleaned_data[imdbid_dict_name])
@@ -287,13 +287,13 @@ def ignore(items):
     status = 200
     response = HttpResponse(content_type="text/plain")
 
-    from lazy_common.metaparser import MetaParser
+    from lazy_common import metaparser
 
     for item in items:
         try:
             dlitem = DownloadItem.objects.get(pk=item)
 
-            if dlitem.get_type() == MetaParser.TYPE_TVSHOW:
+            if dlitem.get_type() == metaparser.TYPE_TVSHOW:
 
                 series_data = dlitem.metaparser()
 

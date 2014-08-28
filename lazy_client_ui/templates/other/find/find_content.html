@@ -11,7 +11,7 @@
 
 <form id="formID">
 {% csrf_token %}
-    {% for site_name,site in search_results.items %}
+    {% for site_dict in search_results %}
         {% if site_name == "global" %}
             {% for error in site.errors %}
                 <div class="error">{{ error }}</div>

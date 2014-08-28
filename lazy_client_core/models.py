@@ -158,41 +158,41 @@ class DownloadItem(models.Model):
         self.save()
 
     def get_type(self):
-        from lazy_common.metaparser import MetaParser
+        from lazy_common import metaparser
 
         if self.tvdbid_id:
-            return MetaParser.TYPE_TVSHOW
+            return metaparser.TYPE_TVSHOW
 
         if self.section == "TVHD":
-            return MetaParser.TYPE_TVSHOW
+            return metaparser.TYPE_TVSHOW
 
         if self.section == "HD" or self.section == "XVID":
-            return MetaParser.TYPE_MOVIE
+            return metaparser.TYPE_MOVIE
 
         if self.video_files:
             first_file = self.video_files[0]
 
             if 'tvdbid_id' in first_file:
-                return MetaParser.TYPE_TVSHOW
+                return metaparser.TYPE_TVSHOW
             if 'imdbid_id' in first_file:
-                return MetaParser.TYPE_MOVIE
+                return metaparser.TYPE_MOVIE
 
-        return MetaParser.TYPE_UNKNOWN
+        return metaparser.TYPE_UNKNOWN
 
 
     def metaparser(self):
-        from lazy_common.metaparser import MetaParser
+        from lazy_common import metaparser
 
         if None is self.parser:
             type = self.get_type()
 
-            if type == MetaParser.TYPE_TVSHOW:
-                self.parser = MetaParser(self.title, type=MetaParser.TYPE_TVSHOW)
-            elif type == MetaParser.TYPE_MOVIE:
-                self.parser = MetaParser(self.title, type=MetaParser.TYPE_MOVIE)
+            if type == metaparser.TYPE_TVSHOW:
+                self.parser = metaparser.get_parser_cache(self.title, type=metaparser.TYPE_TVSHOW)
+            elif type == metaparser.TYPE_MOVIE:
+                self.parser = metaparser.get_parser_cache(self.title, type=metaparser.TYPE_MOVIE)
             else:
 
-                title_parser = MetaParser(self.title)
+                title_parser = metaparser.get_parser_cache(self.title)
 
                 is_tv_show = False
 
@@ -200,9 +200,9 @@ class DownloadItem(models.Model):
                     is_tv_show = True
 
                 if is_tv_show:
-                    self.parser = MetaParser(self.title, type=MetaParser.TYPE_TVSHOW)
+                    self.parser = metaparser.get_parser_cache(self.title, type=metaparser.TYPE_TVSHOW)
                 else:
-                    self.parser = MetaParser(self.title, type=MetaParser.TYPE_MOVIE)
+                    self.parser = metaparser.get_parser_cache(self.title, type=metaparser.TYPE_MOVIE)
 
                 if None is self.parser:
                     self.parser = title_parser
@@ -777,7 +777,7 @@ def add_new_imdbitem(sender, created, instance, **kwargs):
 @receiver(pre_save, sender=DownloadItem)
 def add_new_downloaditem_pre(sender, instance, **kwargs):
 
-    from lazy_common.metaparser import MetaParser
+    from lazy_common import metaparser
 
     if instance.id is None:
         logger.debug("Adding a new download %s" % instance.ftppath)
@@ -871,12 +871,12 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
             for dlitem in DownloadItem.objects.all().filter(Q(status=DownloadItem.QUEUE) | Q(status=DownloadItem.DOWNLOADING) | Q(status=DownloadItem.PENDING)):
 
                 #If its a tvshow and the tvdbid does not match then skip
-                if type == MetaParser.TYPE_TVSHOW and dlitem.tvdbid_id and instance.tvdbid_id:
+                if type == metaparser.TYPE_TVSHOW and dlitem.tvdbid_id and instance.tvdbid_id:
                     #now compare them
                     if instance.tvdbid_id != dlitem.tvdbid_id:
                         continue
 
-                if type == MetaParser.TYPE_MOVIE and dlitem.imdbid_id and instance.imdbid_id:
+                if type == metaparser.TYPE_MOVIE and dlitem.imdbid_id and instance.imdbid_id:
                     if instance.imdbid_id != dlitem.imdbid_id:
                         continue
 
@@ -893,7 +893,7 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
 
                     check = False
 
-                    if parser.type == MetaParser.TYPE_TVSHOW:
+                    if parser.type == metaparser.TYPE_TVSHOW:
                         if 'season' in parser.details and 'episodeNumber' in parser.details and 'season' in dlitem_parser.details and 'episodeNumber' in dlitem_parser.details:
                             if parser.details['season'] == dlitem_parser.details['season'] and parser.details['season'] == dlitem_parser.details['episodeNumber']:
                                 check = True
@@ -917,10 +917,10 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
         tvdbapi = Tvdb()
         type = instance.metaparser().type
 
-        from lazy_common.metaparser import MetaParser
+        from lazy_common import metaparser
 
         #must be a tvshow
-        if type == MetaParser.TYPE_TVSHOW:
+        if type == metaparser.TYPE_TVSHOW:
             if instance.tvdbid_id is None:
                 logger.debug("Looks like we are working with a TVShow")
 

@@ -10,7 +10,7 @@ from lazy_client_core.utils import common
 from lazy_common.utils import create_path, delete
 from lazy_common.tvdb_api import Tvdb
 from lazy_client_core.models import TVShowMappings, Tvdbcache
-from lazy_common.metaparser import MetaParser
+from lazy_common import metaparser
 from lazy_client_core.exceptions import ManuallyFixException, RenameException
 from lazy_common.tvdb_api.tvdb_exceptions import tvdb_seasonnotfound, tvdb_episodenotfound, tvdb_error
 
@@ -87,7 +87,7 @@ class TVRenamer:
                 tvshow_file_metaparser = self.download_item.metaparser()
 
                 if tvshow_file_metaparser.details['type'] == 'season_pack' or tvshow_file_metaparser.details['type'] == 'season_pack_multi':
-                    tvshow_file_metaparser = MetaParser(os.path.basename(tvshow_file), type=MetaParser.TYPE_TVSHOW)
+                    tvshow_file_metaparser = metaparser.get_parser_cache(os.path.basename(tvshow_file), type=metaparser.TYPE_TVSHOW)
 
                 #Check if we have an override for this video_file
                 if self.download_item.video_files:
@@ -111,7 +111,7 @@ class TVRenamer:
                                 season_override = video_file['season_override']
 
             else:
-                tvshow_file_metaparser = MetaParser(os.path.basename(tvshow_file), type=MetaParser.TYPE_TVSHOW)
+                tvshow_file_metaparser = metaparser.get_parser_cache(os.path.basename(tvshow_file), type=metaparser.TYPE_TVSHOW)
 
             #if this is a special then it needs to be manually processed if there is no override
             if 'special' in tvshow_file_metaparser.details:

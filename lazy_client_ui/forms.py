@@ -6,15 +6,15 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 
 from lazy_client_core.models import TVShowMappings
-from lazy_common.metaparser import MetaParser
+from lazy_common import metaparser
 from lazy_client_core.models import Tvdbcache
 
 
 logger = logging.getLogger(__name__)
 
 TYPE_CHOICES = (
-    (MetaParser.TYPE_TVSHOW, 'TVShow'),
-    (MetaParser.TYPE_MOVIE, 'Movie'),
+    (metaparser.TYPE_TVSHOW, 'TVShow'),
+    (metaparser.TYPE_MOVIE, 'Movie'),
 )
 
 class DynamicChoiceField(forms.ChoiceField):
@@ -56,7 +56,7 @@ class DownloadItemManualFixForm(forms.Form):
 
                 int_type = int(type)
 
-                if int_type == MetaParser.TYPE_TVSHOW:
+                if int_type == metaparser.TYPE_TVSHOW:
                     #lets remove all imdb fields..
                     for name in vid_fields:
                         if 'imdbid' in name:
@@ -64,7 +64,7 @@ class DownloadItemManualFixForm(forms.Form):
                             del_name = "%s_%s" % (i, name)
                             del self.fields[del_name]
 
-                elif int_type == MetaParser.TYPE_MOVIE:
+                elif int_type == metaparser.TYPE_MOVIE:
                     for name in vid_fields:
                         if 'tvdbid' in name:
                             #lets remove it

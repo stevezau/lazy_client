@@ -182,6 +182,17 @@ def compare_best_vid_file(f1, f2):
     #if the same format
     if f1_quality == f2_quality:
 
+        #massive different in size
+        if difference > 50:
+            #whats bigger?
+            if f1_size > f2_size:
+                logger.info("%s is same quality MUCH bigger then  %s" % (f1, f2))
+                return f1
+
+            if f2_size > f1_size:
+                logger.info("%s is same quality but MUCH bigger then  %s" % (f2, f1))
+                return f2
+
         #less then 10 days.. lets take the newer one
         if delta.days < 10:
             #Look for proper
@@ -232,7 +243,7 @@ def find_season_folder(path, season):
     if not os.path.exists(path):
         return
 
-    from lazy_common.metaparser import MetaParser
+    from lazy_common import metaparser
 
     folders = [f for f in os.listdir(path) if os.path.isdir(join(path, f))]
 
@@ -241,7 +252,7 @@ def find_season_folder(path, season):
         if season == 0 and folder_name.lower() == "specials":
             return join(path, folder_name)
 
-        parser = MetaParser(folder_name, MetaParser.TYPE_TVSHOW)
+        parser = metaparser.get_parser_cache(folder_name, metaparser.TYPE_TVSHOW)
 
         if 'season' in parser.details:
             if parser.details['season'] == season:
@@ -249,7 +260,7 @@ def find_season_folder(path, season):
 
 def find_ep_season(folder, season, ep):
 
-    from lazy_common.metaparser import MetaParser
+    from lazy_common import metaparser
 
     files = []
 
@@ -267,7 +278,7 @@ def find_ep_season(folder, season, ep):
         name = os.path.basename(f)
 
 
-        parser = MetaParser(name, type=MetaParser.TYPE_TVSHOW)
+        parser = metaparser.get_parser_cache(name, type=metaparser.TYPE_TVSHOW)
 
         f_season = parser.get_season()
         f_eps = parser.get_eps()
