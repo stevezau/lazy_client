@@ -11,24 +11,36 @@
 
 <form id="formID">
 {% csrf_token %}
-    {% for site_dict in search_results %}
-        {% if site_name == "global" %}
-            {% for error in site.errors %}
-                <div class="error">{{ error }}</div>
+    {% if ftp_results.message %}
+        <div class="error">{{ ftp_results.message }}</div>
+    {% endif %}
+
+    <div class="show">
+        <div class="title">{{ ftp_results|length }} existing matches found on FTP</div>
+            {% for ftp_result in ftp_results %}
+                <div class="ep selectable">
+                    <input role="checkbox" type="checkbox" name="item" value="FTP~{{ ftp_result.path }}">
+                         <b>{{ ftp_result.name }}</b>
+                </div>
             {% endfor %}
-        {% else %}
-            <div class="show">
-                <div class="title">{{ site.torrents.items|length }} matches found on site {{ site_name }}</div>
-                    {% for error in site.errors %}
-                        <div class="error">{{ error }}</div>
-                    {% endfor %}
-                    {% for torrent_name,torrent in site.torrents.items %}
-                        <div class="ep selectable">
-                            <input role="checkbox" type="checkbox" name="item" value="{{ site_name }}~{{ torrent_name }}">
-                             <b>{{ torrent_name }}</b> ({{ torrent.size }})
-                        </div>
-                    {% endfor %}
-        {% endif %}
+    </div>
+
+
+    {% if torrent_results.message %}
+        <div class="error">{{ torrent_results.message }}</div>
+    {% endif %}
+    {% for site_dict in torrent_results %}
+        <div class="show">
+            <div class="title">{{ site_dict.results|length }} matches found on site {{ site_dict.site }}</div>
+                {% if site_dict.message %}
+                    <div class="error">{{ site_dict.message }}</div>
+                {% endif %}
+                {% for torrent in site_dict.results %}
+                    <div class="ep selectable">
+                        <input role="checkbox" type="checkbox" name="item" value="{{ site_dict.site }}~{{ torrent.title }}">
+                         <b>{{ torrent.title }}</b> ({{ torrent.size }})
+                    </div>
+                {% endfor %}
 
         </div>
     {% endfor %}

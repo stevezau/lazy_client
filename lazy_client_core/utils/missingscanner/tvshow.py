@@ -1,4 +1,3 @@
-from lazy_common import ftpmanager
 from lazy_common import utils
 
 __author__ = 'Steve'
@@ -8,7 +7,6 @@ from lazy_client_core.models import Tvdbcache
 from lazy_common.tvdb_api import Tvdb
 from datetime import datetime, timedelta
 from lazy_client_core.exceptions import *
-from lazy_common.exceptions import FTPException
 from lazy_client_core.models import DownloadItem
 from django.core.exceptions import ObjectDoesNotExist
 from lazy_common import metaparser
@@ -40,7 +38,9 @@ class TVShowScanner:
     tvshow_name = None
     search_names = None
 
-    def __init__(self, tvshow_path):
+    def __init__(self, tvshow_path, job=None):
+
+        self.job = None
 
         #first lets check the tvshow exist
         if not os.path.exists(tvshow_path):
@@ -78,6 +78,12 @@ class TVShowScanner:
 
 
         self.search_names = self.tvdbcache_obj.names()
+
+    def log(self, msg):
+        if self.job:
+            self.job.log(msg)
+        else:
+            logger.info(msg)
 
     def get_latest_ep(self, season):
         now = datetime.now() - timedelta(days=2)
@@ -197,7 +203,7 @@ class TVShowScanner:
 
         self.missing_eps['errors'].append(err_msg)
 
-    def attempt_fix_report(self, ftp_dir=None, check_seasons=[], fix_missing_seasons=False):
+    def attempt_fix_report(self, check_seasons=[], fix_missing_seasons=False):
 
         force_seasons = check_seasons
 
@@ -207,36 +213,36 @@ class TVShowScanner:
 
         logger.debug("Attempting to fix %s" % self.search_names[0])
 
-        #first we need to get a listing from the FTP so we know whats on there..
-        if ftp_dir is None:
+        #First lets get a listing from the ftp to see whats on there
+        if self.ftp_entries is None:
             try:
-                self.ftp_dir = []
+                self.ftp_entries = []
 
                 for curfolder, dirs, files in ftpmanager.ftpwalk("/TVHD", max_depth=0):
                     for file in files:
                         file_found = str(os.path.join(curfolder, file[0]))
-                        self.ftp_dir.append(file_found)
+                        self.ftp_entries.append(file_found)
 
                     for dir in dirs:
                         dir_found = str(os.path.join(curfolder, dir[0]))
-                        self.ftp_dir.append(dir_found)
+                        self.ftp_entries.append(dir_found)
 
                 for curfolder, dirs, files in ftpmanager.ftpwalk("/REQUESTS", max_depth=0):
                     for file in files:
                         file_found = str(os.path.join(curfolder, file[0]))
-                        self.ftp_dir.append(file_found)
+                        self.ftp_entries.append(file_found)
 
                     for dir in dirs:
                         dir_found = str(os.path.join(curfolder, dir[0]))
-                        self.ftp_dir.append(dir_found)
+                        self.ftp_entries.append(dir_found)
 
-                if len(self.ftp_dir) == 0:
+                if len(self.ftp_entries) == 0:
                     raise FTPException("Unable to get directory listing from FTP")
             except Exception as e:
                 logger.exception(e)
                 raise FTPException("Unable to get directory listing from FTP: %s" % e.message)
         else:
-            self.ftp_dir = ftp_dir
+            self.ftp_entries = ftp_dir
 
         self.missing_eps = self.get_tvshow_missing_report(check_seasons=check_seasons)
 
@@ -515,7 +521,7 @@ class TVShowScanner:
 
         logger.debug("Checking if ep is on the ftp: %s   %s x %s" % (self.search_names[0], season, ep))
 
-        for ftp_rls in self.ftp_dir:
+        for ftp_rls in self.ftp_entries:
 
             ftp_rls_name = os.path.basename(ftp_rls)
 
@@ -549,7 +555,7 @@ class TVShowScanner:
 
         logger.debug("Checking if season is on the ftp: %s   %s" % (self.tvshow_name, season))
 
-        for ftp_rls in self.ftp_dir:
+        for ftp_rls in self.ftp_entries:
 
             ftp_rls_name = os.path.basename(ftp_rls)
 
@@ -623,7 +629,7 @@ class TVShowScanner:
                 else:
                     self._add_new_download(ftp_path, onlyget, requested=True)
 
-            self.ftp_dir.append(ftp_path.strip())
+            self.ftp_entries.append(ftp_path.strip())
             return True
 
         #lets check on on the prescan
@@ -667,7 +673,7 @@ class TVShowScanner:
                                 else:
                                     self._add_new_download(seasonPath, onlyget, requested=True)
 
-                            self.ftp_dir.append(seasonPath.strip())
+                            self.ftp_entries.append(seasonPath.strip())
                             return True
 
         logger.debug("Didnt find it via the prescan, Lets try find it via each torrent site")
@@ -728,7 +734,7 @@ class TVShowScanner:
                             else:
                                 self._add_new_download(seasonPath, onlyget, requested=True)
 
-                        self.ftp_dir.append(seasonPath.strip())
+                        self.ftp_entries.append(seasonPath.strip())
                         return True
                     else:
                         return False

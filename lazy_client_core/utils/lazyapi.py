@@ -5,28 +5,76 @@ import os
 import json
 import logging
 from requests.exceptions import ConnectionError
+from requests.exceptions import HTTPError
 
-class SearchException(Exception):
+class LazyServerExcpetion(Exception):
     """ Error in search """
 
 logger = logging.getLogger(__name__)
 
-lazy_server_api = "http://drifthost.com:8000/api/find_torrents/"
+lazy_server_api = "http://drifthost.com:8000/api/"
 
-def search_torrents(search, sites=["REVTT", "SCC", "TL", "HD"]):
+default_sites = [
+    'SCC',
+    'SCC_0DAY',
+    'SCC_ARCHIVE',
+    'REVTT',
+    'HD',
+    'TL',
+    'TL_PACKS',
+    ]
+
+def download_torrents(torrents):
+    try:
+        headers = {'Content-type': 'application/json', "Accept": "application/json"}
+        r = requests.post(urlparse.urljoin(lazy_server_api, "download_torrents/"), data=json.dumps(torrents), headers=headers)
+        json_response = r.json()
+
+        if 'status' in json_response and json_response['status'] == "success":
+            return json_response['data']
+        else:
+            raise LazyServerExcpetion("Invalid response from server")
+    except ConnectionError as e:
+        raise LazyServerExcpetion(str(e))
+    except HTTPError as e:
+        raise LazyServerExcpetion(str(e))
+
+def search_ftp(search):
+    payload = {
+        'search': search,
+    }
+
+    try:
+        headers = {'Content-type': 'application/json', "Accept": "application/json"}
+        r = requests.post(urlparse.urljoin(lazy_server_api, "search_ftp/"), data=json.dumps(payload), headers=headers)
+        json_response = r.json()
+
+        if 'status' in json_response and json_response['status'] == "success":
+            return json_response['data']
+        else:
+            raise LazyServerExcpetion("Invalid status from server")
+    except ConnectionError as e:
+        raise LazyServerExcpetion(str(e))
+    except HTTPError as e:
+        raise LazyServerExcpetion(str(e))
+
+
+def search_torrents(search, sites=default_sites):
     payload = {
         'sites': sites,
         'search': search,
     }
 
     try:
-        r = requests.post(lazy_server_api, data=payload)
+        headers = {'Content-type': 'application/json', "Accept": "application/json"}
+        r = requests.post(urlparse.urljoin(lazy_server_api, "find_torrents/"), data=json.dumps(payload), headers=headers)
         json_response = r.json()
 
         if 'status' in json_response and json_response['status'] == "success":
-            results = json.loads(json_response)
-            return results['data']
+            return json_response['data']
         else:
-            raise SearchException("Invalid status from server")
+            raise LazyServerExcpetion("Invalid status from server")
     except ConnectionError as e:
-        raise SearchException(str(e))
+        raise LazyServerExcpetion(str(e))
+    except HTTPError as e:
+        raise LazyServerExcpetion(str(e))

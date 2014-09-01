@@ -81,7 +81,8 @@ class DownloadLog(models.Model):
         except:
             return "TITLE NOT FOUND"
 
-    download_id = models.ForeignKey('DownloadItem')
+    download_id = models.ForeignKey('DownloadItem', null=True, blank=True)
+    job_id = models.ForeignKey('Job', null=True, blank=True)
     date = models.DateTimeField(auto_now_add=True)
     message = models.TextField(blank=True, null=True)
 
@@ -327,8 +328,6 @@ class DownloadItem(models.Model):
         try:
             if task:
                 result = task.result
-
-                logger.debug("Task result :%s" % result)
 
                 seconds_now = time.mktime(datetime.now().timetuple())
 
@@ -579,6 +578,24 @@ class Job(models.Model):
 
     class Meta:
         db_table = 'jobs'
+
+    def log(self, msg):
+
+        logger.debug(msg)
+
+        try:
+            frm = inspect.stack()[1]
+            mod = inspect.getmodule(frm[0])
+
+            caller = mod.__name__
+            line = inspect.currentframe().f_back.f_lineno
+
+            logmsg = "%s(%s): %s" % (caller, line, msg)
+
+        except:
+            logmsg = msg
+
+        self.downloadlog_set.create(job_id=self.id, message=logmsg)
 
 class Tvdbcache(models.Model):
 

@@ -95,7 +95,7 @@ class MissingScanner:
         report = {}
 
         try:
-            scanner = TVShowScanner(tvshow_path)
+            scanner = TVShowScanner(tvshow_path, job=job)
             report[os.path.basename(tvshow_path)] = scanner.attempt_fix_report(check_seasons=seasons)
         except Exception as e:
             logger.exception(e)
