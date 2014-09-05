@@ -6,7 +6,7 @@ from django.http import HttpResponse
 from rest_framework.response import Response
 from rest_framework import status
 from flexget.utils.imdb import ImdbSearch
-from lazy_client_core.models import DownloadItem, Imdbcache, Tvdbcache
+from lazy_client_core.models import DownloadItem, TVShow, Movie
 from lazy_client_api.serializers import DownloadItemSerializer, ImdbItemSerializer, TvdbItemSerializer
 from lazy_common.tvdb_api import Tvdb
 from lazy_client_core.exceptions import AlradyExists_Updated
@@ -50,20 +50,19 @@ class DownloadItemDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = DownloadItemSerializer
 
 class ImdbItemList(generics.ListCreateAPIView):
-    queryset = Imdbcache.objects.all()[1:10]
+    queryset = Movie.objects.all()[1:10]
     serializer_class = ImdbItemSerializer
 
 class ImdbDetail(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Tvdbcache.objects.all()
+    queryset = Movie.objects.all()
     serializer_class = TvdbItemSerializer
 
 class TvdbItemList(generics.ListCreateAPIView):
-    queryset = Tvdbcache.objects.all()[1:10]
+    queryset = TVShow.objects.all()[1:10]
     serializer_class = TvdbItemSerializer
 
-
 class TvdbDetail(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Tvdbcache.objects.all()
+    queryset = TVShow.objects.all()
     serializer_class = TvdbItemSerializer
 
 @api_view(['POST'])
@@ -72,7 +71,7 @@ def download_action(request, pk):
 
     if request.method == "POST":
         if 'action' not in request.DATA:
-            error = {'detail': "invalid action"}
+            error = {'status': 'failed', 'detail': "invalid action"}
             return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
         action = request.DATA['action']
@@ -85,8 +84,6 @@ def download_action(request, pk):
                 dlitem = DownloadItem.objects.get(id=pk)
 
                 if dlitem.get_type() == metaparser.TYPE_TVSHOW:
-                    return Response({'detail': "ignored show"})
-
                     series_data = dlitem.metaparser()
 
                     if series_data:
@@ -96,10 +93,12 @@ def download_action(request, pk):
                     else:
                         dlitem.delete()
 
-                    return Response({'detail': "ignored show %s" % ignoretitle})
+                    return Response({'status': 'success', 'detail': "ignored show %s" % ignoretitle})
+                else:
+                    return Response({'status': 'failed', 'detail': "cannot ignore as not a TVShow"})
 
             except ObjectDoesNotExist:
-                error = {'detail': "unable to find download item"}
+                error = {'status': 'failed', 'detail': "unable to find download item"}
                 return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
         if action == "approve":
@@ -107,32 +106,33 @@ def download_action(request, pk):
                 dlitem = DownloadItem.objects.get(pk=pk)
                 dlitem.status = DownloadItem.QUEUE
                 dlitem.save()
-                return Response({'detail': "approved pk: %s" % pk})
+                return Response({'status': 'success', 'detail': "approved pk: %s" % pk})
             except ObjectDoesNotExist as e:
-                error = {'detail': "unable to find download item"}
+                error = {'status': 'failed', 'detail': "unable to find download item"}
                 return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
         if action == "reset":
             try:
                 dlitem = DownloadItem.objects.get(pk=pk)
-                dlitem.reset()
-                return Response({'detail': "reset pk: %s" % pk})
+                dlitem.retries = 0
+                dlitem.save()
+                return Response({'status': 'success', 'detail': "reset pk: %s" % pk})
             except ObjectDoesNotExist as e:
-                error = {'detail': "unable to find download item"}
+                error = {'status': 'failed', 'detail': "unable to find download item"}
                 return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
         if action == "delete":
             try:
                 dlitem = DownloadItem.objects.get(pk=pk)
                 dlitem.delete()
-                return Response({'detail': "delete pk: %s" % pk})
+                return Response({'status': 'success', 'detail': "deleted pk: %s" % pk})
             except ObjectDoesNotExist as e:
-                error = {'detail': "unable to find download item"}
+                error = {'status': 'failed', 'detail': "unable to find download item"}
                 return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
 
         #Action not found
-        error = {'detail': "invalid action"}
+        error = {'status': 'failed', 'detail': "invalid action"}
         return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
 def get_tvdb_eps(request, showid, season):

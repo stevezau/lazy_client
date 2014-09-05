@@ -25,14 +25,14 @@ class APITestsDownloadItemTestCase(TestCase):
         self.assertTrue(created_obj.is_valid())
 
         imdbid = created_obj.data.get("imdbid_id")
-        imdbobj = Imdbcache.objects.get(id=int(imdbid))
+        imdbobj = Movie.objects.get(id=int(imdbid))
         self.assertTrue(imdbobj)
         imdb_img = imdbobj.posterimg
         self.assertTrue(os.path.isfile(imdb_img.name))
 
         if type == "tvhd":
             tvdbid = created_obj.data.get("tvdbid_id")
-            tvdbobj = Tvdbcache.objects.get(id=int(tvdbid))
+            tvdbobj = TVShow.objects.get(id=int(tvdbid))
             self.assertTrue(tvdbobj)
             tvdb_img = tvdbobj.posterimg
             self.assertTrue(os.path.isfile(tvdb_img.name))

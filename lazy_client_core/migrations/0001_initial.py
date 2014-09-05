@@ -12,7 +12,7 @@ class Migration(SchemaMigration):
         db.create_table('tvshowmappings', (
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('title', self.gf('django.db.models.fields.CharField')(unique=True, max_length=150, db_index=True)),
-            ('tvdbid', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['lazy_client_core.Tvdbcache'], on_delete=models.DO_NOTHING)),
+            ('tvdbid', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['lazy_client_core.TVShow'], on_delete=models.DO_NOTHING)),
         ))
         db.send_create_signal(u'lazy_client_core', ['TVShowMappings'])
 
@@ -34,14 +34,14 @@ class Migration(SchemaMigration):
             ('localsize', self.gf('django.db.models.fields.IntegerField')(default=0, null=True)),
             ('message', self.gf('django.db.models.fields.CharField')(max_length=255, null=True, blank=True)),
             ('imdbid', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['lazy_client_core.Imdbcache'], null=True, on_delete=models.DO_NOTHING, blank=True)),
-            ('tvdbid', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['lazy_client_core.Tvdbcache'], null=True, on_delete=models.DO_NOTHING, blank=True)),
+            ('tvdbid', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['lazy_client_core.TVShow'], null=True, on_delete=models.DO_NOTHING, blank=True)),
             ('epoverride', self.gf('django.db.models.fields.IntegerField')(default=0, null=True, blank=True)),
             ('seasonoverride', self.gf('django.db.models.fields.IntegerField')(default=0, null=True, blank=True)),
             ('onlyget', self.gf('lazy_client_core.utils.jsonfield.fields.JSONField')(null=True, blank=True)),
         ))
         db.send_create_signal(u'lazy_client_core', ['DownloadItem'])
 
-        # Adding model 'Imdbcache'
+        # Adding model 'Movie'
         db.create_table('imdbcache', (
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('title', self.gf('django.db.models.fields.CharField')(max_length=200, db_index=True)),
@@ -89,7 +89,7 @@ class Migration(SchemaMigration):
         # Deleting model 'DownloadItem'
         db.delete_table('download')
 
-        # Deleting model 'Imdbcache'
+        # Deleting model 'Movie'
         db.delete_table('imdbcache')
 
         # Deleting model 'Job'

@@ -1,1 +1,71 @@
-.row { padding-bottom: 30px;}
+/* Extra small devices (phones, less than 768px) */
+/* No media query since this is the default in Bootstrap */
+
+/* ###################### */
+/* Download Items (Queue) */
+/* ###################### */
+.download-item {
+    border-top: 15px solid #eee;
+    padding: 5px;
+}
+
+.download-item .poster {
+    max-width: 70px;
+    padding-right: 10px;
+}
+
+.download-item .multi-items table tr td {
+    padding-right: 7px;
+}
+
+.download-item h4 {
+    margin-top: 0px;
+}
+
+.download-item .button_bar {
+    padding-top: 20px;
+}
+
+.download-item .label-bar {
+    display: block;
+    font-size: 65%;
+}
+
+.download-item .rating {
+    background-image: url(/static/images/icons/star.png);
+    background-size: 30px 30px;
+    height: 30px;
+    width: 29px;
+    display: inline-block;
+    background-repeat: no-repeat;
+    font-size: 10px;
+    font-weight: bold;
+    text-align: center;
+    line-height: 31px;
+    zoom: 1
+}
+
+/* Small devices (tablets, 768px and up) */
+@media (min-width: 768px) {
+    .download-item .poster { max-width: 200px; }
+
+    .download-item .button_bar, .multi-items {
+       margin-left: 200px;
+    }
+
+    .download-item {
+       border-top: 25px solid #eee;
+       min-height: 281px;
+    }
+
+}
+
+/* Medium devices (desktops, 992px and up) */
+@media (min-width: 992px) {
+    .download-item .poster { max-width: 200px; }
+}
+
+/* Large devices (large desktops, 1200px and up) */
+@media (min-width: 1200px) {
+    .download-item.poster { max-width: 200px; }
+}

@@ -9,7 +9,7 @@ from django.core.urlresolvers import reverse
 from django.core.urlresolvers import reverse_lazy
 from django.conf import settings
 from django.db.models import Q
-from lazy_client_core.models import DownloadItem, Tvdbcache, Imdbcache
+from lazy_client_core.models import DownloadItem, TVShow, Movie
 from lazy_client_ui import common
 from lazy_client_core.utils import common as commoncore
 from lazy_common.tvdb_api import Tvdb
@@ -130,9 +130,9 @@ class DownloadsManuallyFixItem(UpdateView):
                 tvdb_id = int(form.cleaned_data[tvdbid_dict_name])
 
                 try:
-                    tvdbobj = Tvdbcache.objects.get(id=tvdb_id)
+                    tvdbobj = TVShow.objects.get(id=tvdb_id)
                 except ObjectDoesNotExist:
-                    tvdbobj = Tvdbcache()
+                    tvdbobj = TVShow()
                     tvdbobj.id = tvdb_id
                     tvdbobj.update_from_tvdb()
 
@@ -158,9 +158,9 @@ class DownloadsManuallyFixItem(UpdateView):
                 imdbid_id = int(form.cleaned_data[imdbid_dict_name])
 
                 try:
-                    imdbobj = Imdbcache.objects.get(id=imdbid_id)
+                    imdbobj = Movie.objects.get(id=imdbid_id)
                 except ObjectDoesNotExist:
-                    imdbobj = Imdbcache()
+                    imdbobj = Movie()
                     imdbobj.id = imdbid_id
                     imdbobj.update_from_imdb()
 

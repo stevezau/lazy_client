@@ -7,7 +7,7 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from lazy_client_core.models import TVShowMappings
 from lazy_common import metaparser
-from lazy_client_core.models import Tvdbcache
+from lazy_client_core.models import TVShow
 
 
 logger = logging.getLogger(__name__)
@@ -139,7 +139,7 @@ class DownloadItemManualFixForm(forms.Form):
 
                     if 'tvdbid_id' in video_file:
                         try:
-                            tvdb_obj = Tvdbcache.objects.get(id=int(video_file['tvdbid_id']))
+                            tvdb_obj = TVShow.objects.get(id=int(video_file['tvdbid_id']))
 
                             self.fields['%s_tvdbid_id' % i].initial = tvdb_obj.id
                             self.fields['%s_tvdbid_display' % i].initial = tvdb_obj.title

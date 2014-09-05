@@ -13,6 +13,33 @@ from lazy_common import utils
 
 logger = logging.getLogger(__name__)
 
+from django.core.files.storage import FileSystemStorage
+class OverwriteStorage(FileSystemStorage):
+
+    def get_available_name(self, name):
+        """Returns a filename that's free on the target storage system, and
+        available for new content to be written to.
+
+        Found at http://djangosnippets.org/snippets/976/
+
+        This file storage solves overwrite on upload problem. Another
+        proposed solution was to override the save method on the model
+        like so (from https://code.djangoproject.com/ticket/11663):
+
+        def save(self, *args, **kwargs):
+            try:
+                this = MyModelName.objects.get(id=self.id)
+                if this.MyImageFieldName != self.MyImageFieldName:
+                    this.MyImageFieldName.delete()
+            except: pass
+            super(MyModelName, self).save(*args, **kwargs)
+        """
+        # If the filename already exists, remove it as if it was a true file system
+        if self.exists(name):
+            os.remove(os.path.join(settings.MEDIA_ROOT, name))
+        return name
+
+
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -258,38 +285,29 @@ def find_season_folder(path, season):
             if parser.details['season'] == season:
                 return join(path, folder_name)
 
-def find_ep_season(folder, season, ep):
+
+def find_ep_season(season_folder, season, ep):
 
     from lazy_common import metaparser
+    from lazy_common import utils
 
-    files = []
-
-    for f in os.listdir(folder):
-        try:
-            if isfile:
-                files.append(join(folder, f))
-        except:
-            pass
-
-
+    files = [f for f in os.listdir(season_folder) if os.path.isfile(join(season_folder, f))]
     found = []
 
     for f in files:
-        name = os.path.basename(f)
+        if utils.is_video_file(f):
+            name = os.path.basename(f)
+            parser = metaparser.get_parser_cache(name, type=metaparser.TYPE_TVSHOW)
 
+            f_season = parser.get_season()
+            f_eps = parser.get_eps()
 
-        parser = metaparser.get_parser_cache(name, type=metaparser.TYPE_TVSHOW)
-
-        f_season = parser.get_season()
-        f_eps = parser.get_eps()
-
-        if f_season == season:
-            if ep in f_eps:
-                #We found one
-                found.append(join(folder, f))
+            if f_season == season:
+                if ep in f_eps:
+                    #We found one
+                    found.append(join(folder, f))
 
     return found
-
 
 
 def get_video_files(path):
@@ -336,7 +354,17 @@ def ignore_show(title):
     ins = open(settings.FLEXGET_IGNORE, "r+")
 
     for line in ins:
-        if title == line:
+
+        line = line.rstrip("\n")
+
+        if line.startswith("    - ^"):
+            line_title = line.replace("    - ^", "")
+        elif line.startswith("    - "):
+            line_title = line.replace("    - ", "")
+        else:
+            continue
+
+        if line_title.lower().replace(".", " ") == title.lower().replace(".", " "):
             logger.debug("Show already ignored, not adding %s" % title)
             ins.close()
             return

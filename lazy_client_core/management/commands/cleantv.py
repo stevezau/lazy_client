@@ -9,7 +9,7 @@ from django.core.management.base import BaseCommand
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 
-from lazy_client_core.models import Tvdbcache
+from lazy_client_core.models import TVShow
 from lazy_common.tvdb_api import Tvdb
 from lazy_common import metaparser
 from lazy_client_core.utils import common
@@ -101,13 +101,13 @@ class Command(BaseCommand):
 
 
         if options['updateimgs']:
-            for tvdb_obj in Tvdbcache.objects.all():
+            for tvdb_obj in TVShow.objects.all():
                 tvdb_obj.update_from_tvdb()
 
         if options['all'] or options['updatecache']:
             logger.info('Performing tvdb update')
 
-            for tvdb_obj in Tvdbcache.objects.all():
+            for tvdb_obj in TVShow.objects.all():
 
                 #Step 1 - Lets remove all tvdbcache objects with path that does not exist
                 if tvdb_obj.localpath:
@@ -151,7 +151,7 @@ class Command(BaseCommand):
 
                 #lets see if it already belongs to a tvshow
                 try:
-                    tvobj = Tvdbcache.objects.get(localpath=path)
+                    tvobj = TVShow.objects.get(localpath=path)
                 except ObjectDoesNotExist:
                     #does not exist
                     logger.info("FOLDER: %s is not associated with any tvdb object.. lets try fix" % dir)
@@ -161,13 +161,13 @@ class Command(BaseCommand):
                         tvdbid = int(showobj['id'])
 
                         try:
-                            tvdbobj = Tvdbcache.objects.get(id=int(showobj['id']))
+                            tvdbobj = TVShow.objects.get(id=int(showobj['id']))
                             tvdbobj.localpath = path
                             tvdbobj.save()
                             logger.info("FOLDER: %s was associated with tvdb object id %s" % (dir, tvdbobj.id))
                         except:
                             #does not exist in tvdbcache, lets create it
-                            new_tvdbcache = Tvdbcache()
+                            new_tvdbcache = TVShow()
                             new_tvdbcache.id = tvdbid
                             new_tvdbcache.localpath = path
                             logger.info("FOLDER: %s create new tvdb object" % dir)
@@ -186,7 +186,7 @@ class Command(BaseCommand):
                 path = os.path.join(settings.TVHD, dir)
 
                 #lets see if it already belongs to a tvshow
-                tvobjs = Tvdbcache.objects.all().filter(localpath=path)
+                tvobjs = TVShow.objects.all().filter(localpath=path)
 
                 if len(tvobjs) > 1:
                     logger.info("Duplicate tvdb shows found in db %s" % dir)
@@ -197,7 +197,7 @@ class Command(BaseCommand):
 
                         tvdbid = int(showobj['id'])
 
-                        tvdbobj = Tvdbcache.objects.get(id=int(showobj['id']))
+                        tvdbobj = TVShow.objects.get(id=int(showobj['id']))
 
                         if tvdbobj:
                             logger.info("%s: Found a duplicate entry %s:%s" % (dir, tvdbobj.title, tvdbobj.id))

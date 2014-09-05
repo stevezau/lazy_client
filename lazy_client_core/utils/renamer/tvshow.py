@@ -9,7 +9,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from lazy_client_core.utils import common
 from lazy_common.utils import create_path, delete
 from lazy_common.tvdb_api import Tvdb
-from lazy_client_core.models import TVShowMappings, Tvdbcache
+from lazy_client_core.models import TVShow, TVShowMappings
 from lazy_common import metaparser
 from lazy_client_core.exceptions import ManuallyFixException, RenameException
 from lazy_common.tvdb_api.tvdb_exceptions import tvdb_seasonnotfound, tvdb_episodenotfound, tvdb_error
@@ -98,9 +98,9 @@ class TVRenamer:
                             logger.debug(video_file)
                             if 'tvdbid_id' in video_file:
                                 try:
-                                    tvdbcache_obj_override = Tvdbcache.objects.get(id=int(video_file['tvdbid_id']))
+                                    tvdbcache_obj_override = TVShow.objects.get(id=int(video_file['tvdbid_id']))
                                 except ObjectDoesNotExist:
-                                    tvdbcache_obj_override = Tvdbcache()
+                                    tvdbcache_obj_override = TVShow()
                                     tvdbcache_obj_override.id = int(video_file['tvdbid_id'])
                                     tvdbcache_obj_override.update_from_tvdb()
 
@@ -384,14 +384,14 @@ class TVRenamer:
                 self.log("Found show on tvdb %s" % found_id)
 
                 try:
-                    tvdbcache_obj = Tvdbcache.objects.get(id=found_id)
+                    tvdbcache_obj = TVShow.objects.get(id=found_id)
 
                     if tvdbcache_obj:
                         self.log("Found show in database already %s" % tvdbcache_obj.title)
                 except:
                     #not found, lets add it
                     self.log("Adding show to the tvdbcache database")
-                    tvdbcache_obj = Tvdbcache()
+                    tvdbcache_obj = TVShow()
                     tvdbcache_obj.id = found_id
                     tvdbcache_obj.update_from_tvdb()
         except:

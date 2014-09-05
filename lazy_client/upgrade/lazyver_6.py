@@ -3,14 +3,14 @@ import os
 from PIL import Image
 from django.core.files import File
 from django.core.files.temp import NamedTemporaryFile
-from lazy_client_core.models import Tvdbcache, Imdbcache
+from lazy_client_core.models import TVShow, Movie
 import logging
 
 logger = logging.getLogger(__name__)
 
 
 def upgrade():
-    for tvdb_obj in Tvdbcache.objects.all():
+    for tvdb_obj in TVShow.objects.all():
         if tvdb_obj.posterimg:
             try:
                 img_file = str(tvdb_obj.posterimg.file)
@@ -31,7 +31,7 @@ def upgrade():
                 print "cannot create thumbnail for '%s'" % img_file
 
 
-    for imdb_obj in Imdbcache.objects.all():
+    for imdb_obj in Movie.objects.all():
         if imdb_obj.posterimg:
             try:
                 img_file = str(imdb_obj.posterimg.file)

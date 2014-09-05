@@ -10,10 +10,8 @@ from lazy_client_ui import common
 from lazy_client_ui.forms import Find, FindMissing
 from lazy_client_core.exceptions import AlradyExists, AlradyExists_Updated
 from lazy_client_core.models import DownloadItem, Job
-from lazy_client_core.utils.missingscanner import MissingScanner
-from lazy_common import ftpmanager
+from lazy_client_core.utils import missingscanner
 from lazy_client_core.utils import lazyapi
-
 
 logger = logging.getLogger(__name__)
 
@@ -60,11 +58,10 @@ class FindMissingReportContent(TemplateView):
     def get_context_data(self, **kwargs):
         context = super(FindMissingReportContent, self).get_context_data(**kwargs)
         context['selectable'] = True
-        scanner = MissingScanner()
         tvshow = kwargs.get("tvshow")
         tvshow_path = os.path.join(settings.TVHD, tvshow)
 
-        report = scanner.show_report(tvshow_path)
+        report = missingscanner.show_report(tvshow_path)
         context['report'] = report
 
         return context
@@ -120,7 +117,6 @@ def fix_missing_seasons(items):
 
     status = 200
     response = HttpResponse(content_type="text/plain")
-    scanner = MissingScanner()
 
     #figure out what we are trying to fix
     fix = {}
@@ -148,7 +144,7 @@ def fix_missing_seasons(items):
                     int_seasons.append(int(season_no))
 
                 #lets do the fixing
-                scanner.fix_show.delay(showpath, int_seasons)
+                missingscanner.fix_show.delay(showpath, int_seasons)
                 response.write("Launched job to try fix %s with seasons %s" % (showpath, int_seasons))
 
             else:
@@ -187,8 +183,7 @@ def fix_all(request):
     response = HttpResponse(content_type="text/plain")
 
     try:
-        scanner = MissingScanner()
-        scanner.fix_all.delay()
+        missingscanner.fix_all.delay()
 
         response.write("Fixing all TVShows. This can take a while so i've launched a job, please check the status of the job in the jobs menu")
     except Exception as e:
@@ -203,8 +198,7 @@ def report_all(request):
     response = HttpResponse(content_type="text/plain")
 
     try:
-        scanner = MissingScanner()
-        scanner.report_all.delay()
+        missingscanner.report_all.delay()
 
         response.write("Checking all TVShows. This can take a while so i've launched a job, please check the status of the job in the jobs menu")
     except Exception as e:

@@ -2,7 +2,7 @@ from django.conf.urls import patterns, url
 from django.views.generic import RedirectView
 from django.core.urlresolvers import reverse_lazy
 
-from lazy_client_ui.views import downloads, config, other
+from lazy_client_ui.views import downloads, config, other, manage
 from lazy_client_ui.views import home
 
 from django.contrib.auth.views import login
@@ -57,8 +57,8 @@ urlpatterns = patterns('',
     url(r'^other/find/(?P<search>(.+))/$', other.SearchIndexView.as_view(), name='other.find.search'),
     url(r'^other/find/(?P<search>(.+))/content$', other.FindListView.as_view(), name='other.find.list'),
 
-    #Config - Find Missing
-    url(r'^other/findmissing/$', other.FindMissingIndexView.as_view(), name='other.findmissing.index'),
+    #Manage - TVShows
+    url(r'^manage/tvshows/$', manage.tvshows, name='manage.tvshows.index'),
     url(r'^other/findmissing/(?P<tvshow>(.+))/$', other.FindMissingReport.as_view(), name='other.findmissing.report'),
     url(r'^other/findmissing/(?P<tvshow>(.+))/content$', other.FindMissingReportContent.as_view(), name='other.findmissing.report.content'),
 

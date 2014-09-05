@@ -1,6 +1,6 @@
 from django.forms import widgets
 from rest_framework import serializers
-from lazy_client_core.models import DownloadItem, Tvdbcache, Imdbcache
+from lazy_client_core.models import DownloadItem, TVShow, Movie
 import logging
 import rest_framework.relations
 logger = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ class ImdbItemSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField()
 
     class Meta:
-        model = Imdbcache
+        model = Movie
         fields = ('id', 'title', 'score', 'votes', 'year', 'genres', 'description')
 
 
@@ -30,5 +30,5 @@ class TvdbItemSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField()
 
     class Meta:
-        model = Tvdbcache
+        model = TVShow
         fields = ('id', 'title', 'posterimg', 'networks', 'genres', 'description', 'imdbid')

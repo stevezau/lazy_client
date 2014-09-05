@@ -1,6 +1,10 @@
 ###########
 ### NOW ###
 ###########
+--enable gzip compression
+
+--upggrade scripts remove duplicates in ignore.yml
+
 --improve fix select (found s1e1 in queue of the last skip but still did serches?)
 --Movies and flexget config.. movies for FIX release
 

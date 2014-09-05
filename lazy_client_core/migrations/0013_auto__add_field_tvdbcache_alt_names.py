@@ -1,85 +1,62 @@
 # -*- coding: utf-8 -*-
-import os
-import logging
-
-from south.v2 import DataMigration
-from django.conf import settings
-from django.core.exceptions import ObjectDoesNotExist
-
-from lazy_common.tvdb_api import Tvdb
-from lazy_client_core.models import TVShow
+from south.utils import datetime_utils as datetime
+from south.db import db
+from south.v2 import SchemaMigration
+from django.db import models
 
 
-logger = logging.getLogger(__name__)
-
-
-class Migration(DataMigration):
+class Migration(SchemaMigration):
 
     def forwards(self, orm):
-
-        tvdbapi = Tvdb()
-
-        for dir in os.listdir(settings.TVHD):
-            path = os.path.join(settings.TVHD, dir)
-
-            #lets see if it already belongs to a tvshow
-            try:
-                tvobj = TVShow.objects.get(localpath=path)
-            except ObjectDoesNotExist:
-                #does not exist
-                logger.debug("Trying to figure out tvdbid for %s" % dir)
-                try:
-                    showobj = tvdbapi[dir]
-
-                    tvdbid = int(showobj['id'])
-
-                    try:
-                        tvdbobj = TVShow.objects.get(id=int(showobj['id']))
-                        tvdbobj.localpath = path
-                        tvdbobj.save()
-                    except:
-                        #does not exist in tvdbcache, lets create it
-                        new_tvdbcache = TVShow()
-                        new_tvdbcache.id = tvdbid
-                        new_tvdbcache.localpath = path
-                        new_tvdbcache.save()
-
-                except Exception as e:
-                    logger.info("Does not exist %s (%s)" % (path, e))
+        # Adding field 'Tvdbcache.alt_names'
+        db.add_column('tvdbcache', 'alt_names',
+                      self.gf('picklefield.fields.PickledObjectField')(null=True, blank=True),
+                      keep_default=False)
 
 
     def backwards(self, orm):
-        "Write your backwards methods here."
+        # Deleting field 'Tvdbcache.alt_names'
+        db.delete_column('tvdbcache', 'alt_names')
+
 
     models = {
         u'lazy_client_core.downloaditem': {
             'Meta': {'ordering': "['id']", 'object_name': 'DownloadItem', 'db_table': "'download'"},
             'dateadded': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'db_index': 'True', 'blank': 'True'}),
             'dlstart': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
-            'epoverride': ('django.db.models.fields.IntegerField', [], {'default': '0', 'null': 'True', 'blank': 'True'}),
-            'ftppath': ('django.db.models.fields.CharField', [], {'max_length': '255', 'db_index': 'True'}),
+            'ftppath': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '255', 'db_index': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'imdbid': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['lazy_client_core.Imdbcache']", 'null': 'True', 'on_delete': 'models.DO_NOTHING', 'blank': 'True'}),
             'localpath': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'localsize': ('django.db.models.fields.IntegerField', [], {'default': '0', 'null': 'True'}),
-            'message': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
+            'message': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'onlyget': ('lazy_client_core.utils.jsonfield.fields.JSONField', [], {'null': 'True', 'blank': 'True'}),
             'pid': ('django.db.models.fields.IntegerField', [], {'default': '0', 'null': 'True'}),
             'priority': ('django.db.models.fields.IntegerField', [], {'default': '10', 'null': 'True'}),
-            'remotesize': ('django.db.models.fields.IntegerField', [], {'default': '0', 'null': 'True'}),
+            'remotesize': ('django.db.models.fields.BigIntegerField', [], {'default': '0', 'null': 'True'}),
             'requested': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'retries': ('django.db.models.fields.IntegerField', [], {'default': '0', 'null': 'True'}),
-            'seasonoverride': ('django.db.models.fields.IntegerField', [], {'default': '0', 'null': 'True', 'blank': 'True'}),
+            'retries': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
             'section': ('django.db.models.fields.CharField', [], {'db_index': 'True', 'max_length': '10', 'null': 'True', 'blank': 'True'}),
             'status': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
+            'taskid': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'title': ('django.db.models.fields.CharField', [], {'db_index': 'True', 'max_length': '150', 'null': 'True', 'blank': 'True'}),
-            'tvdbid': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['lazy_client_core.Tvdbcache']", 'null': 'True', 'on_delete': 'models.DO_NOTHING', 'blank': 'True'})
+            'tvdbid': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['lazy_client_core.Tvdbcache']", 'null': 'True', 'on_delete': 'models.DO_NOTHING', 'blank': 'True'}),
+            'video_files': ('lazy_client_core.utils.jsonfield.fields.JSONField', [], {'null': 'True', 'blank': 'True'})
+        },
+        u'lazy_client_core.downloadlog': {
+            'Meta': {'object_name': 'DownloadLog', 'db_table': "'download_log'"},
+            'date': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
+            'download_id': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['lazy_client_core.DownloadItem']", 'null': 'True', 'blank': 'True'}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'job_id': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['lazy_client_core.Job']", 'null': 'True', 'blank': 'True'}),
+            'message': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'})
         },
         u'lazy_client_core.imdbcache': {
             'Meta': {'object_name': 'Imdbcache', 'db_table': "'imdbcache'"},
             'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'genres': ('django.db.models.fields.CharField', [], {'max_length': '200', 'null': 'True', 'blank': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'localpath': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'posterimg': ('django.db.models.fields.files.ImageField', [], {'max_length': '100', 'null': 'True', 'blank': 'True'}),
             'score': ('django.db.models.fields.DecimalField', [], {'null': 'True', 'max_digits': '3', 'decimal_places': '1', 'blank': 'True'}),
             'title': ('django.db.models.fields.CharField', [], {'max_length': '200', 'db_index': 'True'}),
@@ -99,6 +76,7 @@ class Migration(DataMigration):
         },
         u'lazy_client_core.tvdbcache': {
             'Meta': {'object_name': 'Tvdbcache', 'db_table': "'tvdbcache'"},
+            'alt_names': ('picklefield.fields.PickledObjectField', [], {'null': 'True', 'blank': 'True'}),
             'description': ('django.db.models.fields.TextField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'genres': ('django.db.models.fields.CharField', [], {'max_length': '200', 'null': 'True', 'blank': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
@@ -114,8 +92,12 @@ class Migration(DataMigration):
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'title': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '150', 'db_index': 'True'}),
             'tvdbid': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['lazy_client_core.Tvdbcache']", 'on_delete': 'models.DO_NOTHING'})
+        },
+        u'lazy_client_core.version': {
+            'Meta': {'object_name': 'Version', 'db_table': "'version'"},
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'version': ('django.db.models.fields.IntegerField', [], {})
         }
     }
 
     complete_apps = ['lazy_client_core']
-    symmetrical = True

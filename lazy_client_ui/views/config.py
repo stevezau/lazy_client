@@ -10,7 +10,7 @@ from django.core.urlresolvers import reverse_lazy
 
 from lazy_client_core.utils import common as commoncore
 from lazy_client_ui import common
-from lazy_client_core.models import TVShowMappings, Tvdbcache
+from lazy_client_core.models import TVShowMappings, TVShow
 from lazy_client_ui.forms import AddTVMapForm, AddApprovedShow, AddIgnoreShow
 from lazy_common.tvdb_api import Tvdb
 
@@ -60,12 +60,12 @@ class ApprovedListView(TemplateView):
             for tvdbfav in tvdbfavs:
 
                 try:
-                    tvcache_obj = Tvdbcache.objects.get(id=tvdbfav)
+                    tvcache_obj = TVShow.objects.get(id=tvdbfav)
                     favs.append(tvcache_obj)
 
                 except ObjectDoesNotExist:
                     #not found, lets add it
-                    new_tvcache = Tvdbcache()
+                    new_tvcache = TVShow()
                     new_tvcache.id = tvdbfav
                     new_tvcache.update_from_tvdb()
                     new_tvcache.save()
@@ -89,7 +89,7 @@ class ApprovedCreate(FormView):
         #TODO: Need better checking here
         #also create a folder
         try:
-            tvdbobj = Tvdbcache.objects.get(id=int(form.cleaned_data['tvdbid_id']))
+            tvdbobj = TVShow.objects.get(id=int(form.cleaned_data['tvdbid_id']))
             dst = os.path.join(settings.TVHD, tvdbobj.title)
             dst = re.sub(settings.ILLEGAL_CHARS_REGEX, " ", dst)
             dst = dst.strip()
@@ -101,7 +101,7 @@ class ApprovedCreate(FormView):
                 os.mkdir(dst)
 
         except ObjectDoesNotExist:
-            new_tvdbcache = Tvdbcache()
+            new_tvdbcache = TVShow()
             new_tvdbcache.id = int(form.cleaned_data['tvdbid_id'])
             new_tvdbcache.update_from_tvdb()
 

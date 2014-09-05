@@ -5,7 +5,7 @@ from django.conf import settings
 from flexget.utils.imdb import ImdbSearch, ImdbParser
 from django.core.exceptions import ObjectDoesNotExist
 
-from lazy_client_core.models import Imdbcache
+from lazy_client_core.models import Movie
 from lazy_client_core.utils import common
 from lazy_common.utils import create_path, delete
 from lazy_common import metaparser
@@ -140,9 +140,9 @@ class MovieRenamer:
                             if video_file_path == os.path.basename(files[0]):
                                 if 'imdbid_id' in video_file:
                                     try:
-                                        imdb_obj = Imdbcache.objects.get(id=video_file['imdbid_id'])
+                                        imdb_obj = Movie.objects.get(id=video_file['imdbid_id'])
                                     except ObjectDoesNotExist:
-                                        imdb_obj = Imdbcache()
+                                        imdb_obj = Movie()
                                         imdb_obj.id = video_file['imdbid_id']
                                         try:
                                             imdb_obj.update_from_imdb()
@@ -200,7 +200,7 @@ class MovieRenamer:
         #Ok we need to make sure the movie does not exist already..
         if imdb_id:
             try:
-                imdbcache_obj = Imdbcache.objects.get(id=imdb_id)
+                imdbcache_obj = Movie.objects.get(id=imdb_id)
 
                 logger.debug("Found existing imdbcache object for movie")
 
@@ -211,7 +211,7 @@ class MovieRenamer:
                 #didnt find it so lets add it..
                 try:
                     logger.debug("Didnt find imdbcache object, will add it")
-                    imdbcache_obj = Imdbcache()
+                    imdbcache_obj = Movie()
                     imdbcache_obj.id = int(imdb_id)
                     imdbcache_obj.update_from_imdb()
                     imdbcache_obj.save()

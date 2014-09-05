@@ -1,28 +1,35 @@
 from __future__ import division
+
+from datetime import timedelta
+import urllib2
 import logging
 import shutil
 import os
 import re
 from datetime import datetime
-import urllib2
 import inspect
 import time
 
+from picklefield.fields import PickledObjectField
 from requests.exceptions import HTTPError
-from django.db import models
+from django.core.files import File
+from django.core.files.temp import NamedTemporaryFile
+from south.modelsinspector import add_introspection_rules
 from django.dispatch import receiver
 from django.db.models.signals import pre_save, post_save
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from flexget.utils.imdb import ImdbSearch, ImdbParser
-from django.core.files import File
-from django.core.files.temp import NamedTemporaryFile
 from celery.contrib.abortable import AbortableAsyncResult
 from django.db.models import Q
+
+from lazy_client_core.utils import common
+from PIL import Image
+from lazy_common import utils
+
+from lazy_client_core.utils.common import OverwriteStorage
 from lazy_common.utils import bytes2human
 from lazy_common import ftpmanager
-from PIL import Image
-
 from lazy_common.tvdb_api import Tvdb
 from lazy_client_core.exceptions import AlradyExists_Updated, AlradyExists
 from lazy_client_core.exceptions import DownloadException
@@ -31,64 +38,9 @@ from lazy_client_core.utils.jsonfield.fields import JSONField
 
 logger = logging.getLogger(__name__)
 
-from south.modelsinspector import add_introspection_rules
-
 add_introspection_rules([], ["^lazy_client_core\.utils\.jsonfield\.fields\.JSONField"])
 
-from django.core.files.storage import FileSystemStorage
-
-
-class OverwriteStorage(FileSystemStorage):
-
-    def get_available_name(self, name):
-        """Returns a filename that's free on the target storage system, and
-        available for new content to be written to.
-
-        Found at http://djangosnippets.org/snippets/976/
-
-        This file storage solves overwrite on upload problem. Another
-        proposed solution was to override the save method on the model
-        like so (from https://code.djangoproject.com/ticket/11663):
-
-        def save(self, *args, **kwargs):
-            try:
-                this = MyModelName.objects.get(id=self.id)
-                if this.MyImageFieldName != self.MyImageFieldName:
-                    this.MyImageFieldName.delete()
-            except: pass
-            super(MyModelName, self).save(*args, **kwargs)
-        """
-        # If the filename already exists, remove it as if it was a true file system
-        if self.exists(name):
-            os.remove(os.path.join(settings.MEDIA_ROOT, name))
-        return name
-
-class TVShowMappings(models.Model):
-    class Meta:
-        """ Meta """
-        db_table = 'tvshowmappings'
-        ordering = ['-id']
-
-    title = models.CharField(max_length=150, db_index=True, unique=True)
-    tvdbid = models.ForeignKey('Tvdbcache', on_delete=models.DO_NOTHING)
-
-
-class DownloadLog(models.Model):
-
-    def __unicode__(self):
-        try:
-            return self.title
-        except:
-            return "TITLE NOT FOUND"
-
-    download_id = models.ForeignKey('DownloadItem', null=True, blank=True)
-    job_id = models.ForeignKey('Job', null=True, blank=True)
-    date = models.DateTimeField(auto_now_add=True)
-    message = models.TextField(blank=True, null=True)
-
-    class Meta:
-        db_table = 'download_log'
-
+from django.db import models
 
 class Version(models.Model):
     class Meta:
@@ -97,6 +49,11 @@ class Version(models.Model):
 
     version = models.IntegerField()
 
+#############################################################
+#############################################################
+####################### DOWNLOAD ITEM #######################
+#############################################################
+#############################################################
 
 class DownloadItem(models.Model):
     class Meta:
@@ -145,12 +102,45 @@ class DownloadItem(models.Model):
     requested = models.BooleanField(default=False)
     localsize = models.IntegerField(default=0, null=True)
     message = models.TextField(blank=True, null=True)
-    imdbid = models.ForeignKey('Imdbcache', blank=True, null=True, on_delete=models.DO_NOTHING)
-    tvdbid = models.ForeignKey('Tvdbcache', blank=True, null=True, on_delete=models.DO_NOTHING)
+    imdbid = models.ForeignKey('Movie', blank=True, null=True, on_delete=models.DO_NOTHING)
+    tvdbid = models.ForeignKey('TVShow', blank=True, null=True, on_delete=models.DO_NOTHING)
     onlyget = JSONField(blank=True, null=True)
     video_files = JSONField(blank=True, null=True)
 
     parser = None
+
+    def get_season(self):
+        parser = self.metaparser()
+        if 'season' in parser.details:
+            return parser.details['season']
+
+    def get_eps(self):
+        parser = self.metaparser()
+
+        if 'episodeList' in parser.details:
+            return parser.details['episodeList']
+        elif 'episodeNumber' in parser.details:
+            return [parser.details['episodeNumber']]
+
+    def get_quality(self):
+        parser = self.metaparser()
+
+        quality = None
+
+        if 'format' in parser.details:
+            if parser.details['format'] == "HDTV":
+                quality = "SD"
+
+        if 'screenSize' in parser.details:
+            quality = parser.details['screenSize']
+
+        return quality
+
+    def get_year(self):
+        parser = self.metaparser()
+
+        if 'year' in parser.details:
+            return parser.details['year']
 
     def retry(self):
         self.dlstart = None
@@ -346,7 +336,6 @@ class DownloadItem(models.Model):
 
     def get_task(self):
         if self.taskid == None or self.taskid == "":
-            logger.debug("No taskid found for %s" % self.title)
             return None
 
         return AbortableAsyncResult(self.taskid)
@@ -495,308 +484,12 @@ class DownloadItem(models.Model):
             obj.delete()
 
 
-class Imdbcache(models.Model):
-
-    class Meta:
-        db_table = 'imdbcache'
-
-    def __unicode__(self):
-        return self.title
-
-    title = models.CharField(max_length=200, db_index=True)
-    score = models.DecimalField(max_digits=3, decimal_places=1, blank=True, null=True)
-    votes = models.IntegerField(default=0, blank=True, null=True)
-    year = models.IntegerField(default=0, blank=True, null=True)
-    genres = models.CharField(max_length=200, blank=True, null=True)
-    posterimg = models.ImageField(upload_to=".", storage=OverwriteStorage(), blank=True, null=True)
-    description = models.TextField(blank=True, null=True)
-    updated = models.DateTimeField(blank=True, null=True)
-    localpath = models.CharField(max_length=255, blank=True, null=True)
-
-    def update_from_imdb(self):
-        imdbtt = "tt" + str(self.id).zfill(7)
-
-        logger.info("Updating %s %s" % (imdbtt, self.title))
-
-        try:
-            imdbobj = ImdbParser()
-            imdbobj.parse(imdbtt)
-
-            self.score = imdbobj.score
-            self.title = imdbobj.name.encode('ascii', 'ignore')
-            self.year = imdbobj.year
-            self.votes = imdbobj.votes
-
-            if imdbobj.plot_outline:
-                self.description = imdbobj.plot_outline.encode('ascii', 'ignore')
-
-            sGenres = ''
-
-            if imdbobj.genres:
-                for genre in imdbobj.genres:
-                    sGenres += '|' + genre.encode('ascii', 'ignore')
-
-            self.genres = sGenres.replace('|', '', 1)
-
-            if imdbobj.photo:
-                try:
-                    img_download = NamedTemporaryFile(delete=True)
-                    img_download.write(urllib2.urlopen(imdbobj.photo).read())
-                    img_download.flush()
-
-                    size = 214, 317
-
-                    if os.path.getsize(img_download.name) > 0:
-                        img_tmp = NamedTemporaryFile(delete=True)
-                        im = Image.open(img_download.name)
-                        im = im.resize(size, Image.ANTIALIAS)
-                        im.save(img_tmp, "JPEG", quality=70)
-
-                        self.posterimg.save(str(self.id) + '-imdb.jpg', File(img_tmp))
-                except Exception as e:
-                    logger.error("error saving image: %s" % e.message)
-
-            self.save()
-            self.updated = datetime.now()
-            self.save()
-        except HTTPError as e:
-            if e.errno == 404:
-                logger.error("Error entry was not found in imdn!")
-                raise ObjectDoesNotExist()
-
-class Job(models.Model):
-
-    def __unicode__(self):
-        return self.title
-
-    type = models.IntegerField(blank=True, null=True)
-    status = models.IntegerField(blank=True, null=True)
-    startdate = models.DateTimeField(auto_now_add=True, blank=True, null=True)
-    finishdate = models.DateTimeField(blank=True, null=True)
-    title = models.TextField(blank=True, null=True)
-    report = JSONField(blank=True, null=True)
-
-    class Meta:
-        db_table = 'jobs'
-
-    def log(self, msg):
-
-        logger.debug(msg)
-
-        try:
-            frm = inspect.stack()[1]
-            mod = inspect.getmodule(frm[0])
-
-            caller = mod.__name__
-            line = inspect.currentframe().f_back.f_lineno
-
-            logmsg = "%s(%s): %s" % (caller, line, msg)
-
-        except:
-            logmsg = msg
-
-        self.downloadlog_set.create(job_id=self.id, message=logmsg)
-
-class Tvdbcache(models.Model):
-
-    class Meta:
-        db_table = 'tvdbcache'
-
-    def __unicode__(self):
-        return self.title
-
-    title = models.CharField(max_length=200, db_index=True)
-    posterimg = models.ImageField(upload_to=".", storage=OverwriteStorage(), blank=True, null=True)
-    networks = models.CharField(max_length=50, blank=True, null=True)
-    genres = models.CharField(max_length=200, blank=True, null=True)
-    description = models.TextField(max_length=255, blank=True, null=True)
-    updated = models.DateTimeField(blank=True, null=True)
-    imdbid = models.ForeignKey('Imdbcache', blank=True, null=True, on_delete=models.DO_NOTHING)
-    localpath = models.CharField(max_length=255, blank=True, null=True)
-
-    def get_seasons(self):
-        season = []
-
-        try:
-            tvdbapi = Tvdb()
-            tvdb_obj = tvdbapi[self.id]
-            season = tvdb_obj.keys()
-        except:
-            pass
-
-        return season
-
-    def get_eps(self, season):
-        tvdbapi = Tvdb()
-        tvdb_obj = tvdbapi[self.id][season]
-        return tvdb_obj.keys()
-
-    def names(self):
-        alt_names = []
-
-        #Now lets figure out what title we should search for on sites
-        fixed_name = self.title
-
-        for search, replace in settings.TVSHOW_AUTOFIX_REPLACEMENTS.items():
-            fixed_name = fixed_name.replace(search, replace)
-
-        alt_names.append(fixed_name)
-
-        #if self.title not in alt_names:
-        #    alt_names.append(self.title)
-
-        #list of alt names on tvdb.com
-        try:
-            tvdbapi = Tvdb()
-            search_results = tvdbapi.search(self.title)
-
-            for result in search_results:
-                if result['seriesid'] == str(self.id):
-                    if 'aliasnames' in result:
-                        for alias in result['aliasnames']:
-                            if alias not in alt_names:
-                                alt_names.append(alias)
-                    break
-        except:
-            pass
-
-        #show mappings
-        try:
-            mappings = TVShowMappings.objects.all().filter(tvdbid_id=self.id)
-
-            if mappings:
-                for map in mappings:
-                    map_name = map.title
-
-                    for search, replace in settings.TVSHOW_AUTOFIX_REPLACEMENTS.items():
-                        map_name = map_name.replace(search, replace)
-
-                    if map_name not in mappings:
-                        alt_names.insert(0, map_name)
-
-        except Exception as e:
-            logger.exception(e)
-            pass
-
-        return alt_names
-
-    def update_from_tvdb(self):
-        logger.info("Updating %s %s" % (str(self.id), self.title))
-
-        try:
-            tvdbapi = Tvdb(banners=True)
-            tvdb_obj = tvdbapi[self.id]
-
-            self.updated = datetime.now()
-
-            if 'seriesname' in tvdb_obj.data:
-                if tvdb_obj['seriesname'] is not None:
-                    self.title = tvdb_obj['seriesname'].replace(".", " ").strip()
-
-            if 'network' in tvdb_obj.data:
-                if tvdb_obj['network'] is not None:
-                    self.networks = tvdb_obj['network']
-
-            if 'overview' in tvdb_obj.data:
-                if tvdb_obj['overview'] is not None:
-                    self.description = tvdb_obj['overview'].encode('ascii', 'ignore')
-
-            if 'imdb_id' in tvdb_obj.data:
-                if tvdb_obj['imdb_id'] is not None:
-                    try:
-                        imdbid_id = tvdb_obj['imdb_id'].lstrip("tt")
-                        self.imdbid_id = int(imdbid_id)
-
-                        try:
-                            imdbobj = Imdbcache.objects.get(id=int(imdbid_id))
-                        except ObjectDoesNotExist:
-                            imdbobj = Imdbcache()
-                            imdbobj.id = int(imdbid_id)
-                            imdbobj.save()
-
-                    except:
-                        pass
-
-            if '_banners' in tvdb_obj.data:
-                if tvdb_obj['_banners'] is not None:
-                    bannerData = tvdb_obj['_banners']
-
-                    if 'poster' in bannerData.keys():
-                        posterSize = bannerData['poster'].keys()[0]
-                        posterID = bannerData['poster'][posterSize].keys()[0]
-                        posterURL = bannerData['poster'][posterSize][posterID]['_bannerpath']
-
-                        try:
-                            img_download = NamedTemporaryFile(delete=True)
-                            img_download.write(urllib2.urlopen(posterURL).read())
-                            img_download.flush()
-
-                            size = (214, 317)
-
-                            if os.path.getsize(img_download.name) > 0:
-                                img_tmp = NamedTemporaryFile(delete=True)
-                                im = Image.open(img_download.name)
-                                im = im.resize(size, Image.ANTIALIAS)
-                                im.save(img_tmp, "JPEG", quality=70)
-
-                                self.posterimg.save(str(self.id) + '-tvdb.jpg', File(img_tmp))
-                        except Exception as e:
-                            logger.error("error saving image: %s" % e.message)
-                            pass
-
-            if 'genre' in tvdb_obj.data:
-                if tvdb_obj['genre'] is not None:
-                    self.genres = tvdb_obj['genre']
-
-            self.save()
-        except Exception as e:
-            logger.exception("Error updating entry %s" % e)
-
-
-
-@receiver(pre_save, sender=TVShowMappings)
-def create_tvdb_on_add(sender, instance, **kwargs):
-
-    instance.title = instance.title.lower()
-
-    if instance.id is None:
-        logger.debug("Adding a new tv mapping %s" % instance.title)
-
-        #lets look for existing tvdbshow.. if not add it and get the details from tvdb.com
-        try:
-            existing = Tvdbcache.objects.get(id=instance.tvdbid_id)
-
-            if existing:
-                logger.debug("Found existing tvdb record")
-                pass
-        except:
-            logger.debug("Didnt find tvdb record, adding a new one")
-            new = Tvdbcache()
-            new.id = instance.tvdbid_id
-            new.update_from_tvdb()
-
-
-
-@receiver(post_save, sender=Tvdbcache)
-def add_new_tvdbitem(sender, created, instance, **kwargs):
-
-    if created:
-        logger.info("Adding a new tvdbitem, lets make sure its fully up to date")
-        instance.update_from_tvdb()
-
-@receiver(post_save, sender=Imdbcache)
-def add_new_imdbitem(sender, created, instance, **kwargs):
-
-    if created:
-        logger.info("Adding a new imdbitem, lets make sure its fully up to date")
-        instance.update_from_imdb()
 
 @receiver(pre_save, sender=DownloadItem)
 def add_new_downloaditem_pre(sender, instance, **kwargs):
 
-    from lazy_common import metaparser
-
     if instance.id is None:
+        from lazy_common import metaparser
         logger.debug("Adding a new download %s" % instance.ftppath)
 
         instance.ftppath = instance.ftppath.strip()
@@ -930,7 +623,6 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
                             dlitem.delete()
 
         #Ok now we know its a valid downloaditem lets add it to the db
-
         tvdbapi = Tvdb()
         type = instance.metaparser().type
 
@@ -1016,7 +708,7 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
         except ObjectDoesNotExist as e:
             logger.debug("Getting tvdb data for release")
 
-            new_tvdb_item = Tvdbcache()
+            new_tvdb_item = TVShow()
             new_tvdb_item.id = instance.tvdbid_id
             new_tvdb_item.save()
 
@@ -1040,10 +732,9 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
                         logger.info("Error updating IMDB info as it was not found")
 
         except ObjectDoesNotExist as e:
-
             logger.debug("Getting IMDB data for release")
 
-            new_imdb = Imdbcache()
+            new_imdb = Movie()
             new_imdb.id = instance.imdbid_id
 
             try:
@@ -1054,3 +745,586 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
         except Exception as e:
             logger.exception("error gettig imdb %s information.. from website %s" %  (instance.imdbid_id, e.message))
 
+
+
+#############################################################
+#############################################################
+########################## Movie ############################
+#############################################################
+#############################################################
+
+class Movie(models.Model):
+
+    class Meta:
+        db_table = 'imdbcache'
+
+    def __unicode__(self):
+        return self.title
+
+    title = models.CharField(max_length=200, db_index=True)
+    score = models.DecimalField(max_digits=3, decimal_places=1, blank=True, null=True)
+    votes = models.IntegerField(default=0, blank=True, null=True)
+    year = models.IntegerField(default=0, blank=True, null=True)
+    genres = models.CharField(max_length=200, blank=True, null=True)
+    posterimg = models.ImageField(upload_to=".", storage=OverwriteStorage(), blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    updated = models.DateTimeField(blank=True, null=True)
+    localpath = models.CharField(max_length=255, blank=True, null=True)
+
+    def get_genres(self):
+        genres = []
+
+        if self.genres:
+            for genre in self.genres.split("|"):
+                genres.append(genre)
+        return genres
+
+    def update_from_imdb(self):
+        imdbtt = "tt" + str(self.id).zfill(7)
+
+        logger.info("Updating %s %s" % (imdbtt, self.title))
+
+        try:
+            imdbobj = ImdbParser()
+            imdbobj.parse(imdbtt)
+
+            self.score = imdbobj.score
+            self.title = imdbobj.name.encode('ascii', 'ignore')
+            self.year = imdbobj.year
+            self.votes = imdbobj.votes
+
+            if imdbobj.plot_outline:
+                self.description = imdbobj.plot_outline.encode('ascii', 'ignore')
+
+            sGenres = ''
+
+            if imdbobj.genres:
+                for genre in imdbobj.genres:
+                    sGenres += '|' + genre.encode('ascii', 'ignore')
+
+            self.genres = sGenres.replace('|', '', 1)
+
+            if imdbobj.photo:
+                try:
+                    img_download = NamedTemporaryFile(delete=True)
+                    img_download.write(urllib2.urlopen(imdbobj.photo).read())
+                    img_download.flush()
+
+                    size = 214, 317
+
+                    if os.path.getsize(img_download.name) > 0:
+                        img_tmp = NamedTemporaryFile(delete=True)
+                        im = Image.open(img_download.name)
+                        im = im.resize(size, Image.ANTIALIAS)
+                        im.save(img_tmp, "JPEG", quality=70)
+
+                        self.posterimg.save(str(self.id) + '-imdb.jpg', File(img_tmp))
+                except Exception as e:
+                    logger.error("error saving image: %s" % e.message)
+
+            self.save()
+            self.updated = datetime.now()
+            self.save()
+        except HTTPError as e:
+            if e.errno == 404:
+                logger.error("Error entry was not found in imdn!")
+                raise ObjectDoesNotExist()
+
+
+@receiver(post_save, sender=Movie)
+def add_new_imdbitem(sender, created, instance, **kwargs):
+
+    if created:
+        logger.info("Adding a new imdbitem, lets make sure its fully up to date")
+        instance.update_from_imdb()
+
+
+#######################################################
+######################### JOBS ########################
+#######################################################
+
+class Job(models.Model):
+
+    def __unicode__(self):
+        return self.title
+
+    type = models.IntegerField(blank=True, null=True)
+    status = models.IntegerField(blank=True, null=True)
+    startdate = models.DateTimeField(auto_now_add=True, blank=True, null=True)
+    finishdate = models.DateTimeField(blank=True, null=True)
+    title = models.TextField(blank=True, null=True)
+    report = JSONField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'jobs'
+
+    def log(self, msg):
+
+        logger.debug(msg)
+
+        try:
+            frm = inspect.stack()[1]
+            mod = inspect.getmodule(frm[0])
+
+            caller = mod.__name__
+            line = inspect.currentframe().f_back.f_lineno
+
+            logmsg = "%s(%s): %s" % (caller, line, msg)
+
+        except:
+            logmsg = msg
+
+        self.downloadlog_set.create(job_id=self.id, message=logmsg)
+
+
+###################################################
+###################### LOG ########################
+###################################################
+
+
+class DownloadLog(models.Model):
+
+    def __unicode__(self):
+        try:
+            return self.title
+        except:
+            return "TITLE NOT FOUND"
+
+    download_id = models.ForeignKey('DownloadItem', null=True, blank=True)
+    job_id = models.ForeignKey('Job', null=True, blank=True)
+    date = models.DateTimeField(auto_now_add=True)
+    message = models.TextField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'download_log'
+
+
+#########################################################
+#################### TV SHOW MAPPING ####################
+#########################################################
+
+class TVShowMappings(models.Model):
+    class Meta:
+        """ Meta """
+        db_table = 'tvshowmappings'
+        ordering = ['-id']
+
+    title = models.CharField(max_length=150, db_index=True, unique=True)
+    tvdbid = models.ForeignKey('TVShow', on_delete=models.DO_NOTHING)
+
+
+@receiver(pre_save, sender=TVShowMappings)
+def create_tvdb_on_add(sender, instance, **kwargs):
+
+    instance.title = instance.title.lower()
+
+    if instance.id is None:
+        logger.debug("Adding a new tv mapping %s" % instance.title)
+
+        #lets look for existing tvdbshow.. if not add it and get the details from tvdb.com
+        try:
+            existing = TVShow.objects.get(id=instance.tvdbid_id)
+
+            if existing:
+                logger.debug("Found existing tvdb record")
+                pass
+        except:
+            logger.debug("Didnt find tvdb record, adding a new one")
+            new = TVShow()
+            new.id = instance.tvdbid_id
+            new.update_from_tvdb()
+
+
+
+######################################################
+##################### TV SHOW ########################
+######################################################
+
+class TVShowExcpetion():
+    """
+    """
+
+class TVShow(models.Model):
+
+    class Meta:
+        db_table = 'tvdbcache'
+
+    def __unicode__(self):
+        return self.title
+
+    title = models.CharField(max_length=200, db_index=True)
+    posterimg = models.ImageField(upload_to=".", storage=OverwriteStorage(), blank=True, null=True)
+    networks = models.CharField(max_length=50, blank=True, null=True)
+    genres = models.CharField(max_length=200, blank=True, null=True)
+    description = models.TextField(max_length=255, blank=True, null=True)
+    updated = models.DateTimeField(blank=True, null=True)
+    imdbid = models.ForeignKey('Movie', blank=True, null=True, on_delete=models.DO_NOTHING)
+    localpath = models.CharField(max_length=255, blank=True, null=True)
+    alt_names = PickledObjectField(blank=True, null=True)
+
+    tvdbapi = Tvdb(convert_xem=True)
+    tvdb_obj = None
+
+    @staticmethod
+    def get_by_path(tvshow_path):
+        tvshow_path = os.path.normpath(tvshow_path)
+
+        #First lets search by path
+        try:
+            tvshow_obj = TVShow.objects.get(tvshow_path)
+            logger.debug("Found matching tvshow item %s" % tvshow_obj.title)
+            return tvshow_obj
+        except ObjectDoesNotExist:
+            pass
+
+        #Lets try find it by ID on TheTVDB.com
+        try:
+            tvdbapi = Tvdb(convert_xem=True)
+            tvdbshow_obj = tvdbapi[os.path.basename(tvshow_path)]
+            tvdbcache_obj = TVShow.objects.get(id=tvdbshow_obj)
+            logger.debug("Found matching tvdbcache item %s" % self.tvdbcache_obj.id)
+            return tvdbcache_obj
+        except:
+            pass
+
+        raise Exception("Didn't find matchin tvshow object")
+
+    def get_genres_list(self):
+        genres = []
+
+        if self.genres:
+            for genre in self.genres.split("|"):
+                if len(genre) > 1:
+                    genres.append(genre)
+        return genres
+
+    def get_networks(self):
+        networks = []
+
+        if self.networks:
+            for network in self.networks.split("|"):
+                networks.append(network)
+
+        return networks
+
+    def get_latest_ep(self, season):
+        now = datetime.now() - timedelta(days=2)
+
+        tvdb_obj = self.get_tvdb_obj()
+
+        if tvdb_obj:
+            for ep in reversed(tvdb_obj[season].keys()):
+                    ep_obj = tvdb_obj[season][ep]
+
+                    aired_date = ep_obj['firstaired']
+
+                    if aired_date is not None:
+                        aired_date = datetime.strptime(aired_date, '%Y-%m-%d')
+
+                        if now > aired_date:
+                            if ep == 0:
+                                return 1
+                            else:
+                                return ep
+        return 1
+
+    def get_latest_season(self):
+        tvdb_obj = self.get_tvdb_obj()
+
+        if tvdb_obj:
+            now = datetime.now() - timedelta(days=2)
+
+            #loop through each season
+            for season in reversed(tvdb_obj.keys()):
+
+                #Lets loop through each ep..
+                for ep in reversed(tvdb_obj[season].keys()):
+                    ep_obj = self.tvdbshow_obj[season][ep]
+
+                    aired_date = ep_obj['firstaired']
+
+                    if aired_date is not None:
+                        aired_date = datetime.strptime(aired_date, '%Y-%m-%d')
+
+                        if now > aired_date:
+                            #Found the ep and season
+                            return int(season)
+        return 1
+
+    def get_existing_eps(self, season):
+        from lazy_common import metaparser
+        if self.tvshow_path:
+            season_folder = common.find_season_folder(self.tvshow_path, season)
+
+            found = []
+
+            if os.path.exists(season_folder):
+                files = [f for f in os.listdir(season_folder) if os.path.isfile(os.path.join(season_folder, f))]
+
+                for f in files:
+                    if utils.is_video_file(f):
+                        parser = metaparser.get_parser_cache(os.path.basename(f), type=metaparser.TYPE_TVSHOW)
+                        f_season = parser.get_season()
+                        f_eps = parser.get_eps()
+
+                        if season == f_season:
+                            for ep in f_eps:
+                                found.append(ep)
+            return found
+
+    def get_missing_eps_season(self, season):
+        logger.info("Checking for missing eps in season season %s" % season)
+        missing = []
+
+        #get latest ep of this season
+        tvdb_latest_ep = self.get_latest_ep(season)
+        logger.info("Latest ep for season %s is %s" % (season, tvdb_latest_ep))
+
+        season_path = common.find_season_folder(self.tvshow_path, season)
+
+        if not season_path or not os.path.isdir(season_path):
+            missing.append("ALL")
+        else:
+            #Find all the existing Eps..
+            existing_eps = self.get_existing_eps(season)
+
+            #Now lets figure out whats actually missing
+            for ep_no in range(1, tvdb_latest_ep + 1):
+                if ep_no not in existing_eps:
+                    missing.append(ep_no)
+
+        return missing
+
+    def get_missing(self, check_seasons=[]):
+        logger.info("Looking for missing eps in %s" % self.tvshow_path)
+
+        #If none specified then try fix everything.. (all seasons, eps)
+        if len(check_seasons) == 0:
+            for season in self.get_all_seasons():
+                check_seasons.append(season)
+
+        missing = {}
+
+        for cur_season in range(1, self.latest_season + 1):
+            #do we want to process this season?
+            if cur_season not in check_seasons:
+                logger.debug("Wont check season %s" % cur_season)
+                continue
+            else:
+                missing_eps = self.get_missing_eps_season(cur_season)
+
+            if len(missing_eps) > 0:
+                missing[cur_season] = missing_eps
+
+        return missing
+
+    def get_seasons(self):
+        tvdb_obj = self.get_tvdb_obj()
+
+        if tvdb_obj:
+            tvdb_obj = self.tvdbapi[self.id]
+            return tvdb_obj.keys()
+
+    def get_eps(self, season):
+        tvdb_obj = self.tvdbapi[self.id][season]
+        return tvdb_obj.keys()
+
+    def get_titles(self, refresh=True):
+
+        if refresh:
+            alt_names = []
+
+            #Now lets figure out what title we should search for on sites
+            for search, replace in settings.TVSHOW_AUTOFIX_REPLACEMENTS.items():
+                fixed_name = self.title.replace(search, replace)
+
+            alt_names.append(fixed_name)
+
+            #list of alt names on tvdb.com
+            search_results = self.tvdbapi.search(self.title)
+
+            for result in search_results:
+                if result['seriesid'] == str(self.id):
+                    if 'aliasnames' in result:
+                        for alias in result['aliasnames']:
+                            if alias not in alt_names:
+                                alt_names.append(alias)
+                    break
+
+            #show mappings
+            mappings = TVShowMappings.objects.all().filter(tvdbid_id=self.id)
+
+            for mapping in mappings:
+                map_name = mapping.title
+
+                for search, replace in settings.TVSHOW_AUTOFIX_REPLACEMENTS.items():
+                    map_name = map_name.replace(search, replace)
+
+                if map_name not in mappings:
+                    alt_names.insert(0, map_name)
+
+            self.alt_names = alt_names
+
+        return self.alt_names
+
+    def get_tvdbid(self):
+        if self.id:
+            return self.id
+
+        try:
+            tvdb_obj = self.get_tvdb_obj()
+
+            if tvdb_obj:
+                return int(tvdb_obj['id'])
+        except:
+            pass
+
+    def get_tvdb_obj(self):
+        if self.tvdb_obj:
+            return self.tvdb_obj
+
+        if self.id:
+            try:
+                self.tvdb_obj = self.tvdbapi[self.id]
+                logger.info("Found on thetvdb %s" % self.tvdbshow_obj['id'])
+                return self.tvdbshow_obj
+            except:
+                pass
+        elif self.title:
+            try:
+                self.tvdbshow_obj = self.tvdbapi[self.title]
+                logger.info("Found matching tvdbcache item %s" % self.tvdbshow_obj['id'])
+                return self.tvdbshow_obj
+            except:
+                pass
+        elif self.alt_names:
+            for name in self.alt_name:
+                try:
+                    self.tvdb_obj = self.tvdbapi[name]
+                    logger.info("Found matching tvdbcache item %s" % tvdbshow_obj['id'])
+                    return tvdbshow_obj
+                except:
+                    pass
+
+        return self.tvdb_obj
+
+    def update_names(self):
+        tvdb_obj = self.get_tvdb_obj()
+
+        if tvdb_obj and 'seriesname' in tvdb_obj.data:
+                if tvdb_obj['seriesname'] is not None:
+                    self.title = tvdb_obj['seriesname'].replace(".", " ").strip()
+
+        self.alt_names = self.get_titles(refresh=True)
+
+    def get_network(self, refresh=False):
+        if refresh:
+            tvdb_obj = self.get_tvdb_obj()
+
+            if tvdb_obj and 'network' in tvdb_obj.data:
+                if tvdb_obj['network'] is not None:
+                    self.networks = tvdb_obj['network']
+
+        return self.networks
+
+    def get_description(self, refresh=False):
+        if refresh:
+            tvdb_obj = self.get_tvdb_obj()
+
+            if 'overview' in tvdb_obj.data:
+                if tvdb_obj['overview'] is not None:
+                    self.description = tvdb_obj['overview'].encode('ascii', 'ignore')
+
+        return self.description
+
+    def get_genres(self, refresh=False):
+        if refresh:
+            tvdb_obj = self.get_tvdb_obj()
+
+            if tvdb_obj and 'genre' in tvdb_obj.data:
+                if tvdb_obj['genre'] is not None:
+                    self.genres = tvdb_obj['genre']
+
+        return self.genres
+
+    def get_posterimg(self, refresh=False):
+        if refresh:
+            tvdb_obj = self.get_tvdb_obj()
+
+            if tvdb_obj and '_banners' in tvdb_obj.data:
+                if tvdb_obj['_banners'] is not None:
+                    banner_data = tvdb_obj['_banners']
+
+                    if 'poster' in banner_data.keys():
+                        posterSize = banner_data['poster'].keys()[0]
+                        posterID = banner_data['poster'][posterSize].keys()[0]
+                        posterURL = banner_data['poster'][posterSize][posterID]['_bannerpath']
+
+                        try:
+                            img_download = NamedTemporaryFile(delete=True)
+                            img_download.write(urllib2.urlopen(posterURL).read())
+                            img_download.flush()
+
+                            size = (214, 317)
+
+                            if os.path.getsize(img_download.name) > 0:
+                                img_tmp = NamedTemporaryFile(delete=True)
+                                im = Image.open(img_download.name)
+                                im = im.resize(size, Image.ANTIALIAS)
+                                im.save(img_tmp, "JPEG", quality=70)
+
+                                self.posterimg.save(str(self.id) + '-tvdb.jpg', File(img_tmp))
+                        except Exception as e:
+                            logger.error("error saving image: %s" % e.message)
+                            pass
+        return self.posterimg
+
+    def get_imdb(self, refresh=True):
+        if refresh:
+            tvdb_obj = self.get_tvdb_obj()
+
+            if tvdb_obj and 'imdb_id' in tvdb_obj.data:
+                if tvdb_obj['imdb_id'] is not None:
+                    try:
+                        imdbid_id = tvdb_obj['imdb_id'].lstrip("tt")
+                        self.imdbid_id = int(imdbid_id)
+
+                        try:
+                            imdbobj = Movie.objects.get(id=int(imdbid_id))
+                        except ObjectDoesNotExist:
+                            imdbobj = Movie()
+                            imdbobj.id = int(imdbid_id)
+                            imdbobj.save()
+
+                    except:
+                        pass
+
+        return self.imdbid
+
+    def update_from_tvdb(self):
+
+        logger.info("Updating %s %s" % (str(self.id), self.title))
+        tvdb_obj = self.get_tvdb_obj()
+
+        if tvdb_obj:
+            #Lets update everything..
+            self.update_names()
+            self.get_network(refresh=True)
+            self.get_genres(refresh=True)
+            self.get_description(refresh=True)
+            self.get_posterimg(refresh=True)
+            self.get_imdb(refresh=True)
+            self.updated = datetime.now()
+            self.save()
+
+@receiver(post_save, sender=TVShow)
+def add_new_tvdbitem(sender, created, instance, **kwargs):
+
+    if created:
+        logger.info("Adding a new tvdbitem, lets make sure its fully up to date")
+
+        #First lets find the tvdbid
+        if not instance.id:
+            instance.id = instance.get_tvdbid()
+
+        instance.update_from_tvdb()

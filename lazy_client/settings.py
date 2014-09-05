@@ -15,7 +15,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 ###Lazy settings###
 ###################
 
-__VERSION__ = 6
+__VERSION__ = 7
 
 QUEUE = "rabbitmq"
 DB_TYPE = "mysql"
@@ -156,6 +156,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.admin',
+    'django.contrib.humanize',
     'rest_framework',
     'sitetree',
     'south',
@@ -243,12 +244,11 @@ LOGGING = {
             'propagate': False,
         },
         'lazy_common': {
-            'handlers': ['console', 'logfile', 'mail_admins'],
             'level': 'DEBUG',
         },
         'tvdb_api': {
             'handlers': ['console', 'logfile', 'mail_admins'],
-            'level': 'INFO',
+            'level': 'DEBUG',
         },
         '': {
             'handlers': ['console', 'logfile', 'mail_admins'],
@@ -278,6 +278,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django_mobile.middleware.MobileDetectionMiddleware',
+    'django.middleware.gzip.GZipMiddleware',
     'django_mobile.middleware.SetFlavourMiddleware',
     'lazy_client_ui.middleware.LoginRequiredMiddleware',
 )

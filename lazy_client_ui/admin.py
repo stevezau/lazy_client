@@ -1,5 +1,5 @@
 from django.contrib import admin
-from lazy_client_core.models import DownloadItem, Job, Imdbcache, Tvdbcache, Version
+from lazy_client_core.models import DownloadItem, Job, Movie, TVShow, Version
 
 class DownloadItemAdmin(admin.ModelAdmin):
     search_fields = ('title', 'localpath', 'ftppath')
@@ -16,5 +16,5 @@ class TvdbcacheAdmin(admin.ModelAdmin):
 admin.site.register(DownloadItem, DownloadItemAdmin)
 admin.site.register(Job)
 admin.site.register(Version, VersionAdmin)
-admin.site.register(Imdbcache, ImdbcacheAdmin)
-admin.site.register(Tvdbcache, TvdbcacheAdmin)
+admin.site.register(Movie, ImdbcacheAdmin)
+admin.site.register(TVShow, TvdbcacheAdmin)

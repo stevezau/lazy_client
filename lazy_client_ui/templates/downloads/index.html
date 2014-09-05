@@ -7,8 +7,6 @@
 {% endblock %}
 
 {% block content %}
-    <h1>{{ type|title }}</h1>
-    <!--{% sitetree_menu from "lazymenu" include "this-children" template "buttons.html" %}-->
+    <h1>    {{ type|title }}</h1>
     <div class='downloads' action='{% url 'downloads.get' type %}'></div>
-     <!--{{% sitetree_menu from "lazymenu" include "this-children" template "buttons.html" %}-->
 {% endblock %}

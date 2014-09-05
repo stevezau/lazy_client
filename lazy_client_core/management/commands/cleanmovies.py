@@ -11,7 +11,7 @@ from flexget.utils.imdb import ImdbSearch, ImdbParser
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 
-from lazy_client_core.models import Imdbcache
+from lazy_client_core.models import Movie
 from lazy_client_core.utils import common
 from lazy_common.utils import is_video_file, get_size
 from lazy_common import metaparser
@@ -50,7 +50,7 @@ class Command(BaseCommand):
         """
 
         if options['updateimgs']:
-            for tvdb_obj in Imdbcache.objects.all():
+            for tvdb_obj in Movie.objects.all():
                 try:
                     tvdb_obj.update_from_imdb()
                 except:
@@ -112,7 +112,7 @@ class Command(BaseCommand):
             #Find jobs running and if they are finished or not
             logger.info('Performing imdb update')
 
-            for imdb_obj in Imdbcache.objects.all():
+            for imdb_obj in Movie.objects.all():
 
                 #logger.info("%s: Updating" % imdb_obj.title)
 
@@ -176,7 +176,7 @@ class Command(BaseCommand):
 
                 #lets see if it already belongs to a movie
                 try:
-                    imdbobj = Imdbcache.objects.get(localpath=path)
+                    imdbobj = Movie.objects.get(localpath=path)
                 except ObjectDoesNotExist:
                     #does not exist
                     logger.info("FOLDER: %s is not associated with any imdb object.. lets try fix" % dir)
@@ -216,7 +216,7 @@ class Command(BaseCommand):
                             continue
 
                         try:
-                            imdbobj = Imdbcache.objects.get(id=imdb_id)
+                            imdbobj = Movie.objects.get(id=imdb_id)
 
                             #lets compare the two
                             cur_files = common.get_video_files(path)
@@ -246,7 +246,7 @@ class Command(BaseCommand):
                             imdbobj.save()
                         except:
                             #does not exist in imdb, lets create it
-                            new_imdbcache = Imdbcache()
+                            new_imdbcache = Movie()
                             new_imdbcache.id = imdb_id
                             new_imdbcache.localpath = path
                             logger.info("FOLDER: %s create new imdb object" % dir)
