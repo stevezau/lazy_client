@@ -7,7 +7,7 @@ def errors(request):
     errors = common.get_lazy_errors()
 
     if len(errors) == 0:
-        errors = ""
+        errors = []
 
     return {
         'lazy_errors': errors,

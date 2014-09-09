@@ -2,10 +2,8 @@ from django.conf.urls import patterns, url
 from django.views.generic import RedirectView
 from django.core.urlresolvers import reverse_lazy
 
-from lazy_client_ui.views import downloads, config, other, manage
+from lazy_client_ui.views import queue, config, other, manage
 from lazy_client_ui.views import home
-
-from django.contrib.auth.views import login
 
 urlpatterns = patterns('',
 
@@ -18,14 +16,11 @@ urlpatterns = patterns('',
     url(r'^$', home.IndexView.as_view(), name='home'),
 
     #Downloads
-    url(r'^downloads$', RedirectView.as_view(url=reverse_lazy('downloads.index', args=['downloading'])), name='downloads.redirect'),
-    url(r'^downloads/get/(?P<type>\w+)/$', downloads.DownloadsListView.as_view(), name='downloads.get'),
-    url(r'^downloads/log/(?P<pk>\w+)/$', downloads.DownloadLog.as_view(), name='downloads.log'),
-    url(r'^downloads/log/(?P<pk>\w+)/clear$', downloads.downloadlog_clear, name='downloads.log.clear'),
-    url(r'^downloads/update/(?P<action>\w+)/$', downloads.update, name='downloads.update'),
-    url(r'^downloads/manualfix/$', downloads.DownloadsManuallyFix.as_view(), name='downloads.manualfix'),
-    url(r'^downloads/manualfix/(?P<pk>\w+)/$', downloads.DownloadsManuallyFixItem.as_view(), name='downloads.manualfixitem'),
-    url(r'^downloads/(?P<type>\w+)/$', downloads.DownloadsIndexView.as_view(), name='downloads.index'),
+    url(r'^queue/log/(?P<pk>\w+)/$', queue.DownloadLog.as_view(), name='queue.log'),
+    url(r'^queue/log/(?P<pk>\w+)/clear$', queue.downloadlog_clear, name='queue.log.clear'),
+    url(r'^queue/manualfix/$', queue.DownloadsManuallyFix.as_view(), name='queue.manualfix'),
+    url(r'^queue/manualfix/(?P<pk>\w+)/$', queue.DownloadsManuallyFixItem.as_view(), name='queue.manualfixitem'),
+    url(r'^queue/(?P<type>\w+)/$', queue.QueueManage.as_view(), name='queue.index'),
 
     #Config - Redirect
     url(r'^config$', RedirectView.as_view(url=reverse_lazy('config.tvmap.index')), name='config.redirect'),

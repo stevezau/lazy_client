@@ -1,87 +1,55 @@
 {% extends "base.html" %}
+{% load sitetree %}
 
-{% block title %}Home{% endblock %}
+{% block title %}{{ type }}{% endblock %}
 
 {% block content %}
-    <h3>Media Server Status ({% if queue_running %}Running{% else %}Stopped{% endif %})</h3>
+{% load download_extras %}
 
-    <div class="middle">
-        <form method="post" id="form">
-        {% csrf_token %}
-        {% if queue_running %}
-            <input type="hidden" name="action" value="stop">
-            <input type="submit" value="Stop Queue">
-        {% else %}
-            <input type="hidden" name="action" value="start">
-            <input type="submit" value="Start Queue">
-        {% endif %}
-        </form>
+<div class="home">
+    <div class="row no-border">
+        <div class="col-xs-12">
+            <div class="progress">
+                <div class="progress-bar progress-bar-{{ percent_used|progressbar_color }} active" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width: {{ percent_used }}%">
+                    <span>
+                        {{ percent_used|floatformat:2 }}% Used ({{ free_gb }} GB Free)
+                    </span>
+                </div>
+            </div>
+            <form method="post" id="form">
+            {% csrf_token %}
+            <strong>Status: {% if queue_running %}Running{% else %}Stopped{% endif %}</strong>
+            {% if queue_running %}
+                <input type="hidden" name="action" value="stop">
+                <input type="submit" class="btn btn-default btn-sm pull-right" value="Stop Queue">
+            {% else %}
+                <input type="hidden" name="action" value="start">
+                <input type="submit" class="btn btn-default btn-sm pull-right" value="Start Queue">
+            {% endif %}
+            </form>
+
+        </div>
     </div>
-<div class="row">
-  <div class="col-sm-6 col-md-2">
-    <div class="thumbnail">
-      <a href='{% url 'downloads.index' 'downloading' %}'><img src='{{ STATIC_URL }}images/icons/download.jpg'></a>
-      <div class="caption">
-        <h3><a href='{% url 'downloads.index' 'downloading' %}'>Downloading</a></h3>
-        <p>There are currently <strong>{{ downloading }}</strong> items downloading</p>
-        <!-- <p>
-            {% load sitetree %}
-            {% sitetree_menu from "lazymenu" include "downloads" template "homebuttons.html" %}
-        </p> -->
-      </div>
+
+    <div class="row">
+        <div class="col-xs-12"><a href="{% url "queue.index" "downloading" %}" class="btn-full"><span class="badge">{{ downloading }}</span><strong>Downloading</strong></a></div>
     </div>
-  </div>
-  <div class="col-sm-6 col-md-2">
-    <div class="thumbnail">
-      <a href='{% url 'downloads.index' 'queue' %}'><img src='{{ STATIC_URL }}images/icons/download_queue.jpg'></a>
-      <div class="caption">
-        <h3><a href='{% url 'downloads.index' 'queue' %}'>Queues</a></h3>
-        <p>There are currently <strong>{{ queue }}</strong> items in queue</p>
-        <!-- <p>
-            {% load sitetree %}
-            {% sitetree_menu from "lazymenu" include "downloads" template "homebuttons.html" %}
-        </p> -->
-      </div>
+
+    <div class="row">
+        <div class="col-xs-12"><a href="{% url 'queue.index' 'queue' %}" class="btn-full"><span class="badge">{{ queue }}</span><strong>In Queue</strong></a></div>
     </div>
-  </div>
-  <div class="col-sm-6 col-md-2">
-    <div class="thumbnail">
-      <a href='{% url 'downloads.index' 'pending' %}'><img src='{{ STATIC_URL }}images/icons/approval.jpg'></a>
-      <div class="caption">
-        <h3><a href='{% url 'downloads.index' 'pending' %}'>Pending Approval</a></h3>
-        <p>There are currently <strong>{{ pending }}</strong> items pending approval</p>
-      </div>
+
+    <div class="row">
+        <div class="col-xs-12"><a href="{% url 'queue.index' 'pending' %}" class="btn-full"><span class="badge">{{ pending }}</span><strong>Pending Approval</strong></a></div>
     </div>
-  </div>
-  <div class="col-sm-6 col-md-2">
-    <div class="thumbnail">
-      <div class='progressbar_10'>x</div>
-      <div class="caption">
-        <h3><a href='{% url 'downloads.index' 'pending' %}'>Pending Approval</a></h3>
-        <p><strong>{{ percent_used }}% Used ({{ free_gb }} GB Free)</strong></p>
-           <script>doReverseProgressbar(10, {{ percent_used }})</script>
-      </div>
+
+    <div class="row">
+        <div class="col-xs-12"><a href="{% url 'queue.index' 'extracting' %}" class="btn-full"><span class="badge">{{ extracting }}</span><strong>Extracting</strong></a></div>
     </div>
-  </div>
-  <div class="col-sm-6 col-md-2">
-    <div class="thumbnail">
-      <img src='{{ STATIC_URL }}images/icons/extracting.png'>
-      <div class="caption">
-        <h3><a href="#">Extracting</a></h3>
-        <p>Currently extracting <strong>{{ extracting }} items</strong></p>
-      </div>
+
+    <div class="row">
+        <div class="col-xs-12"><a href="{% url 'queue.index' 'errors' %}" class="btn-full"><span class="badge">{{ errors }}</span><strong>Errors</strong></a></div>
     </div>
-  </div>
-  <div class="col-sm-6 col-md-2">
-    <div class="thumbnail">
-      <a href='{% url 'downloads.index' 'error' %}'><img src='{{ STATIC_URL }}images/icons/error.jpg'></a>
-      <div class="caption">
-        <h3><a href='{% url 'downloads.index' 'error' %}'>Errors</a></h3>
-        <p>You have <strong>{{ errors }} errors</strong></p>
-      </div>
-    </div>
-  </div>
+
 </div>
-
-
 {% endblock %}

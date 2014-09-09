@@ -1,0 +1,15 @@
+{% if download.imdbid %}
+    <span class="rating">
+        <span class="rating-star">{{ download.imdbid.score }}</span>
+        <span class="rating-votes">
+            <small><i>
+                {% if download.imdbid.score %}
+
+                    {% if download.imdbid.votes %}
+                        {% load humanize %} {{ download.imdbid.votes|intcomma }} Votes
+                    {% endif %}
+                {% endif %}
+            </i></small>
+        </span>
+    </span>
+{% endif %}

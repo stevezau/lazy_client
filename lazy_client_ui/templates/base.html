@@ -10,53 +10,35 @@
 
     <title>{% block title %}Download Manager{% endblock %}</title>
 
-    <!-- Lazy CSS -->
-    <link rel="stylesheet" href="{{ STATIC_URL }}css/lazy_client_ui.css" />
-
     <!-- Jquery core CSS -->
     <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/themes/smoothness/jquery-ui.css" />
 
     <!-- Bootstrap core CSS -->
     <link href="{{ STATIC_URL }}bootstrap/css/bootstrap.min.css" rel="stylesheet">
 
-    <!-- Custom styles for this template -->
-    <link href="{{ STATIC_URL }}bootstrap/starter-template.css" rel="stylesheet">
-
-    <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
-    <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
-    <script src={{ STATIC_URL }}bootstrap/js/ie-emulation-modes-warning.js"></script>
-
-    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-    <script src="{{ STATIC_URL }}bootstrap/js/ie10-viewport-bug-workaround.js"></script>
-
     <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
       <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
       <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
+
+    <!-- Lazy CSS -->
+    <link rel="stylesheet" href="{{ STATIC_URL }}css/lazy_client_ui.css" />
   </head>
 
   <body>
-{% include "header.html" %}
+        {% block header %}
+            {% include "header.html" %}
+        {% endblock %}
 
-    <div id="loading" style='display:none'>
-        <div id="floatingBarsG">
-            <div class="blockG" id="rotateG_01"></div>
-            <div class="blockG" id="rotateG_02"></div>
-            <div class="blockG" id="rotateG_03"></div>
-            <div class="blockG" id="rotateG_04"></div>
-            <div class="blockG" id="rotateG_05"></div>
-            <div class="blockG" id="rotateG_06"></div>
-            <div class="blockG" id="rotateG_07"></div>
-            <div class="blockG" id="rotateG_08"></div>
-        </div>
-        Loading...
-    </div>
-    <div class="container-fluid">
+        {% block submenu %}
+            {% load sitetree %}
+            {% sitetree_breadcrumbs from "lazymenu" template "breadcrumbs.html" %}
+        {% endblock %}
 
-      {% block content %}{% endblock %}
-
-    </div><!-- /.container -->
+        <div class="container body">
+          {% block content %}{% endblock %}
+        </div><!-- /.container -->
 
 
     <!-- Bootstrap core JavaScript
@@ -65,7 +47,6 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
     <script src="{{ STATIC_URL }}bootstrap/js/bootstrap.min.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/jquery-ui.min.js"></script>
-    <script src="{{ STATIC_URL }}js/jquery.dotdotdot.min.js"></script>
     <script src="{{ STATIC_URL }}js/lazy.js"></script>
 
 

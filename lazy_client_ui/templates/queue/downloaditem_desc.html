@@ -1,0 +1,8 @@
+{% load download_extras %}
+<div class="description">
+    {% if download.tvdbid.description %}
+        {% if flavour == "mobile" %}{{ download.tvdbid.description|truncatesmart:300 }}{% else %}{{ download.tvdbid.description }}{% endif %}
+    {% elif download.imdbid.description %}
+       {% if flavour == "mobile" %}{{ download.imdbid.description|truncatesmart:70 }}{% else %}{{ download.imdbid.description}}{% endif %}
+    {% endif %}
+</div>

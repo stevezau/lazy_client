@@ -10,17 +10,20 @@ from django.core.urlresolvers import reverse_lazy
 from django.conf import settings
 from django.db.models import Q
 from lazy_client_core.models import DownloadItem, TVShow, Movie
-from lazy_client_ui import common
-from lazy_client_core.utils import common as commoncore
-from lazy_common.tvdb_api import Tvdb
 from lazy_client_ui.forms import DownloadItemManualFixForm
 
 
 logger = logging.getLogger(__name__)
 
+
+class QueueIndex(TemplateView):
+    template_name = 'queue/index.html'
+    model = DownloadItem
+
+
 class DownloadLog(DetailView):
     model = DownloadItem
-    template_name = "downloads/log.html"
+    template_name = "queue/log.html"
 
     def post(self, request, *args, **kwargs):
         items = request.POST.getlist('item')
@@ -41,7 +44,7 @@ class DownloadLog(DetailView):
 
 class DownloadsManuallyFix(TemplateView):
     model = DownloadItem
-    template_name = "downloads/manualfix.html"
+    template_name = "queue/manualfix.html"
 
     def post(self, request, *args, **kwargs):
         items = request.POST.getlist('item')
@@ -67,7 +70,7 @@ class DownloadsManuallyFixItem(UpdateView):
     form_class = DownloadItemManualFixForm
     success_url = reverse_lazy('downloads.manualfix')
     model = DownloadItem
-    template_name = "downloads/manualfixitem.html"
+    template_name = "queue/manualfixitem.html"
 
     def get_context_data(self, **kwargs):
         context = super(DownloadsManuallyFixItem, self).get_context_data(**kwargs)
@@ -194,39 +197,42 @@ class DownloadsManuallyFixItem(UpdateView):
         return HttpResponseRedirect(self.get_success_url())
 
 
-
-class DownloadsIndexView(TemplateView):
-    template_name = 'downloads/index.html'
-    model = DownloadItem
-
-    def get_context_data(self, **kwargs):
-        context = super(DownloadsIndexView, self).get_context_data(**kwargs)
-        context['type'] = self.kwargs.get('type')
-        return context
-
-
-class DownloadsListView(ListView):
-    template_name = 'downloads/downloaditem_content.html'
+class QueueManage(ListView):
+    template_name = 'queue/index.html'
     model = DownloadItem
 
     type = None
     dlget = DownloadItem.DOWNLOADING
 
     def get_context_data(self, **kwargs):
-        context = super(DownloadsListView, self).get_context_data(**kwargs)
+        context = super(QueueManage, self).get_context_data(**kwargs)
+
+        from lazy_client_ui import common
+        context['downloading'] = common.num_downloading()
+        context['extracting'] = common.num_extracting()
+        context['queue'] = common.num_queue()
+        context['pending'] = common.num_pending()
+        context['errors'] = common.num_error()
+
         context['type'] = self.type
 
         if self.dlget == DownloadItem.PENDING:
             context['doregroup'] = True
             queryset = self.get_queryset()
-            context['object_list_regroup'] = sorted(queryset, key=self.key_function)
+
+            # Sort by class and grade descending, case insensitive
+            from operator import attrgetter
+            from lazy_common import utils
+
+            get_date = utils.compose(attrgetter('dateadded'))
+            get_tvdbid = utils.compose(attrgetter('tvdbid_id'))
+
+            context['object_list_regroup'] = utils.multikeysort(queryset, ['-dateadded', 'tvdbid'],{'tvdbid':get_tvdbid,'dateadded':get_date})
 
         return context
 
 
     def get_queryset(self):
-        """Return the last five published polls."""
-
         self.type = self.kwargs.get('type')
 
         if self.type.lower() == "error":
@@ -257,211 +263,7 @@ class DownloadsListView(ListView):
             return (dlitem.id, None)
 
 
-def approvemore(items):
-    status = 200
-    response = HttpResponse(content_type="text/plain")
 
-    tvdbapi = Tvdb()
-
-    for item in items:
-        try:
-            dlitem = DownloadItem.objects.get(pk=item)
-
-            if dlitem.tvdbid_id:
-                dlitem.status = DownloadItem.QUEUE
-                dlitem.save()
-                tvdbapi.add_fav(dlitem.tvdbid_id)
-                response.write("Approved and will continue to get %s\n" % dlitem.title)
-            else:
-                response.write("Unable to approve and continue to get more %s and it has no associated tvdb entry, try just approve it instead") % item
-
-        except ObjectDoesNotExist:
-            status = 210
-            response.write("Unable to approve %s as it was not found") % item
-
-    response.status_code = status
-    return response
-
-
-def ignore(items):
-    status = 200
-    response = HttpResponse(content_type="text/plain")
-
-    from lazy_common import metaparser
-
-    for item in items:
-        try:
-            dlitem = DownloadItem.objects.get(pk=item)
-
-            if dlitem.get_type() == metaparser.TYPE_TVSHOW:
-
-                series_data = dlitem.metaparser()
-
-                if series_data:
-                    ignoretitle = series_data.details['series'].replace(" ", ".")
-                    commoncore.ignore_show(ignoretitle)
-                    dlitem.delete()
-                    response.write("Deleted and ignored %s\n" % ignoretitle)
-                else:
-                    dlitem.delete()
-                    response.write("Unable to figure out the series name, DELETED BUT NOT IGNORED (DO IT MANUALLY)\n")
-            else:
-                response.write("Deleted but unable ignore %s as its a movie\n" % dlitem.title)
-                dlitem.delete()
-
-        except ObjectDoesNotExist:
-            status = 210
-            response.write("Unable to ignore %s as it was not found\n" % item)
-
-    response.status_code = status
-    return response
-
-
-def retry(items):
-
-    status = 200
-    response = HttpResponse(content_type="text/plain")
-
-    for item in items:
-        try:
-            dlitem = DownloadItem.objects.get(pk=item)
-
-            percent_complete = dlitem.get_percent_complete()
-
-            print percent_complete
-
-            #TODO: Fix this use dlitem retry
-            dlitem.retry()
-            response.write("Retrying %s\n" % dlitem.title)
-
-        except ObjectDoesNotExist:
-            status = 210
-            response.write("Unable to retry %s as it was not found") % item
-
-    response.status_code = status
-    return response
-
-
-def delete(items):
-
-    status = 200
-    response = HttpResponse(content_type="text/plain")
-
-    for item in items:
-        try:
-            dlitem = DownloadItem.objects.get(pk=item)
-            dlitem.delete()
-            response.write("Deleted %s\n" % dlitem.title)
-        except Exception as e:
-            logger.exception(e)
-            status = 210
-            response.write("Unable to delete %s as %s" % (item, e.message))
-
-    response.status_code = status
-    return response
-
-
-def reset(items):
-    status = 200
-    response = HttpResponse(content_type="text/plain")
-
-    for item in items:
-        try:
-            dlitem = DownloadItem.objects.get(pk=item)
-            dlitem.reset()
-            response.write("Reset %s\n" % dlitem.title)
-        except Exception as e:
-            status = 210
-            response.write("Unable to delete %s as %s" % (item, e.message))
-
-    response.status_code = status
-    return response
-
-
-def force_reset(items):
-    status = 200
-    response = HttpResponse(content_type="text/plain")
-
-    for item in items:
-        try:
-            dlitem = DownloadItem.objects.get(pk=item)
-            dlitem.reset(force=True)
-            response.write("Reset %s\n" % dlitem.title)
-        except Exception as e:
-            status = 210
-            response.write("Unable to delete %s as %s" % (item, e.message))
-
-    response.status_code = status
-    return response
-
-
-
-def decreasepri(items):
-    status = 200
-    response = HttpResponse(content_type="text/plain")
-
-    for item in items:
-        try:
-            dlitem = DownloadItem.objects.get(pk=item)
-            dlitem.decrease_prioritys()
-            response.write("Decreased priority of %s to level %s\n" % (dlitem.title, dlitem.priority))
-        except ObjectDoesNotExist:
-            status = 210
-            response.write("Unable to decrease priority %s as it was not found") % item
-
-    response.status_code = status
-    return response
-
-
-def increasepri(items):
-    status = 200
-    response = HttpResponse(content_type="text/plain")
-
-    for item in items:
-        try:
-            dlitem = DownloadItem.objects.get(pk=item)
-            dlitem.increate_priority()
-            response.write("Increased priority of %s to level %s\n" % (dlitem.title, dlitem.priority))
-        except ObjectDoesNotExist:
-            status = 210
-            response.write("Unable to increase priority %s as it was not found") % item
-
-    response.status_code = status
-    return response
-
-
-def approve(items):
-    status = 200
-    response = HttpResponse(content_type="text/plain")
-
-    for item in items:
-        try:
-            dlitem = DownloadItem.objects.get(pk=item)
-            dlitem.status = DownloadItem.QUEUE
-            dlitem.save()
-            response.write("Approved %s\n" % dlitem.title)
-        except ObjectDoesNotExist:
-            status = 210
-            response.write("Unable to approve %s as it was not found") % item
-
-    response.status_code = status
-    return response
-
-def update(request, action):
-
-    if request.method == 'POST':
-        items = request.POST.getlist('item')
-
-        if len(items) == 0:
-            return HttpResponse("Nothing selected", content_type="text/plain", status=210)
-        try:
-            function = common.load_button_module("lazy_client_ui.views.downloads", action)
-            return function(items)
-        except Exception as e:
-            logger.exception(e)
-            return HttpResponse("Error processing update %s" % e, content_type="text/plain", status=220)
-
-    return HttpResponse("Invalid request", content_type="text/plain")
 
 def downloadlog_clear(request, pk):
 

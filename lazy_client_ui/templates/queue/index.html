@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load sitetree %}
+
+{% block title %}{{ type }}{% endblock %}
+
+{% block submenu %}
+    <div class="container submenu">
+            <div class="btn-group-justified btn-group button_bar">
+              <a href="{% url "queue.index" "downloading" %}"><button type="button" class="btn btn-default btn-responsive {% if type|lower == "downloading" %} active{% endif %}">Downloading<span class="badge">{{ downloading }}</span></button></a>
+              <a href="{% url "queue.index" "Queue" %}"><button type="button" class="btn btn-default btn-responsive {% if type|lower == "queue" %} active{% endif %}">Queue<span class="badge">{{ queue }}</span></button></a>
+              <a href="{% url "queue.index" "Pending" %}"><button type="button" class="btn btn-responsive btn-default {% if type|lower == "pending" %} active{% endif %}">Pending<span class="badge">{{ pending }}</span></button></a>
+              <a href="{% url "queue.index" "Errors" %}"><button type="button" class="btn btn-default btn-responsive {% if type|lower == "errors" %} active{% endif %}">Errors<span class="badge">{{ errors }}</span></button></a>
+            </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+    {% if object_list.count > 0 %}
+
+                <form id="formID">
+                <div class="media-list">
+                    {% csrf_token %}
+
+                    {% if doregroup %}
+                        {% regroup object_list_regroup by tvdbid as object_list_grouped %}
+
+                        {% for downloadgroup in object_list_grouped %}
+                            {% with count=downloadgroup.list|length %}
+                                {%  if downloadgroup.grouper == None or count == 1%}
+                                    {% for download in downloadgroup.list %}
+                                        {% include "queue/downloaditem_detail.html" %}
+                                    {% endfor %}
+                                {% else %}
+                                    {% include "queue/downloaditem_group.html" %}
+                                {% endif %}
+                            {% endwith %}
+                        {%  endfor %}
+                    {% else %}
+                        {% for download in object_list %}
+                            {% include "queue/downloaditem_detail.html" %}
+                        {% endfor %}
+                   {% endif %}
+                </div>
+               </form>
+
+        {% else %}
+            <div class="middle pad10">No items found with status of {{ type }}</div>
+        {% endif %}
+{% endblock %}

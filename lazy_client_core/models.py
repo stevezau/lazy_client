@@ -125,16 +125,33 @@ class DownloadItem(models.Model):
     def get_quality(self):
         parser = self.metaparser()
 
-        quality = None
+        quality = []
 
-        if 'format' in parser.details:
-            if parser.details['format'] == "HDTV":
-                quality = "SD"
+        if parser.quality.resolution:
+            quality.append(parser.quality.resolution.name)
 
-        if 'screenSize' in parser.details:
-            quality = parser.details['screenSize']
+        if parser.quality and parser.quality.source:
+            quality.append(parser.quality.source.name)
 
-        return quality
+        if len(quality) == 0 and 'format' in parser.details:
+            quality.append(parser.details['format'])
+
+        formatted_quality = []
+        for q in quality:
+            if q.lower() == "hdtv":
+                q = "HDTV"
+            if q.lower() == "xvid":
+                q = "XVID"
+            if q.lower() == "sdtv":
+                q = "SDTV"
+            if q.lower() == "bluray":
+                q = "Blu-Ray"
+            if q.lower() == "dvdrip":
+                q = "DVDRip"
+
+            formatted_quality.append(q)
+
+        return formatted_quality
 
     def get_year(self):
         parser = self.metaparser()
@@ -306,9 +323,7 @@ class DownloadItem(models.Model):
             if task:
                 result = task.result
                 if 'speed' in result:
-                    from lazy_client_core.utils import common
-                    speed = bytes2human(result['speed'], "%(value).1f %(symbol)s/sec")
-
+                    speed = result['speed']
 
         return speed
 
@@ -461,6 +476,19 @@ class DownloadItem(models.Model):
             total_size = os.path.getsize(self.localpath)
 
         return total_size
+
+    def get_finish_date(self):
+        if self.status == DownloadItem.DOWNLOADING:
+            from datetime import timedelta
+
+            total_size = self.remotesize
+            downloaded = self.get_local_size()
+            speed = self.get_speed()
+
+            if speed > 0:
+                remaining = total_size - downloaded
+                seconds_left = remaining / speed
+                return datetime.now() + timedelta(seconds=seconds_left)
 
     def get_percent_complete(self):
 

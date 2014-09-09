@@ -111,11 +111,20 @@ def download_action(request, pk):
                 error = {'status': 'failed', 'detail': "unable to find download item"}
                 return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
-        if action == "reset":
+        if action == "retry":
             try:
                 dlitem = DownloadItem.objects.get(pk=pk)
                 dlitem.retries = 0
                 dlitem.save()
+                return Response({'status': 'success', 'detail': "retrying pk: %s" % pk})
+            except ObjectDoesNotExist as e:
+                error = {'status': 'failed', 'detail': "unable to find download item"}
+                return Response(error, status=status.HTTP_400_BAD_REQUEST)
+
+        if action == "reset":
+            try:
+                dlitem = DownloadItem.objects.get(pk=pk)
+                dlitem.reset()
                 return Response({'status': 'success', 'detail': "reset pk: %s" % pk})
             except ObjectDoesNotExist as e:
                 error = {'status': 'failed', 'detail': "unable to find download item"}
@@ -124,7 +133,7 @@ def download_action(request, pk):
         if action == "delete":
             try:
                 dlitem = DownloadItem.objects.get(pk=pk)
-                dlitem.delete()
+                #dlitem.delete()
                 return Response({'status': 'success', 'detail': "deleted pk: %s" % pk})
             except ObjectDoesNotExist as e:
                 error = {'status': 'failed', 'detail': "unable to find download item"}

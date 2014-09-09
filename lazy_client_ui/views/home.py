@@ -2,7 +2,7 @@ from django.views.generic import TemplateView
 from django.conf import settings
 import os
 import logging
-from django.db.models import Q
+
 
 from lazy_client_core.models import DownloadItem
 from lazy_client_core.utils.queuemanager import QueueManager
@@ -29,11 +29,13 @@ class IndexView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super(IndexView, self).get_context_data(**kwargs)
 
-        context['downloading'] = DownloadItem.objects.filter(status=DownloadItem.DOWNLOADING, retries__lte=settings.DOWNLOAD_RETRY_COUNT).count()
-        context['extracting'] = DownloadItem.objects.filter(Q(status=DownloadItem.RENAME) | Q(status=DownloadItem.EXTRACT), retries__lte=settings.DOWNLOAD_RETRY_COUNT).count()
-        context['queue'] = DownloadItem.objects.filter(status=DownloadItem.QUEUE, retries__lt=settings.DOWNLOAD_RETRY_COUNT).count()
-        context['pending'] = DownloadItem.objects.filter(status=DownloadItem.PENDING, retries__lt=settings.DOWNLOAD_RETRY_COUNT).count()
-        context['errors'] = DownloadItem.objects.filter(~Q(status=DownloadItem.COMPLETE), retries__gt=settings.DOWNLOAD_RETRY_COUNT).count()
+        from lazy_client_ui import common
+
+        context['downloading'] = common.num_downloading()
+        context['extracting'] = common.num_extracting()
+        context['queue'] = common.num_queue()
+        context['pending'] = common.num_pending()
+        context['errors'] = common.num_error()
 
         context['queue_running'] = QueueManager.queue_running()
 

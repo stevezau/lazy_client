@@ -8,16 +8,24 @@ lazyapi_url = "/api"
 
 
 $( document ).ready(function() {
-	//$( "#dialog" ).dialog();
 
-    $(".truncate").dotdotdot({
-		//	configuration goes here
-	});
+    $(document).on('click', '.alert', function(event) {
+       $(this).hide();
+    })
 
     //////////////////////
-    /// Action Buttons ///
+    /// Download Items ///
     //////////////////////
 
+    /* Remove border if there is only 1 item */
+    if ($(".media-list").length > 0) {
+        dlitems = $(".media-list").children(".download-item")
+        if (dlitems.length == 1) {
+            $(dlitems).addClass("no-border")
+        }
+    }
+
+    /* Actions Buttons */
     $(document).on('click', '[class^="item_approve_"]', function(event) {
         id = $(this).prop("class").match(/item_approve.+[0-9]/).toString().replace("item_approve_", "");
         action_item(id, "approve")
@@ -37,6 +45,14 @@ $( document ).ready(function() {
         id = $(this).prop("class").match(/item_reset_.+[0-9]/).toString().replace("item_reset_", "");
         action_item(id, "reset")
     });
+
+    $(document).on('click', '[class^="item_retry_"]', function(event) {
+        id = $(this).prop("class").match(/item_retry_.+[0-9]/).toString().replace("item_retry_", "");
+        action_item(id, "retry")
+    });
+
+
+
 
     /////////////////////////
     /// Handle Manual Fix ///
@@ -132,229 +148,6 @@ $( document ).ready(function() {
 		  $('#loading').hide();
 		 
 		});
-		
-	//get Download content
-	if ($('.downloads').size()) {
-	    getContent();
-	}
-
-	//Hightlight from checkbox click
-	$(document).on('click', 'input:checkbox', function(event) {
-
-		var downloadItem = $(this).closest('.selectable');
-		
-		if (!downloadItem.length) {
-			return;
-		}
-		
-		var inputName = $(this).prop('name');
-			
-		if (inputName.indexOf('multi') !== -1) {
-			//Multi Item top check box
-			var input = downloadItem.find(':checkbox');
-			
-		    if ($(this).is(':checked')) {
-		    	//check all boxes
-		    	input.prop('checked', true);
-		    	
-		    	//add hightlight
-		    	downloadItem.addClass('highlight');
-		    } else {
-		    	input.prop('checked', false);
-		    	downloadItem.removeClass('highlight');
-		    }
-		} else {
-			//part of a multi?
-			var firstInput = downloadItem.find(':checkbox').first();
-			var inputName = firstInput.prop('name');
-			
-			if (inputName.indexOf('multi') !== -1) {
-				//Multi download item checkbox
-			    if ($(this).is(':checked')) {
-			    	downloadItem.addClass('highlight');
-			    } else {
-			    	if (downloadItem.find(':checkbox').is(':checked')) {
-			    		downloadItem.addClass('highlight');
-			    	} else {
-			    		downloadItem.removeClass('highlight');
-			    	}
-			    	
-			    }	
-			} else {
-				//NON MULTI
-			    if ($(this).is(':checked')) {
-			    	downloadItem.addClass('highlight');
-			    } else {
-			    	downloadItem.removeClass('highlight');
-			    }
-			}
-		}
-		
-		return;
-
-	});
-    
-	//Highlight checked items
-	$(document).on('click', '.selectable', function(event) {
-
-		var target = $(event.target);
-	    if (target.is('input:checkbox')) return;
-			
-	    var input = $(this).find(':checkbox');
-	    
-	    if (input.is(':checked')) {
-	    	input.prop('checked', false);
-	        $(this).removeClass('highlight');
-	    } else {
-	    	input.prop('checked', true);
-	        $(this).addClass('highlight');
-	    }
-	    return ;
-	    			
-	});
-
-   calc_shows()
-
-    $(document).on('click', '#show-shows-no-missing', function(event) {
-
-        $( ".show" ).each(function( index ) {
-            //how many seasons do we have
-            seasons_count = $(this).find(".season").length
-            all_exist_count = $(this).find(".season-all-exists").length
-
-            if (seasons_count == all_exist_count) {
-                $(this).show()
-            }
-        });
-
-        //change button
-        $("#show-shows-no-missing").text("Hide shows with none missing")
-        $("#show-shows-no-missing").attr("id","hide-shows-no-missing")
-
-        calc_shows()
-    });
-
-
-    $(document).on('click', '#hide-shows-no-missing', function(event) {
-
-        $( ".show" ).each(function( index ) {
-            //how many seasons do we have
-
-            seasons_count = $(this).find(".season:visible").length
-            all_exist_count = $(this).find(".season-all-exists:visible").length
-            wont_fix_count = $(this).find(".season-wont-fix:visible").length
-
-            count = all_exist_count + wont_fix_count
-
-            if (seasons_count == count) {
-                $(this).hide()
-            }
-        });
-
-        //change button
-        $("#hide-shows-no-missing").text("Show shows with none missing")
-        $("#hide-shows-no-missing").attr("id","show-shows-no-missing")
-
-        calc_shows()
-    });
-
-    $(document).on('click', '#hide-missing-seasons', function(event) {
-        //hide all the entire missing seasons
-        $(".missing-all-season").parent().hide()
-
-        //change button
-        $("#hide-missing-seasons").text("Show Missing Seasons")
-        $("#hide-missing-seasons").attr("id","show-missing-seasons")
-    });
-
-    $(document).on('click', '#show-missing-seasons', function(event) {
-        //hide all the entire missing seasons
-        $(".missing-all-season").parent().show()
-
-        //change button
-        $("#show-missing-seasons").text("hide Missing Seasons")
-        $("#show-missing-seasons").attr("id","hide-missing-seasons")
-    });
-
-    /////////////////////
-    /// BUTTON POST ////
-    ////////////////////
-
-    $(document).on('click', '.button_post_newpage', function(event) {
-        var url = $(this).attr('url');
-        event.preventDefault();
-
-        $('#formID').prop("method", "post")
-        $('#formID').prop("name", "downloads")
-        $('#formID').prop("action", url)
-
-        document.forms['downloads'].submit();
-
-
-	});
-
-	$(document).on('click', '.button_post', function(event) {
-		var url = $(this).attr('url');
-
-		var okPage = $('.downloads').attr('okPage');
-		var refresh = $('.downloads').attr('refresh');
-		var downloads = $('.downloads').length;
-        var button_reload_page = $(this).attr('reload');
-
-        if (refresh == undefined) {
-            if (downloads == 0) {
-                refresh = 'false';
-            }
-        }
-
-		event.preventDefault();
-		
-		formdata=$('#formID').serialize();
-
-		$.post(url,formdata).done(function(data){
-			
-			if (refresh != 'false') {
-				getContent();
-			}
-						
-			result = "<pre id='dialog'>" + data + "</pre>";
-			
-			if ($('#dialog').length > 0) {
-				$('#dialog').html(result);
-			} else {
-				$('#content').prepend(result);
-			}
-			
-			$( "#dialog" ).dialog({
-				  minHeight: 300,
-			      width: 700,
-			      modal: true,
-			      resize: "auto",
-			     
-			      buttons: {
-			          Ok: function() {
-                          if (button_reload_page == "true") {
-                              $( this ).dialog( "close" );
-                              location.reload();
-                          }
-                          if (okPage == undefined) {
-                              $( this ).dialog( "close" );
-                          } else {
-                              window.location.href = okPage;
-
-                          }
-                          $(window).scrollTop(0);
-			          }
-			        }
-			    });
-
-		});
-
- 		return false;
-	});
-	
-	
-	
 
 });
 
@@ -365,13 +158,19 @@ $( document ).ready(function() {
 
 function item_ajax_success_handler(data, textStatus, jqXHR)
 {
-    this.custom_data.item_obj.remove()
+    if (this.custom_data.multi_obj_id) {
+        this.custom_data.item_obj.remove();
+    } else {
+        this.custom_data.item_obj.delay("fast").fadeOut('fast');
+    }
+
 
     //Any left?
     if (this.custom_data.multi_obj_id) {
         multi_obj = $("#" + this.custom_data.multi_obj_id)
+
         if ($(multi_obj).find("[id^='item_']").length == 0){
-            $(multi_obj).remove()
+            $(multi_obj).delay("fast").fadeOut('fast');
         }
     }
 
@@ -379,14 +178,25 @@ function item_ajax_success_handler(data, textStatus, jqXHR)
 
 function item_ajax_error_handler(jqXHR, textStatus, errorThrown)
 {
-    if (this.custom_data.multi_obj_id) {
-        multi_obj = $("#" + this.custom_data.multi_obj_id)
-        set_error(multi_obj, "Error ignoring: "+ errorThrown)
-    } else{
-        set_error(this.custom_data.item_obj, "Error: "+ textStatus)
+    // Append to container body
+    if (!$(".container.body #message").length) {
+        $(".container.body").prepend('<div id="message" class="col-xs-12"></div>')
     }
 
-};
+   if (this.custom_data.multi_obj_id) {
+       multi_obj = $("#" + this.custom_data.multi_obj_id)
+       ep_season = this.custom_data.item_obj.find(".ep_title").text()
+       title = multi_obj.find(".title").text() + " " + ep_season
+   } else {
+       title = this.custom_data.item_obj.find(".title").text()
+   }
+
+   msg = title + ": " + errorThrown
+
+   $(".container.body #message").prepend('<div id="inner-message" class="alert alert-danger">' +
+                                            '<button type="button" class="close" data-dismiss="alert">&times;</button>' +
+                                            '' + msg + '' +
+                                        '</div>')};
 
 function action_item_ajax(id, action, multi_obj_id) {
     obj_name = "#item_" + id;
@@ -397,7 +207,7 @@ function action_item_ajax(id, action, multi_obj_id) {
         data: {"action": action},
         dataType : "json",
         item_obj: item_obj,
-        custom_data: {"item_obj": item_obj, "multi_obj_id": multi_obj_id},
+        custom_data: {"action": action,"item_obj": item_obj, "multi_obj_id": multi_obj_id},
         success: item_ajax_success_handler,
         error: item_ajax_error_handler,
         type: 'POST'});
@@ -502,79 +312,3 @@ function update_ep(current) {
         }
     });
 }
-
-function calc_shows() {
-     $("#report_count").text($(".show:visible").length)
-}
-
-
-function getContent() {
-	var type = $('.downloads').attr('getType');
-	var action = $('.downloads').attr('action');
-	var post = $('.downloads').attr('post'); 
-	
-	geturl = '';
-	
-	if(type == '10') {
-		
-		var ids = $('.downloads').attr('ids').split(',');
-		
-		var idget = '';
-		
-		jQuery.each( ids, function( i, field ) {
-			idget += "&id[]=" + field;
-	    });
-		
-		geturl = action + idget;
-	} else {
-		geturl = action;
-	}
-	
-	if (post && post != '') {
-		geturl = geturl + post;
-	}
-	
-	$.get(geturl, function( data ) {
-		$('.downloads').html( data );
-
-        $(".download-item").each(function() {
-            var righth = $(this).children(".right-col").height();
-
-            if (righth > 230) {
-                $(this).children(".left-col").height(righth);
-                $(this).children(".right-col").height(righth);
-            }
-        });
-	});
-}
-
-function doProgressbar(id, percent) {
-    $( '.progressbar_' + id).progressbar({
-    	value: percent
-	});
-	
-	if (percent < 10){
-	    $('.progressbar_' + id + ' > div').css({ 'background': 'Red' });
-	} else if (percent < 30){
-	    $('.progressbar_' + id + ' > div').css({ 'background': 'Orange' });
-	} else if (percent < 50){
-	    $('.progressbar_' + id + ' > div').css({ 'background': 'Yellow' });
-	} else{
-	    $('.progressbar_' + id + ' > div').css({ 'background': 'LightGreen' });
-	}
-}
-
-function doReverseProgressbar(id, percent) {
-    $( '.progressbar_' + id).progressbar({
-    	value: percent
-	});
-	
-	if (percent > 95){
-	    $('.progressbar_' + id + ' > div').css({ 'background': 'Red' });
-	} else if (percent > 80){
-	    $('.progressbar_' + id + ' > div').css({ 'background': 'Orange' });
-	} else{
-	    $('.progressbar_' + id + ' > div').css({ 'background': 'LightGreen' });
-	}
-}
-

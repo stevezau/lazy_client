@@ -5,29 +5,23 @@
 {% if form.errors %}
 <p>Your username and password didn't match. Please try again.</p>
 {% endif %}
+<div class="container">
+    <form method="post" action="{% url 'django.contrib.auth.views.login' %}" class="form-signin" role="form">
+    {% csrf_token %}
+        <h2 class="form-signin-heading text-center">Media Manager</h2>
+        <h3 class="text-center"><i>Please sign in</i></h3>
 
-<form method="post" action="{% url 'django.contrib.auth.views.login' %}">
-{% csrf_token %}
-<table>
-<tr>
-    <td>{{ form.username.label_tag }}</td>
-    <td>{{ form.username }}</td>
-</tr>
-<tr>
-    <td>{{ form.password.label_tag }}</td>
-    <td>{{ form.password }}</td>
-</tr>
-</table>
+            <input name="username" type="text" class="form-control" placeholder="username" required autofocus>
+            <input name="password" type="password" class="form-control" placeholder="Password" required>
+            <button class="btn btn-lg btn-primary btn-block" type="submit" value="login">Sign in</button>
 
-<input type="submit" value="login" />
-    {% if next and next.strip %}
-        <input type="hidden" name="next" value="{{ next }}" />
-    {% else %}
-        <input type="hidden" name="next" value="/" />
-    {% endif %}
+            {% if next and next.strip %}
+                <input type="hidden" name="next" value="{{ next }}" />
+            {% else %}
+                <input type="hidden" name="next" value="/" />
+            {% endif %}
+    </form>
+</div>
 
-
-
-</form>
 
 {% endblock %}

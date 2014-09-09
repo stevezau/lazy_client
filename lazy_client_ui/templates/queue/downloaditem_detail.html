@@ -1,0 +1,139 @@
+{% load download_extras %}
+<div class="row download-item" id='item_{{ download.id }}'>
+    <div class='col-md-12'>
+        {% if download.tvdbid.posterimg %}
+            <a href="http://thetvdb.com/index.php?tab=series&id={{ download.tvdbid.id }}" target="_blank" class="pull-left">
+                <img class="poster" src="{{ download.tvdbid.posterimg.url }}">
+            </a>
+        {% else %}
+            {% if download.imdbid.posterimg %}
+                <a href="http://www.imdb.com/title/tt{{ download.imdbid.id }}/" target="_blank" class="pull-left">
+                    <img class="poster" src="{{ download.imdbid.posterimg.url }}">
+                </a>
+            {% else %}
+                <img class="poster pull-left" src="{{ STATIC_URL }}images/noimg.gif" class="pull-left">
+            {% endif %}
+        {% endif %}
+
+         <h4><span class="title">{{ download.title|format_torrent_title }}</span>
+            {% if download.get_year %}<small><i>({{ download.get_year }})</i></small>{% endif %}
+
+            {% if download.get_type == 1 and download.get_season %}
+                <b>
+                    S{{ download.get_season }}
+                    {% for ep in download.get_eps %}
+                        E{{ ep }}
+                    {% endfor %}
+                </b>
+            {% endif %}
+
+            {% include "queue/downloaditem_rating.html" %}
+
+            <span class="label-bar">
+                {% for quality in download.get_quality %}
+                    <span class="label label-primary">{{ quality }}</span>
+                {% endfor %}
+
+                {% if download.imdbid %}
+                     {% for genre in download.imdbid.get_genres %}
+                        <span class="label label-warning">{{ genre|title }}</span>
+                     {% endfor %}
+                {% endif %}
+
+                {% if download.tvdbid %}
+                    {% if not download.imdbid %}
+                        {% for genre in download.tvdbid.get_genres_list %}
+                            <span class="label label-warning">{{ genre|title }}</span>
+                        {% endfor %}
+                    {% endif %}
+
+                    {% for network in download.tvdbid.get_networks %}
+                         <span class="label label-default">{{ network|title }}</span>
+                    {% endfor %}
+                {% endif %}
+            </span>
+
+        </h4>
+
+        {% if download.status != 4 and download.status != 6 %}
+            {% with percent_complete=download.get_percent_complete %}
+                <div class="progress">
+                    <div class="progress-bar progress-bar-success progress-bar-striped active" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width: {{ percent_complete }}%">
+                        <div class="progress-text">
+                            {{ percent_complete|floatformat:2 }}% {% if download.status == 1 %} Complete {% endif %}
+                            {% if download.status == 2 %}
+                                {{ download.get_speed|filesizeformat }}/s
+                                {% if download.get_finish_date %}
+                                    {{ download.get_finish_date|timeuntil }}
+                                {% endif %}
+                            {% endif %}
+
+                        </div>
+                    </div>
+                </div>
+            {% endwith %}
+        {% endif %}
+
+        {% include "queue/downloaditem_desc.html" %}
+
+        {% if download.status == 4 %}
+            <div><b>Extracted and Moved: {{ download.dlstart }}</b></div>
+        {% endif %}
+
+        {% if download.onlyget %}
+
+        <h5>Only downloading</h5>
+        <div class="multi-items">
+        {% for season,eps in download.onlyget.items %}
+            {% for ep in eps %}
+                <div class="download-item-small">
+                {% if ep == 0 %}
+                    <span class="inner">S{{ season }} x ALL</span>
+                {% else %}
+                    <span class="inner">S{{ season }} x E{{ ep }}</span>
+                {% endif %}
+                </div>
+            {% endfor %}
+        {% endfor %}
+        </div>
+    {% endif %}
+
+        {% if download.message %}
+            <div><pre>{{ download.message }}</pre></div>
+        {% endif %}
+
+        <div class="button_bar">
+                {% if download.status == 2 %}
+                     <button type="button" class="item_reset_{{ download.id }} btn btn-default btn-xl">
+                        <span class="glyphicon glyphicon-retweet"></span> Cancel
+                    </button>
+                {% endif %}
+
+                {% if download.status == 6 %}
+                    <button type="button" class="item_approve_{{ download.id }} btn btn-default btn-xl">
+                        <span class="glyphicon glyphicon-ok"></span> Approve
+                    </button>
+                {% endif %}
+
+                {% if download.status != 4 %}
+                    <button type="button" class="item_delete_{{ download.id }} btn btn-default btn-xl">
+                        <span class="glyphicon glyphicon-remove-circle"></span> Delete
+                    </button>
+                {% endif %}
+
+                {% if download.status == 6 and download.get_type == 1%}
+                    <button type="button" class="item_ignore_{{ download.id }} btn btn-default btn-xl">
+                        <span class="glyphicon glyphicon-minus"></span> Ignore
+                    </button>
+                {% endif %}
+
+                {% if download.retries > 3 %}
+                    <button type="button" class="item_retry_{{ download.id }} btn btn-default btn-xl">
+                        <span class="glyphicon glyphicon-repeat"></span> Retry
+                    </button>
+                {% endif %}
+
+                <a class="btn btn-default btn-xl hidden-xs" href="{% url "queue.log" download.id %}"><span class="glyphicon glyphicon-pencil"></span> Log</a>
+        </div>
+    </div>
+</div>

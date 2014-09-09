@@ -1,12 +1,238 @@
 /* Extra small devices (phones, less than 768px) */
 /* No media query since this is the default in Bootstrap */
 
+/* ####### */
+/* General */
+/* ####### */
+
+body {
+    color: #777;
+}
+
+/* Error messages */
+#message {
+    display: box;
+    flex-align: center;
+    flex-pack: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index:99;
+}
+
+#inner-message {
+    margin: 0 auto;
+    width: 300px;
+    margin-bottom: 5px;
+    padding: 3px;
+    padding-top: 15px;
+    padding-bottom: 15px;
+}
+
+
+@media (min-width: 768px) {
+    #inner-message {
+        padding: 10px;
+        width: 600px;
+    }
+}
+
+
+.no-border {
+    border: 0px !important;
+}
+
+
+hr {
+    margin: 10px -10px;
+    border: 0;
+    border-top: 1px solid #ddd;
+}
+
+
+.container {
+    padding: 0px;
+}
+
+.container.submenu {
+    padding-bottom: 10px;
+}
+
+@media (min-width: 768px) {
+    body { background-color: grey; }
+
+    .container.header {
+        background-color: grey;
+        padding-right: 0px;
+        padding-left: 0px;
+    }
+
+    .container.body {
+        min-height: 400px;
+    }
+
+    .container {
+        border-radius: 5px;
+        background-color: white;
+        padding-top: 10px;
+        padding-right: 15px;
+        padding-left: 15px;
+        margin-bottom: 20px;
+    }
+}
+
+/* ######## */
+/* Buttons */
+/* ######## */
+
+.button_bar {
+    font-weight: bold;
+    text-align: center;
+}
+
+.button_bar .btn {
+    padding: 5px;
+}
+
+.btn-responsive {
+    padding:6px 8px 6px 8px;
+    font-size: 11px;
+}
+
+@media (min-width: 768px) {
+    .btn-responsive {
+        padding:6px 12px 6px 12px;
+        line-height: 20px;
+        font-size: 14px;
+    }
+}
+
+.btn-full .badge {
+    margin-right: 10px;
+    height: 20px;
+    vertical-align: middle;
+    min-width: 40px;
+}
+
+.btn-full {
+    background: transparent;
+    border: 0;
+    display: block;
+    margin: -10px;
+    padding: 10px 20px 10px 10px;
+    position: relative;
+    font-size: 20px;
+}
+
+.btn-full:after {
+    background-image: url(/static/images/icons/chevron-right.png);
+    background-size: 17px;
+    background-repeat: no-repeat;
+    bottom: 0;
+    content: "";
+    height: 36px;
+    left: 0;
+    margin: auto 7px auto auto;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 18px;
+}
+
+
+/* ######### */
+/* Home Page */
+/* ######### */
+
+
+.home, .home a {
+    float: none;
+    max-width: 550px;
+    margin: 0 auto;
+    color: #777;
+    font-weight: bolder;
+}
+
+.home .progress {
+    margin-top: 20px;
+}
+
+.home hr {
+    border: 3px solid #eee;
+}
+
+.home .row {
+    padding-bottom: 5px;
+    padding-top: 5px;
+    border-top: 3px solid #eee;
+    margin-top: 5px;
+}
+
+
+
+/* ############ */
+/* Sign in Form */
+/* ############ */
+
+.form-signin h3 {
+    margin-top: 0px;
+    font-size: 110%;
+    color: #777;
+}
+
+.form-signin {
+  max-width: 330px;
+  padding: 15px;
+  margin: 0 auto;
+}
+.form-signin .form-signin-heading,
+.form-signin .checkbox {
+  margin-bottom: 10px;
+}
+.form-signin .checkbox {
+  font-weight: normal;
+}
+.form-signin .form-control {
+  position: relative;
+  height: auto;
+  -webkit-box-sizing: border-box;
+     -moz-box-sizing: border-box;
+          box-sizing: border-box;
+  padding: 10px;
+  font-size: 16px;
+}
+.form-signin .form-control:focus {
+  z-index: 2;
+}
+.form-signin input[type="text"] {
+  margin-bottom: -1px;
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.form-signin input[type="password"] {
+  margin-bottom: 10px;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
 /* ###################### */
 /* Download Items (Queue) */
 /* ###################### */
+
+.download-item .progress-text {
+    float: left;
+    min-width: 240px;
+    color: #a74d58;
+    font-weight: bold;
+    text-align: left;
+    margin-left: 5px;
+}
+
 .download-item {
     border-top: 15px solid #eee;
     padding: 5px;
+    min-height: 240px;
 }
 
 .download-item .poster {
@@ -22,20 +248,27 @@
     margin-top: 0px;
 }
 
-.download-item .button_bar {
-    padding-top: 20px;
-}
 
 .download-item .label-bar {
     display: block;
-    font-size: 65%;
+    font-size: 70%;
+}
+
+.download-item .label-bar .label {
+    display: inline-block;
+    margin-bottom: 3px;
+    margin-top: 5px;
 }
 
 .download-item .rating {
+    display: inline-block;
+}
+
+.download-item .rating-star {
     background-image: url(/static/images/icons/star.png);
-    background-size: 30px 30px;
-    height: 30px;
-    width: 29px;
+    background-size: 29px 26px;
+    height: 28px;
+    width: 28px;
     display: inline-block;
     background-repeat: no-repeat;
     font-size: 10px;
@@ -45,24 +278,57 @@
     zoom: 1
 }
 
+.download-item .button_bar {
+    padding-top: 20px;
+}
+
 /* Small devices (tablets, 768px and up) */
 @media (min-width: 768px) {
     .download-item .poster { max-width: 200px; }
+
+    .description {
+        max-height: 280px;
+    }
 
     .download-item .button_bar, .multi-items {
        margin-left: 200px;
     }
 
     .download-item {
-       border-top: 25px solid #eee;
-       min-height: 281px;
+        border-radius: 10px;
+        border: 2px solid #eee;
+        margin: 0px 20px 10px 10px;
+        min-height: 281px;
+    }
+    .download-item .progress {
+        width: 40%;
+    }
+    .download-item .progress-text {
+        margin-left: 10px;
     }
 
+    .download-item .button_bar {
+        text-align: left;
+    }
+
+    .download-item .button_bar .btn {
+        font-size: 15px;
+        padding-left: 10px;
+        padding-right: 10px;
+    }
 }
 
 /* Medium devices (desktops, 992px and up) */
 @media (min-width: 992px) {
     .download-item .poster { max-width: 200px; }
+
+    .download-item .label-bar {
+        font-size: 85%;
+    }
+
+    .download-item .progress {
+        width: 30%;
+    }
 }
 
 /* Large devices (large desktops, 1200px and up) */
