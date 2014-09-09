@@ -15,4 +15,3 @@ django-celery-transactions
 guessit
 pillow
 netaddr
-django-picklefield
