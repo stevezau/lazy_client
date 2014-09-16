@@ -133,7 +133,7 @@ def download_action(request, pk):
         if action == "delete":
             try:
                 dlitem = DownloadItem.objects.get(pk=pk)
-                #dlitem.delete()
+                dlitem.delete()
                 return Response({'status': 'success', 'detail': "deleted pk: %s" % pk})
             except ObjectDoesNotExist as e:
                 error = {'status': 'failed', 'detail': "unable to find download item"}

@@ -1,7 +1,6 @@
 ###########
 ### NOW ###
 ###########
---enable gzip compression
 
 --upggrade scripts remove duplicates in ignore.yml
 
