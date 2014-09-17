@@ -227,7 +227,7 @@ class QueueManage(ListView):
             get_date = utils.compose(attrgetter('dateadded'))
             get_tvdbid = utils.compose(attrgetter('tvdbid_id'))
 
-            context['object_list_regroup'] = utils.multikeysort(queryset, ['-dateadded', 'tvdbid'],{'tvdbid':get_tvdbid,'dateadded':get_date})
+            context['object_list_regroup'] = sorted(queryset, key=self.key_function)
 
         return context
 
@@ -243,7 +243,6 @@ class QueueManage(ListView):
                 if dlint[1].lower() == self.type.lower():
                     self.dlget = dlint[0]
 
-        #only get a max of 10 for
         if self.dlget == DownloadItem.COMPLETE:
            return DownloadItem.objects.all().filter(status=self.dlget).order_by('-id').filter()[0:30]
         elif self.dlget == DownloadItem.QUEUE:

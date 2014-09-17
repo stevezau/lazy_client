@@ -7,9 +7,9 @@
     <div class="container submenu">
             <div class="btn-group-justified btn-group button_bar">
               <a href="{% url "queue.index" "downloading" %}"><button type="button" class="btn btn-default btn-responsive {% if type|lower == "downloading" %} active{% endif %}">Downloading<span class="badge">{{ downloading }}</span></button></a>
-              <a href="{% url "queue.index" "Queue" %}"><button type="button" class="btn btn-default btn-responsive {% if type|lower == "queue" %} active{% endif %}">Queue<span class="badge">{{ queue }}</span></button></a>
-              <a href="{% url "queue.index" "Pending" %}"><button type="button" class="btn btn-responsive btn-default {% if type|lower == "pending" %} active{% endif %}">Pending<span class="badge">{{ pending }}</span></button></a>
-              <a href="{% url "queue.index" "Errors" %}"><button type="button" class="btn btn-default btn-responsive {% if type|lower == "errors" %} active{% endif %}">Errors<span class="badge">{{ errors }}</span></button></a>
+              <a href="{% url "queue.index" "queue" %}"><button type="button" class="btn btn-default btn-responsive {% if type|lower == "queue" %} active{% endif %}">Queue<span class="badge">{{ queue }}</span></button></a>
+              <a href="{% url "queue.index" "pending" %}"><button type="button" class="btn btn-responsive btn-default {% if type|lower == "pending" %} active{% endif %}">Pending<span class="badge">{{ pending }}</span></button></a>
+              <a href="{% url "queue.index" "error" %}"><button type="button" class="btn btn-default btn-responsive {% if type|lower == "errors" %} active{% endif %}">Errors<span class="badge">{{ errors }}</span></button></a>
             </div>
     </div>
 {% endblock %}
@@ -22,7 +22,7 @@
                     {% csrf_token %}
 
                     {% if doregroup %}
-                        {% regroup object_list_regroup by tvdbid as object_list_grouped %}
+                        {% regroup object_list_regroup by tvdbid_id as object_list_grouped %}
 
                         {% for downloadgroup in object_list_grouped %}
                             {% with count=downloadgroup.list|length %}
