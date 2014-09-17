@@ -162,6 +162,13 @@ $( document ).ready(function() {
 
 function item_ajax_success_handler(data, textStatus, jqXHR)
 {
+
+    num = parseInt($('button.active > span').text())
+
+    if (!isNaN(num)) {
+        $('button.active > span').text(num - 1)
+    }
+
     if (this.custom_data.multi_obj_id) {
         this.custom_data.item_obj.remove();
     } else {
