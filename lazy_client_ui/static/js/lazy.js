@@ -9,6 +9,10 @@ lazyapi_url = "/api"
 
 $( document ).ready(function() {
 
+    if ($('.content').size()) {
+	    getContent();
+	}
+
     $(document).on('click', '.alert', function(event) {
        $(this).hide();
     })
@@ -288,6 +292,19 @@ function update_season(current) {
              });
         }
     });
+}
+
+function getContent() {
+	var geturl = $('.content').attr('action');
+	var post = $('.content').attr('post');
+
+	if (post && post != '') {
+		geturl = geturl + post;
+	}
+
+	$.get(geturl, function( data ) {
+		$('.content').html( data );
+	});
 }
 
 function update_ep(current) {

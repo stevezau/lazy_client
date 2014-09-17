@@ -16,18 +16,20 @@
                     </span>
                 </div>
             </div>
+        </div>
+    </div>
+    <div class="row no-border">
+        <div class="col-xs-12">
             <form method="post" id="form">
             {% csrf_token %}
-            <strong>Status: {% if queue_running %}Running{% else %}Stopped{% endif %}</strong>
             {% if queue_running %}
                 <input type="hidden" name="action" value="stop">
-                <input type="submit" class="btn btn-default btn-sm pull-right" value="Stop Queue">
+                <input type="submit" class="btn btn-default btn-full" value="Stop Queue">
             {% else %}
                 <input type="hidden" name="action" value="start">
-                <input type="submit" class="btn btn-default btn-sm pull-right" value="Start Queue">
+                <input type="submit" class="btn btn-default btn-full" value="Start Queue">
             {% endif %}
             </form>
-
         </div>
     </div>
 
