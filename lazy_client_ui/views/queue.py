@@ -220,13 +220,6 @@ class QueueManage(ListView):
             context['doregroup'] = True
             queryset = self.get_queryset()
 
-            # Sort by class and grade descending, case insensitive
-            from operator import attrgetter
-            from lazy_common import utils
-
-            get_date = utils.compose(attrgetter('dateadded'))
-            get_tvdbid = utils.compose(attrgetter('tvdbid_id'))
-
             context['object_list_regroup'] = sorted(queryset, key=self.key_function)
 
         return context
