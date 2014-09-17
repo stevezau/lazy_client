@@ -95,6 +95,7 @@ hr {
     text-align: center;
 }
 
+
 .button_bar .btn {
     padding: 5px;
 }
@@ -119,11 +120,13 @@ hr {
     min-width: 40px;
 }
 
+.btn-square {
+    border-radius: 0;
+}
+
 .btn-full {
     background: transparent;
-    border-radius: 5px;
     display: block;
-    margin: -10px;
     padding: 10px 20px 10px 10px;
     position: relative;
     font-size: 20px;
@@ -156,7 +159,6 @@ hr {
 /* Home Page */
 /* ######### */
 
-
 .home, .home a {
     float: none;
     max-width: 550px;
@@ -167,6 +169,7 @@ hr {
 
 .home .progress {
     margin-top: 20px;
+    margin-bottom: 0px;
 }
 
 .home hr {
