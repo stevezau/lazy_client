@@ -300,11 +300,14 @@ hr {
     line-height: 31px;
     zoom: 1
 }
-
-.download-item .button_bar {
-    padding-top: 20px;
+@media (max-width: 767px) {
+    .download-item .button_bar {
+        padding-top: 20px;
+        position: absolute;
+        bottom: 0;
+        float: left;
+    }
 }
-
 /* Small devices (tablets, 768px and up) */
 @media (min-width: 768px) {
     .download-item .poster { max-width: 200px; }
@@ -331,6 +334,7 @@ hr {
     }
 
     .download-item .button_bar {
+        padding-top: 20px;
         text-align: left;
     }
 
