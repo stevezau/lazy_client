@@ -21,13 +21,20 @@ def tvshows(request):
 
             local_shows = TVShow.objects.filter(title__icontains=search)
             tvdb = Tvdb()
-            tvdb_shows = tvdb.search(search)
 
-            print tvdb_shows
+            #Get a list of local showids
+            local_ids = [show.id for show in local_shows]
 
+            #Remove local shows found in tvdb
+            tvdb_shows = []
+            for show in tvdb.search(search):
+                if show['id'] not in local_ids:
+                    tvdb_shows.append(show)
 
+            import pprint
+            pprint.pprint(tvdb.search(search), indent=4)
 
-        return render(request, 'manage/tvshows/index.html', {'form': form})
+        return render(request, 'manage/tvshows/index.html', {'form': form, 'tvdb_shows': tvdb_shows, 'local_shows': local_shows})
     else:
 
         return render(request, 'manage/tvshows/index.html', {'form': form})
