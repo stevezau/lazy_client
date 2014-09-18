@@ -82,6 +82,22 @@ hr {
     }
 }
 
+/* ##### */
+/* Forms */
+/* ##### */
+
+.asteriskField {
+    display: none;
+}
+
+.input-sm {
+    max-width: 200px;
+}
+
+.input-md {
+
+}
+
 /* ######## */
 /* Buttons */
 /* ######## */
@@ -130,13 +146,7 @@ hr {
     padding: 10px 20px 10px 10px;
     position: relative;
     font-size: 20px;
-     width: 100%;
-    -webkit-border-top-right-radius: 0;
-    -webkit-border-bottom-right-radius: 0;
-    -moz-border-radius-topright: 0;
-    -moz-border-radius-bottomright: 0;
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
+    width: 100%;
 }
 
 .btn-full:after {

@@ -11,12 +11,10 @@
     {% sitetree_menu from "lazymenu" include "this-children" template "buttons.html" %}
     <form action="" method="POST">
       {% csrf_token %}
-
         <div class="forms">
             {{ form }}
             <input type="submit" name="submit" value="Search" />
         </div>
-
     </form>
     {% sitetree_menu from "lazymenu" include "this-children" template "buttons.html" %}
 {% endblock %}

@@ -66,6 +66,28 @@ class TvdbDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = TvdbItemSerializer
 
 @api_view(['POST'])
+def server_api(request):
+    from rest_framework import status
+
+    if request.method == "POST":
+        if 'action' not in request.DATA:
+            error = {'status': 'failed', 'detail': "invalid action"}
+            return Response(error, status=status.HTTP_400_BAD_REQUEST)
+
+        action = request.DATA['action']
+
+        if action == "stop_queue":
+            from lazy_client_core.utils.queuemanager import QueueManager
+            QueueManager.stop_queue()
+            return Response({'status': 'success', 'detail': "Queue Stopped"})
+
+        if action == "start_queue":
+            from lazy_client_core.utils.queuemanager import QueueManager
+            QueueManager.start_queue()
+            return Response({'status': 'success', 'detail': "Queue started"})
+
+
+@api_view(['POST'])
 def download_action(request, pk):
     from rest_framework import status
 

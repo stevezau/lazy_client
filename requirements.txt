@@ -15,3 +15,5 @@ django-celery-transactions
 guessit
 pillow
 netaddr
+django-crispy-forms
+django-htmlmin

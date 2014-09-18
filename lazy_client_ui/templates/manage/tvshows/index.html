@@ -3,37 +3,14 @@
 
 {% block title %}{{ type }}{% endblock %}
 {% block submenu %}
-    {% sitetree_menu from "lazymenu" include "other" template "headersubmenu.html" %}
 {% endblock %}
 
+
 {% block content %}
-    <h1>{{ type|title }}</h1>
-    <form id="formID" action="" method="POST">
-      {% csrf_token %}
 
-        <div class="forms">
-            {{ form }}
-            <input type="submit" name="submit" value="Run Report" />
-        </div>
-
-    </form>
-
-     <div class="container">
-    <div class="row">
-    <div class="span7 offset">
-    <div class="row">
-    <div class="span4">
-   <p>Maecenas aliquet velit vel turpis. Mauris neque metus, malesuada nec, ultricies sit amet, porttitor mattis, enim. In massa libero, interdum nec, interdum vel, blandit sed, nulla. In ullamcorper, est eget tempor cursus, neque mi consectetuer mi, a ultricies massa est sed nisl. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos hymenaeos. Proin nulla arcu, nonummy luctus, dictum eget, fermentum et, lorem. Nunc porta convallis pede.</p>
+{% load crispy_forms_tags %}
+    <div class="center-block">
+        <h1>Manage TVShows</h1>
+        {% crispy form %}
     </div>
-   <div class="span3">
-<p>Maecenas aliquet velit vel turpis. Mauris neque metus, malesuada nec, ultricies sit amet, porttitor mattis, enim. In massa libero, interdum nec, interdum vel, blandit sed, nulla. In ullamcorper, est eget tempor cursus, neque mi consectetuer mi, a ultricies massa est sed nisl. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos hymenaeos. Proin nulla arcu, nonummy luctus, dictum eget, fermentum et, lorem. Nunc porta convallis pede.</p>
-    </div>
-    </div>
-   </div>
-  <div class="span5">
-  <p>Maecenas aliquet velit vel turpis. Mauris neque metus, malesuada nec, ultricies sit amet, porttitor mattis, enim. In massa libero, interdum nec, interdum vel, blandit sed, nulla. In ullamcorper, est eget tempor cursus, neque mi consectetuer mi, a ultricies massa est sed nisl. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos hymenaeos. Proin nulla arcu, nonummy luctus, dictum eget, fermentum et, lorem. Nunc porta convallis pede.</p>
-    </div>
-   </div>
-   </div>
-- See more at: http://www.w3resource.com/twitter-bootstrap/grid-system-tutorial.php#sthash.Rl1i9XRZ.dpuf
 {% endblock %}

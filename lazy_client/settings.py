@@ -132,10 +132,12 @@ SECRET_KEY = 'afizuu0e=b50x8!eu7n3-7e+0yv*u$mpxrdoi%@9f9^h)!q3)c'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
-#DEBUG = True
 
 TEMPLATE_DEBUG = True
-TEMPLATE_DIRS = [os.path.join(BASE_DIR, 'templates')]
+TEMPLATE_DIRS = [
+    os.path.join(BASE_DIR, 'templates'),
+    os.path.join(BASE_DIR, "lazy_client_ui", 'templates'),
+    ]
 
 #ALLOWED_HOSTS = []
 
@@ -164,6 +166,7 @@ INSTALLED_APPS = (
     'djcelery',
     'jquery_ui',
     'django_mobile',
+    'crispy_forms',
     'lazy_client_core',
     'lazy_client_api',
     'lazy_client_ui',
@@ -271,17 +274,20 @@ CACHES = {
 }
 
 MIDDLEWARE_CLASSES = (
-    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.gzip.GZipMiddleware',
+    'htmlmin.middleware.HtmlMinifyMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'htmlmin.middleware.MarkRequestMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django_mobile.middleware.MobileDetectionMiddleware',
-    'django.middleware.gzip.GZipMiddleware',
     'django_mobile.middleware.SetFlavourMiddleware',
     'lazy_client_ui.middleware.LoginRequiredMiddleware',
 )
+
 
 LOGIN_EXEMPT_URLS = (
     'login/',
@@ -293,6 +299,8 @@ ROOT_URLCONF = 'lazy_client.urls'
 
 WSGI_APPLICATION = 'lazy_client.wsgi.application'
 
+
+CRISPY_TEMPLATE_PACK = 'bootstrap3'
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.6/topics/i18n/

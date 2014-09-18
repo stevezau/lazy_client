@@ -17,6 +17,46 @@ $( document ).ready(function() {
        $(this).hide();
     })
 
+
+    /////////////////
+    /// Home Page ///
+    /////////////////
+    $(document).on('click', '.manage-queue', function(event) {
+        item_obj = $(this)
+
+        current_state = $(this).attr("state")
+
+        if (current_state == "started") {
+            item_obj.text("Stopping Queue...");
+            action = "stop_queue";
+        } else {
+            item_obj.text("Starting Queue...");
+            action = "start_queue";
+        }
+
+        $.ajax({
+            url: "/api/server/",
+            data: {"action": action},
+            dataType : "json",
+            custom_data: {"action": action,"item_obj": item_obj},
+            success: function(data, textStatus, jqXHR) {
+                if (this.custom_data.action == "stop_queue") {
+                    location.reload();
+                } else {
+                    location.reload();
+                }
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                if (this.custom_data.action == "start_queue") {
+                    this.custom_data.item_obj.text("Failed Starting Queue: " + errorThrown);
+                } else {
+                    this.custom_data.item_obj.text("Failed Stopping Queue: " + errorThrown);
+                }
+            },
+            type: 'POST'});
+    });
+
+
     //////////////////////
     /// Download Items ///
     //////////////////////
@@ -54,9 +94,6 @@ $( document ).ready(function() {
         id = $(this).prop("class").match(/item_retry_.+[0-9]/).toString().replace("item_retry_", "");
         action_item(id, "retry")
     });
-
-
-
 
     /////////////////////////
     /// Handle Manual Fix ///

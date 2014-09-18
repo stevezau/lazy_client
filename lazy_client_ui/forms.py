@@ -217,3 +217,26 @@ class FindMissing(forms.Form):
 
     class Meta:
         fields = ('search')
+
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import Layout, Div, Submit, HTML, Button, Row, Field
+from crispy_forms.bootstrap import AppendedText, PrependedText, FormActions, StrictButton
+from crispy_forms.bootstrap import InlineField
+
+
+class FindTVShow(forms.Form):
+
+    def __init__(self, *args, **kwargs):
+        super(FindTVShow, self).__init__(*args, **kwargs)
+        # Uni-form
+        self.helper = FormHelper()
+        self.helper.form_class = 'form-inline'
+        self.helper.field_template = 'bootstrap3/layout/inline_field.html'
+        self.helper.error_text_inline = True
+        self.helper.help_text_inline = False
+        self.helper.layout = Layout(
+            'search',
+            Submit('submit', 'Search', css_class='btn-default'),
+        )
+
+    search = forms.CharField(label="Search for TVShow", max_length=200)
