@@ -312,8 +312,6 @@ hr {
 @media (max-width: 767px) {
     .download-item .button_bar {
         padding-top: 20px;
-        position: absolute;
-        bottom: 0;
         float: left;
     }
 }
