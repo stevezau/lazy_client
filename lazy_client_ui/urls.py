@@ -11,7 +11,6 @@ urlpatterns = patterns('',
     url(r'^login/$', 'django.contrib.auth.views.login', {'template_name': 'login.html'}, name="login"),
     url(r'^logout/$', 'django.contrib.auth.views.logout_then_login', name="logout"),
 
-
     #Home - Default Index
     url(r'^$', home.IndexView.as_view(), name='home'),
 
@@ -47,13 +46,11 @@ urlpatterns = patterns('',
     url(r'^other/update/fix_all/$', other.fix_all, name='other.findmissing.fix_all'),
     url(r'^other/update/(?P<type>\w+)/$', other.update, name='other.update'),
 
-    #Config - Find
-    url(r'^other/find/$', other.FindIndexView.as_view(), name='other.find.index'),
-    url(r'^other/find/(?P<search>(.+))/$', other.SearchIndexView.as_view(), name='other.find.search'),
-    url(r'^other/find/(?P<search>(.+))/content$', other.FindListView.as_view(), name='other.find.list'),
+    #Other - Find
+    url(r'^find/$', other.find, name='other.find'),
 
     #Manage - TVShows
-    url(r'^manage/tvshows/$', manage.tvshows, name='manage.tvshows.index'),
+    url(r'^manage/tvshows/$', manage.tvshows, name='manage.tvshows.find'),
     url(r'^other/findmissing/(?P<tvshow>(.+))/$', other.FindMissingReport.as_view(), name='other.findmissing.report'),
     url(r'^other/findmissing/(?P<tvshow>(.+))/content$', other.FindMissingReportContent.as_view(), name='other.findmissing.report.content'),
 

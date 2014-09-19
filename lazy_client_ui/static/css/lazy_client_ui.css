@@ -239,6 +239,15 @@ hr {
   border-top-right-radius: 0;
 }
 
+/* ################### */
+/* Search Items (Queue) */
+/* #################### */
+.search-item .poster {
+    max-width: 90px;
+    padding-right: 10px;
+}
+
+
 /* ###################### */
 /* Download Items (Queue) */
 /* ###################### */

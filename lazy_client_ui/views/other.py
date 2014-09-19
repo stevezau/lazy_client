@@ -12,6 +12,9 @@ from lazy_client_core.exceptions import AlradyExists, AlradyExists_Updated
 from lazy_client_core.models import DownloadItem, Job
 from lazy_client_core.utils import missingscanner
 from lazy_client_core.utils import lazyapi
+from django.shortcuts import render
+from lazy_client_core.models import TVShow
+from lazy_common.tvdb_api import Tvdb
 
 logger = logging.getLogger(__name__)
 
@@ -82,36 +85,6 @@ class SearchIndexView(TemplateView):
         context['search'] = self.kwargs.get('search')
         return context
 
-class FindListView(TemplateView):
-    template_name = 'other/find/find_content.html'
-
-
-    def get_context_data(self, **kwargs):
-        context = super(FindListView, self).get_context_data(**kwargs)
-        search = kwargs.get("search")
-
-        if not search or search == "":
-            raise Exception("You didn't enter anything to search!")
-
-        try:
-            ftp_results = []
-
-            for ftp_path in lazyapi.search_ftp(search):
-                name = os.path.split(ftp_path)[-1]
-                ftp_results.append({'name': name, 'path': ftp_path})
-
-        except lazyapi.LazyServerExcpetion as e:
-            ftp_results = {'message': str(e)}
-
-        try:
-            torrent_results = lazyapi.search_torrents(search)
-        except lazyapi.LazyServerExcpetion as e:
-            torrent_results = {'message': str(e)}
-
-        context['torrent_results'] = torrent_results
-        context['ftp_results'] = ftp_results
-
-        return context
 
 def fix_missing_seasons(items):
 
@@ -246,7 +219,7 @@ def download_torrent(items):
         results = lazyapi.download_torrents(torrent_request)
 
         for result in results:
-            if result['status'] != "finished":
+            if result['status'] == "finished":
                 response.write("ERROR: Unable to download %s as %s\n" % (result['title'], result['message']))
                 continue
 
@@ -288,3 +261,38 @@ def update(request, type):
             return HttpResponse("Error processing update %s" % e, content_type="text/plain", status=220)
 
     return HttpResponse("Invalid request", content_type="text/plain")
+
+
+def find(request):
+
+    form = Find(request.POST or None)
+    context = {'form': form}
+
+    if request.method == "POST":
+        #OK Lets have a look
+        if form.is_valid():
+            search = form.cleaned_data['search']
+
+            try:
+                ftp_results = []
+
+                for ftp_path in lazyapi.search_ftp(search):
+                    name = os.path.split(ftp_path)[-1]
+                    ftp_results.append({'name': name, 'path': ftp_path})
+
+            except lazyapi.LazyServerExcpetion as e:
+                ftp_results = {'message': str(e)}
+
+            try:
+                torrent_results = lazyapi.search_torrents(search)
+            except lazyapi.LazyServerExcpetion as e:
+                torrent_results = {'message': str(e)}
+
+            context['torrent_results'] = torrent_results
+            context['ftp_results'] = ftp_results
+
+            context['local_results'] = DownloadItem.objects.filter(title__icontains=search)
+
+        return render(request, 'other/find/index.html', context)
+    else:
+        return render(request, 'other/find/index.html', context)

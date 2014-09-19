@@ -1,0 +1,28 @@
+{% load download_extras %}
+{% if show.posterimg %}
+    <a href="http://thetvdb.com/index.php?tab=series&id={{ show.id }}" target="_blank" class="pull-left">
+        <img class="poster" src="{{ show.posterimg.url }}">
+    </a>
+{% else %}
+    <img class="poster pull-left" src="{{ STATIC_URL }}images/noimg.gif" class="pull-left">
+{% endif %}
+<h4><span class="title">{{ show.title }}</span></h4>
+<span class="label-bar">
+    {% for quality in download.get_quality %}
+        <span class="label label-primary">{{ quality }}</span>
+    {% endfor %}
+
+    {% for genre in show.get_genres_list %}
+        <span class="label label-warning">{{ genre|title }}</span>
+    {% endfor %}
+
+    {% for network in show.get_networks %}
+         <span class="label label-default">{{ network|title }}</span>
+    {% endfor %}
+</span>
+
+<div class="description">
+    {% if show.description %}
+        {% if flavour == "mobile" %}{{ show.description|truncatesmart:300 }}{% else %}{{ show.description }}{% endif %}
+    {% endif %}
+</div>

@@ -3,18 +3,65 @@
 
 {% block title %}{{ type }}{% endblock %}
 {% block submenu %}
-    {% sitetree_menu from "lazymenu" include "other" template "headersubmenu.html" %}
 {% endblock %}
 
+
 {% block content %}
-    <h1>{{ type|title }}</h1>
-    {% sitetree_menu from "lazymenu" include "this-children" template "buttons.html" %}
-    <form action="" method="POST">
-      {% csrf_token %}
-        <div class="forms">
-            {{ form }}
-            <input type="submit" name="submit" value="Search" />
-        </div>
-    </form>
-    {% sitetree_menu from "lazymenu" include "this-children" template "buttons.html" %}
+{% load download_extras %}
+
+    {% load crispy_forms_tags %}
+    <div class="center-block">
+        <h1>Search</h1>
+        {% crispy form %}
+    </div>
+
+    {% if local_shows %}
+        <h3>Found local</h3>
+        {% for dlitem in local_resultsa %}
+            <div class="row search-item download-item">
+                <div class="col-xs-12">
+                    {% include "manage/tvshows/tvshow_item.html" %}
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if ftp_results %}
+        <h3>{{ ftp_results|length }} existing matches found on FTP</h3>
+        {% if ftp_results.message %}
+            <div class="row search-item download-item">
+                <div class="col-xs-12">
+                    <div class="error">{{ ftp_results.message }}</div>
+                </div>
+            </div>
+        {% endif %}
+        {% for ftp_result in ftp_results %}
+            <div class="row search-item download-item">
+                <div class="col-xs-12">
+                    <h4><span class="ftp_download" path="{{ ftp_result.path }}">{{ ftp_result.name }}</span></h4>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if torrent_results %}
+        {% for site_dict in torrent_results %}
+            <h3>{{ torrent_results|length }} existing matches found on {{ site_dict.site }}</h3>
+            {% if site_dict.message %}
+                <div class="row search-item download-item">
+                    <div class="col-xs-12">
+                        <div class="error">{{ ftp_results.message }}</div>
+                    </div>
+                </div>
+            {% endif %}
+            {% for torrent in site_dict.results %}
+                <div class="row search-item download-item">
+                    <div class="col-xs-12">
+                        <h4><span class="site_download" site="{{ site_dict.site }}" torrent="{{ torrent.title }}">{{ torrent.title }}</span></h4>
+                    </div>
+                </div>
+            {% endfor %}
+        {% endfor %}
+    {% endif %}
+
 {% endblock %}

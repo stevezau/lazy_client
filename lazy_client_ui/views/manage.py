@@ -31,9 +31,6 @@ def tvshows(request):
                 if show['id'] not in local_ids:
                     tvdb_shows.append(show)
 
-            import pprint
-            pprint.pprint(tvdb.search(search), indent=4)
-
         return render(request, 'manage/tvshows/index.html', {'form': form, 'tvdb_shows': tvdb_shows, 'local_shows': local_shows})
     else:
 

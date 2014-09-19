@@ -7,10 +7,38 @@
 
 
 {% block content %}
+{% load download_extras %}
 
-{% load crispy_forms_tags %}
+    {% load crispy_forms_tags %}
     <div class="center-block">
         <h1>Manage TVShows</h1>
         {% crispy form %}
     </div>
+
+    {% if local_shows %}
+        <h3>Found local cached shows</h3>
+        {% for show in local_shows %}
+            <div class="row search-item download-item">
+                <div class="col-xs-12">
+                    {% include "manage/tvshows/tvshow_item.html" %}
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+
+    {% if tvdb_shows %}
+        <h3>Found via thetvdb</h3>
+        {% for show in tvdb_shows %}
+
+             <div class="row search-item download-item">
+                <div class="col-xs-12">
+                    {% include "manage/tvshows/tvshow_tvdb.html" %}
+                </div>
+            </div>
+        {% endfor %}
+
+    {% endif %}
+
+
 {% endblock %}

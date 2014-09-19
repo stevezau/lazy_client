@@ -1,0 +1,34 @@
+{% load download_extras %}
+{% if show.banner %}
+    <a href="http://thetvdb.com/index.php?tab=series&id={{ show.id }}" target="_blank" class="pull-left">
+        <img class="poster pull-left" src="http://thetvdb.com/banners/_cache/posters/{{ show.id }}-1.jpg" class="pull-left">
+    </a>
+{% else %}
+    <a href="http://thetvdb.com/index.php?tab=series&id={{ show.id }}" target="_blank" class="pull-left">
+        <img class="poster pull-left" src="{{ STATIC_URL }}images/noimg.gif" class="pull-left">
+    </a>
+{% endif %}
+
+<h4><span class="title">{{ show.seriesname }}</span></h4>
+{% if show.aliasnames %}
+    <h5>Alias: {% for alias in show.aliasnames %}{{ alias }}{% endfor %}</h5>
+{% endif %}
+<span class="label-bar">
+    {% for quality in download.get_quality %}
+        <span class="label label-primary">{{ quality }}</span>
+    {% endfor %}
+
+    {% for genre in show.get_genres_list %}
+        <span class="label label-warning">{{ genre|title }}</span>
+    {% endfor %}
+
+    {% for network in show.get_networks %}
+         <span class="label label-default">{{ network|title }}</span>
+    {% endfor %}
+</span>
+
+<div class="description">
+    {% if show.overview %}
+        {% if flavour == "mobile" %}{{ show.overview|truncatesmart:300 }}{% else %}{{ show.overview }}{% endif %}
+    {% endif %}
+</div>
