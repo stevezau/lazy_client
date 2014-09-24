@@ -41,17 +41,16 @@ urlpatterns = patterns('',
     url(r'^config/tvmap/list$', config.TVMappingsListView.as_view(), name='config.tvmap.list'),
 
     #Other - Redirect
-    url(r'^other$', RedirectView.as_view(url=reverse_lazy('other.find.index')), name='other.redirect'),
-    url(r'^other/update/report_all/$', other.report_all, name='other.findmissing.report_all'),
-    url(r'^other/update/fix_all/$', other.fix_all, name='other.findmissing.fix_all'),
+    #url(r'^other/update/report_all/$', other.report_all, name='other.findmissing.report_all'),
+    #url(r'^other/update/fix_all/$', other.fix_all, name='other.findmissing.fix_all'),
     url(r'^other/update/(?P<type>\w+)/$', other.update, name='other.update'),
 
     #Other - Find
-    url(r'^find/$', other.find, name='other.find'),
+    url(r'^find/$', other.find, name='find'),
 
     #Manage - TVShows
     url(r'^manage/tvshows/$', manage.tvshows, name='manage.tvshows.find'),
-    url(r'^other/findmissing/(?P<tvshow>(.+))/$', other.FindMissingReport.as_view(), name='other.findmissing.report'),
+    url(r'^manage/tvshows/(?P<pk>\w+)/$', manage.TVShowDetail.as_view(), name='manage.tvshow.detail'),
     url(r'^other/findmissing/(?P<tvshow>(.+))/content$', other.FindMissingReportContent.as_view(), name='other.findmissing.report.content'),
 
 

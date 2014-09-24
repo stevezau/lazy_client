@@ -305,7 +305,7 @@ def find_ep_season(season_folder, season, ep):
             if f_season == season:
                 if ep in f_eps:
                     #We found one
-                    found.append(join(folder, f))
+                    found.append(join(season_folder, f))
 
     return found
 

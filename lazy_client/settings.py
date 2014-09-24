@@ -146,6 +146,7 @@ DEFAULT_FROM_EMAIL = 'support@drifthost.com'
 EMAIL_HOST = 'aspmx.l.google.com'
 SERVER_EMAIL = 'support@drifthost.com'
 
+
 ADMINS = (
     ('Steve Adams', 'support@drifthost.com'),
 )
@@ -352,6 +353,11 @@ ALLOWED_HOSTS = ['*']
 
 import lazysettings
 from lazysettings import *
+
+if hasattr(lazysettings, "SERVER_NAME"):
+    EMAIL_SUBJECT_PREFIX = "[LAZY_CLIENT] [%s]" % lazysettings.SERVER_NAME
+else:
+    EMAIL_SUBJECT_PREFIX = "[DJANGO] "
 
 if DB_TYPE == "mysql":
     DATABASES = {

@@ -3,6 +3,7 @@ from lazy_client_core.models import DownloadItem, Job, Movie, TVShow, Version
 
 class DownloadItemAdmin(admin.ModelAdmin):
     search_fields = ('title', 'localpath', 'ftppath')
+    list_filter = ('status',)
 
 class ImdbcacheAdmin(admin.ModelAdmin):
     search_fields = ('title', 'id')

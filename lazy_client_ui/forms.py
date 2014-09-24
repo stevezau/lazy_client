@@ -228,6 +228,7 @@ class Find(forms.Form):
         self.helper.field_template = 'bootstrap3/layout/inline_field.html'
         self.helper.error_text_inline = True
         self.helper.help_text_inline = False
+        self.helper.form_method = "GET"
         self.helper.layout = Layout(
             'search',
             Submit('submit', 'Search', css_class='btn-default'),
@@ -244,6 +245,7 @@ class FindTVShow(forms.Form):
         self.helper.form_class = 'form-inline'
         self.helper.field_template = 'bootstrap3/layout/inline_field.html'
         self.helper.error_text_inline = True
+        self.helper.form_method = "GET"
         self.helper.help_text_inline = False
         self.helper.layout = Layout(
             'search',

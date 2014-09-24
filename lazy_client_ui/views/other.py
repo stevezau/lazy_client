@@ -265,28 +265,29 @@ def update(request, type):
 
 def find(request):
 
-    form = Find(request.POST or None)
+    form = Find(request.GET or None)
     context = {'form': form}
 
-    if request.method == "POST":
+    if request.method == "GET":
         #OK Lets have a look
         if form.is_valid():
             search = form.cleaned_data['search']
 
             try:
-                ftp_results = []
+                ftp_results = {'results': lazyapi.search_ftp(search)}
 
-                for ftp_path in lazyapi.search_ftp(search):
-                    name = os.path.split(ftp_path)[-1]
-                    ftp_results.append({'name': name, 'path': ftp_path})
+                for result in ftp_results['results']:
+                    result['name'] = os.path.split(result['path'])[-1]
 
             except lazyapi.LazyServerExcpetion as e:
-                ftp_results = {'message': str(e)}
+                ftp_results['message'] = str(e)
+
+            torrent_results = {}
 
             try:
-                torrent_results = lazyapi.search_torrents(search)
+                torrent_results['results'] = lazyapi.search_torrents(search)
             except lazyapi.LazyServerExcpetion as e:
-                torrent_results = {'message': str(e)}
+                torrent_results['message'] = str(e)
 
             context['torrent_results'] = torrent_results
             context['ftp_results'] = ftp_results

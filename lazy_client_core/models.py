@@ -1010,7 +1010,7 @@ class TVShow(models.Model):
             tvdbapi = Tvdb(convert_xem=True)
             tvdbshow_obj = tvdbapi[os.path.basename(tvshow_path)]
             tvdbcache_obj = TVShow.objects.get(id=tvdbshow_obj)
-            logger.debug("Found matching tvdbcache item %s" % self.tvdbcache_obj.id)
+            logger.debug("Found matching tvdbcache item %s" % tvdbcache_obj.id)
             return tvdbcache_obj
         except:
             pass
@@ -1229,8 +1229,8 @@ class TVShow(models.Model):
             for name in self.alt_name:
                 try:
                     self.tvdb_obj = self.tvdbapi[name]
-                    logger.info("Found matching tvdbcache item %s" % tvdbshow_obj['id'])
-                    return tvdbshow_obj
+                    logger.info("Found matching tvdbcache item %s" % self.tvdb_obj['id'])
+                    return self.tvdb_obj
                 except:
                     pass
 
@@ -1249,9 +1249,10 @@ class TVShow(models.Model):
         if refresh:
             tvdb_obj = self.get_tvdb_obj()
 
-            if tvdb_obj and 'network' in tvdb_obj.data:
-                if tvdb_obj['network'] is not None:
-                    self.networks = tvdb_obj['network']
+            if tvdb_obj and 'network' in tvdb_obj.data and tvdb_obj['network']:
+                networks = tvdb_obj['network'].encode('ascii', 'ignore')
+                if networks and len(networks) > 0:
+                    self.networks = networks
 
         return self.networks
 
@@ -1259,8 +1260,9 @@ class TVShow(models.Model):
         if refresh:
             tvdb_obj = self.get_tvdb_obj()
 
-            if 'overview' in tvdb_obj.data:
-                if tvdb_obj['overview'] is not None:
+            if 'overview' in tvdb_obj.data and tvdb_obj['overview']:
+                overview = tvdb_obj['overview'].encode('ascii', 'ignore')
+                if overview and len(overview) > 0:
                     self.description = tvdb_obj['overview'].encode('ascii', 'ignore')
 
         return self.description
@@ -1269,8 +1271,9 @@ class TVShow(models.Model):
         if refresh:
             tvdb_obj = self.get_tvdb_obj()
 
-            if tvdb_obj and 'genre' in tvdb_obj.data:
-                if tvdb_obj['genre'] is not None:
+            if tvdb_obj and 'genre' in tvdb_obj.data and tvdb_obj['genre']:
+                genre = tvdb_obj['genre'].encode('ascii', 'ignore')
+                if genre and len(genre) > 0:
                     self.genres = tvdb_obj['genre']
 
         return self.genres
@@ -1329,7 +1332,7 @@ class TVShow(models.Model):
 
         return self.imdbid
 
-    def update_from_tvdb(self):
+    def update_from_tvdb(self, update_imdb=True):
 
         logger.info("Updating %s %s" % (str(self.id), self.title))
         tvdb_obj = self.get_tvdb_obj()
@@ -1341,8 +1344,10 @@ class TVShow(models.Model):
             self.get_genres(refresh=True)
             self.get_description(refresh=True)
             self.get_posterimg(refresh=True)
-            self.get_imdb(refresh=True)
+            if update_imdb:
+                self.get_imdb(refresh=True)
             self.updated = datetime.now()
+
             self.save()
 
 @receiver(post_save, sender=TVShow)

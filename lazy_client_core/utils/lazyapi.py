@@ -27,11 +27,14 @@ default_sites = [
 def download_torrents(torrents):
     try:
         headers = {'Content-type': 'application/json', "Accept": "application/json"}
-        r = requests.post(urlparse.urljoin(lazy_server_api, "download_torrents/"), data=json.dumps(torrents), headers=headers)
+        downloads = {"download": torrents}
+        r = requests.post(urlparse.urljoin(lazy_server_api, "download_torrents/"), data=json.dumps(downloads), headers=headers)
         json_response = r.json()
 
         if 'status' in json_response and json_response['status'] == "success":
             return json_response['data']
+        elif 'message' in json_response:
+            raise LazyServerExcpetion(json_response['message'])
         else:
             raise LazyServerExcpetion("Invalid response from server")
     except ConnectionError as e:

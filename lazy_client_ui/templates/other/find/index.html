@@ -8,60 +8,84 @@
 
 {% block content %}
 {% load download_extras %}
-
-    {% load crispy_forms_tags %}
-    <div class="center-block">
-        <h1>Search</h1>
-        {% crispy form %}
+<div class="row">
+    <div class="col-md-4 col-md-offset-4 col-xs-12">
+        {% load crispy_forms_tags %}
+        <div class="text-center">
+            {% crispy form %}
+        </div>
     </div>
-
-    {% if local_shows %}
-        <h3>Found local</h3>
-        {% for dlitem in local_resultsa %}
-            <div class="row search-item download-item">
-                <div class="col-xs-12">
-                    {% include "manage/tvshows/tvshow_item.html" %}
-                </div>
+</div>
+<hr/>
+<div class="row search">
+    <div class="col-md-8 col-md-offset-2 col-xs-12 search">
+    {% if ftp_results %}
+        {% if ftp_results.message %}
+            <div class="panel-body">
+                <p class="alert alert-danger">{{ ftp_results.message }}</p>
+           </div>
+        {% endif %}
+        <div class="panel panel-primary">
+            <div class="panel-heading arrow-toggle" data-toggle="collapse" data-target="#ftp">
+                <span><strong>Found {{ ftp_results.results|length }} existing matches</strong></span>
+                <a class="arrow-toggle icon-arrow pull-right" data-toggle="collapse" data-target="#ftp" href="javascript:void(0);">
+                    <span class="glyphicon glyphicon-collapse-up icon-arrow-up icon-lg"></span>
+                    <span class="glyphicon glyphicon-collapse-down icon-arrow-down icon-lg"></span>
+                </a>
             </div>
-        {% endfor %}
+            <div id="ftp" class="collapse in">
+                <table class="table">
+                    {% if ftp_results %}
+                        {% for ftp_result in ftp_results.results %}
+                            <tr>
+                                <td class="icon"><a class="glyphicon glyphicon-download add-download" site="ftp" torrent="{{ ftp_result.path }}" href="javascript:void(0);"></a></td>
+                                <td class="result">{{ ftp_result.name }}  <div class="size">{{ ftp_result.size|filesizeformat }}</div></td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <div class="center-block"><p>No results found</p></div>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
     {% endif %}
 
-    {% if ftp_results %}
-        <h3>{{ ftp_results|length }} existing matches found on FTP</h3>
-        {% if ftp_results.message %}
-            <div class="row search-item download-item">
-                <div class="col-xs-12">
-                    <div class="error">{{ ftp_results.message }}</div>
-                </div>
+        {% if torrent_results.message %}
+            <div class="panel-body">
+                <p class="alert alert-danger">{{ torrent_results.message }}</p>
             </div>
         {% endif %}
-        {% for ftp_result in ftp_results %}
-            <div class="row search-item download-item">
-                <div class="col-xs-12">
-                    <h4><span class="ftp_download" path="{{ ftp_result.path }}">{{ ftp_result.name }}</span></h4>
+        {% for site_dict in torrent_results.results %}
+            <div class="panel panel-info">
+                <div class="panel-heading arrow-toggle" data-toggle="collapse" data-target="#{{ site_dict.site }}">
+                    Found {{ site_dict.results|length }} via {{ site_dict.site }}
+                    <a class="arrow-toggle icon-arrow pull-right" data-toggle="collapse" data-target="#{{ site_dict.site }}" href="javascript:void(0);">
+                        <span class="glyphicon glyphicon-collapse-up icon-arrow-up icon-lg"></span>
+                        <span class="glyphicon glyphicon-collapse-down icon-arrow-down icon-lg"></span>
+                    </a>
                 </div>
+                <div id="{{ site_dict.site }}" class="collapse in">
+                    {% if site_dict.message %}
+                        <div class="panel-body">
+                            <p class="alert alert-danger">{{ site_dict.message }}</p>
+                        </div>
+                    {% endif %}
+                        {% if site_dict.results %}
+                            <table class="table">
+                                {% for torrent in site_dict.results %}
+                                    <tr>
+                                        <td class="icon"><a class="glyphicon glyphicon-download add-download" site="{{ site_dict.site }}" torrent="{{ torrent.title }}" href="javascript:void(0);"></a></td>
+                                        <td class="result">{{ torrent.title }} <div class="size">{{ torrent.size }}</div></td>
+                                    </tr>
+                                {% endfor %}
+                            </table>
+                        {% else %}
+                            <p class="lead">No results found</p>
+                        {% endif %}
+
+                 </div>
             </div>
         {% endfor %}
-    {% endif %}
-
-    {% if torrent_results %}
-        {% for site_dict in torrent_results %}
-            <h3>{{ torrent_results|length }} existing matches found on {{ site_dict.site }}</h3>
-            {% if site_dict.message %}
-                <div class="row search-item download-item">
-                    <div class="col-xs-12">
-                        <div class="error">{{ ftp_results.message }}</div>
-                    </div>
-                </div>
-            {% endif %}
-            {% for torrent in site_dict.results %}
-                <div class="row search-item download-item">
-                    <div class="col-xs-12">
-                        <h4><span class="site_download" site="{{ site_dict.site }}" torrent="{{ torrent.title }}">{{ torrent.title }}</span></h4>
-                    </div>
-                </div>
-            {% endfor %}
-        {% endfor %}
-    {% endif %}
-
+    </div>
+</div>
 {% endblock %}

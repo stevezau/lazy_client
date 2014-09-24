@@ -13,10 +13,9 @@ $( document ).ready(function() {
 	    getContent();
 	}
 
-    $(document).on('click', '.alert', function(event) {
+    $(document).on('click', '.alert-close', function(event) {
        $(this).hide();
     })
-
 
     /////////////////
     /// Home Page ///
@@ -56,6 +55,20 @@ $( document ).ready(function() {
             type: 'POST'});
     });
 
+    /* Add from search */
+    $(document).on('click', '.add-download', function(event) {
+        event.preventDefault();
+        obj = $(this)
+        site = obj.attr("site");
+        torrent = obj.attr("torrent");
+
+        data = {"site": site, "download": torrent};
+
+        obj.addClass("glyphicon-refresh");
+        obj.addClass("glyphicon-refresh-animate");
+
+        call_ajax("/api/downloads/add/", data, {"obj": obj}, search_download_success, search_download_error);
+    });
 
     //////////////////////
     /// Download Items ///
@@ -192,14 +205,63 @@ $( document ).ready(function() {
 
 });
 
+//////////////////////
+/// Helper Methods ///
+//////////////////////
+
+function call_ajax(url, data, custom_data, succes_handler, error_handler) {
+    $.ajax({
+        url: url,
+        data: data,
+        dataType : "json",
+        custom_data: custom_data,
+        success: succes_handler,
+        error: error_handler,
+        type: 'POST'});
+}
+
+///////////////////
+/// Search Page ///
+///////////////////
+
+function search_alert(obj, text, type) {
+    alert = obj.parent().siblings().find(".alert")
+
+    if (alert.length > 0) {
+        alert.remove()
+    } else {
+        obj.parent().siblings().append("<div class='alert alert-" + type + "'>" + text + "</div>")
+    }
+}
+
+function search_download_success(data, textStatus, jqXHR) {
+    if (data['status'] == "success") {
+        this.custom_data.obj.removeClass("glyphicon-refresh");
+        this.custom_data.obj.removeClass("glyphicon-refresh-animate");
+        this.custom_data.obj.addClass("glyphicon-ok");
+        search_alert(this.custom_data.obj, "Added to the queue", "success")
+    } else {
+        search_error(this.custom_data.obj, data['detail'])
+    }
+}
+
+function search_download_error(jqXHR, textStatus, errorThrown) {
+    search_error(this.custom_data.obj, textStatus + " " + errorThrown)
+}
+
+function search_error(obj, message) {
+    obj.removeClass("glyphicon-refresh");
+    obj.removeClass("glyphicon-refresh-animate");
+    obj.addClass("glyphicon-remove");
+    search_alert(obj, message, "danger")
+}
 
 /////////////////////////////
 /// Download Item Buttons ///
 /////////////////////////////
 
-function item_ajax_success_handler(data, textStatus, jqXHR)
+function downloads_success_handler(data, textStatus, jqXHR)
 {
-
     num = parseInt($('button.active > span').text())
 
     if (!isNaN(num)) {
@@ -212,7 +274,6 @@ function item_ajax_success_handler(data, textStatus, jqXHR)
         this.custom_data.item_obj.delay("fast").fadeOut('fast');
     }
 
-
     //Any left?
     if (this.custom_data.multi_obj_id) {
         multi_obj = $("#" + this.custom_data.multi_obj_id)
@@ -224,7 +285,7 @@ function item_ajax_success_handler(data, textStatus, jqXHR)
 
 };
 
-function item_ajax_error_handler(jqXHR, textStatus, errorThrown)
+function downloads_error_handler(jqXHR, textStatus, errorThrown)
 {
     // Append to container body
     if (!$(".container.body #message").length) {
@@ -241,40 +302,30 @@ function item_ajax_error_handler(jqXHR, textStatus, errorThrown)
 
    msg = title + ": " + errorThrown
 
-   $(".container.body #message").prepend('<div id="inner-message" class="alert alert-danger">' +
+   $(".container.body #message").prepend('<div id="inner-message" class="alert alert-close alert-danger">' +
                                             '<button type="button" class="close" data-dismiss="alert">&times;</button>' +
                                             '' + msg + '' +
                                         '</div>')};
 
-function action_item_ajax(id, action, multi_obj_id) {
-    obj_name = "#item_" + id;
-    item_obj = $(obj_name);
-
-    $.ajax({
-        url: "/api/downloads/" + id + "/action/",
-        data: {"action": action},
-        dataType : "json",
-        item_obj: item_obj,
-        custom_data: {"action": action,"item_obj": item_obj, "multi_obj_id": multi_obj_id},
-        success: item_ajax_success_handler,
-        error: item_ajax_error_handler,
-        type: 'POST'});
-}
-
 function action_item(id, action) {
-
     obj_name = "#item_" + id;
     item_obj = $(obj_name);
+
+    url = "/api/downloads/" + id + "/action/";
+    data = {"action": action}
 
     if ($(item_obj).attr("multi") == "yes") {
         multi_obj_id = $(item_obj).attr("id")
 
         $(item_obj).find("[id^='item_']").each(function(i, obj) {
             item_id = $(obj).attr("id").replace("item_", "")
-            action_item_ajax(item_id, action, multi_obj_id)
+            url = "/api/downloads/" + item_id + "/action/";
+            custom_data = {"action": action,"item_obj": item_obj, "multi_obj_id": multi_obj_id}
+            call_ajax(url, data, custom_data, downloads_success_handler, downloads_error_handler)
         });
     } else {
-        action_item_ajax(id, action, false)
+        custom_data = {"action": action,"item_obj": item_obj, "multi_obj_id": false}
+        call_ajax(url, data, custom_data, downloads_success_handler, downloads_error_handler)
     }
 
 }

@@ -7,6 +7,7 @@ urlpatterns = patterns('',
     url(r'^server/$', 'lazy_client_api.views.server_api', name="server_api"),
 
     url(r'^downloads/$', DownloadItemList.as_view(), name="download_api"),
+    url(r'^downloads/add/$', 'lazy_client_api.views.downloads', name="server_api"),
     url(r'^downloads/(?P<pk>[0-9]+)/$', DownloadItemDetail.as_view(), name="download_api_detail"),
     url(r'^downloads/(?P<pk>[0-9]+)/action/$', 'lazy_client_api.views.download_action', name="download_api_detail_ignore"),
 

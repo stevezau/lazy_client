@@ -2,6 +2,11 @@
 ### NOW ###
 ###########
 
+-amazing race AU does not detect on thetvdb.com
+-make searchtvdb look for local tvshows first..(via database)
+-convert AU to australia etc when searching tvdb
+
+
 --upggrade scripts remove duplicates in ignore.yml
 
 --improve fix select (found s1e1 in queue of the last skip but still did serches?)
@@ -15,9 +20,6 @@ remove TV/HD etc
 improve QTS lazy script
 
 -Test Cases
-
--ensure right show when adding to favs
--enhance find missing ui to show the show it matches on
 
 -multiple files found, allow manual fix
 -manual rename for files not found

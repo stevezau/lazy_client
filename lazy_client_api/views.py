@@ -9,7 +9,7 @@ from flexget.utils.imdb import ImdbSearch
 from lazy_client_core.models import DownloadItem, TVShow, Movie
 from lazy_client_api.serializers import DownloadItemSerializer, ImdbItemSerializer, TvdbItemSerializer
 from lazy_common.tvdb_api import Tvdb
-from lazy_client_core.exceptions import AlradyExists_Updated
+from lazy_client_core.exceptions import AlradyExists_Updated, AlradyExists
 from rest_framework.decorators import api_view
 from django.core.exceptions import ObjectDoesNotExist
 
@@ -86,6 +86,78 @@ def server_api(request):
             QueueManager.start_queue()
             return Response({'status': 'success', 'detail': "Queue started"})
 
+
+@api_view(['POST'])
+def downloads(request):
+    from rest_framework import status
+
+    if request.method == "POST":
+        if 'site' not in request.DATA:
+            error = {'status': 'failed', 'detail': "missing site"}
+            return Response(error)
+
+        if 'download' not in request.DATA:
+            error = {'status': 'failed', 'detail': "missing download"}
+            return Response(error)
+
+        site = request.DATA['site'].lower()
+        download = request.DATA['download']
+
+        if site == "ftp":
+            #Lets add to the queue directly
+            new_download_item = DownloadItem()
+            new_download_item.status = DownloadItem.QUEUE
+            new_download_item.ftppath = download
+            new_download_item.requested = True
+
+            try:
+                new_download_item.save()
+            except AlradyExists:
+                error = {'status': 'failed', 'detail': "Already downloaded previously"}
+                return Response(error)
+            except AlradyExists_Updated:
+                pass
+            except Exception as e:
+                print type(e)
+                error = {'status': 'failed', 'detail': str(e)}
+                return Response(error)
+
+            return Response({'status': 'success', 'detail': "added to queue : %s" % download})
+        else:
+            from lazy_client_core.utils import lazyapi
+            try:
+                results = lazyapi.download_torrents([{'site': site, "title": download}])
+            except lazyapi.LazyServerExcpetion as e:
+                logger.exception(e)
+                error = {'status': 'failed', 'detail': str(e)}
+                return Response(error)
+
+            for result in results:
+                if result['status'] != "finished":
+                    error = {'status': 'failed', 'detail': "Unable to download as %s " % result['message']}
+                    return Response(error)
+
+                try:
+                    #Now add it to the queue
+                    new_download_item = DownloadItem()
+                    new_download_item.status = DownloadItem.QUEUE
+                    new_download_item.ftppath = result['ftp_path']
+                    new_download_item.requested = True
+                    new_download_item.save()
+                except AlradyExists:
+                    error = {'status': 'failed', 'detail': "Already downloaded previously"}
+                    return Response(error)
+                except AlradyExists_Updated:
+                    pass
+                except Exception as e:
+                    error = {'status': 'failed', 'detail': str(e)}
+                    return Response(error)
+
+            return Response({'status': 'success', 'detail': "added to queue : %s" % download})
+
+    #error not found
+    error = {'status': 'failed', 'detail': "invalid action"}
+    return Response(error, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
 def download_action(request, pk):

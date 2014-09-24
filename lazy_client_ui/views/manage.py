@@ -6,32 +6,42 @@ from django.http import HttpResponseRedirect, HttpResponse
 from lazy_client_core.utils import missingscanner
 from lazy_client_core.models import TVShow
 from lazy_common.tvdb_api import Tvdb
+from django.views.generic import TemplateView, ListView, DetailView, UpdateView
 
 logger = logging.getLogger(__name__)
+
+class TVShowDetail(DetailView):
+    model = TVShow
+    template_name = "manage/tvshows/detail.html"
 
 
 def tvshows(request):
 
-    form = FindTVShow(request.POST or None)
+    form = FindTVShow(request.GET or None)
 
-    if request.method == "POST":
+    context = {'form': form}
+
+    if request.method == "GET":
         #OK Lets have a look
         if form.is_valid():
             search = form.cleaned_data['search']
 
-            local_shows = TVShow.objects.filter(title__icontains=search)
+            shows = list(TVShow.objects.filter(title__icontains=search))
+
             tvdb = Tvdb()
 
             #Get a list of local showids
-            local_ids = [show.id for show in local_shows]
+            local_ids = [s.id for s in shows]
 
             #Remove local shows found in tvdb
-            tvdb_shows = []
             for show in tvdb.search(search):
                 if show['id'] not in local_ids:
-                    tvdb_shows.append(show)
+                    tvshow = TVShow(show['id'])
+                    tvshow.update_from_tvdb(update_imdb=False)
+                    shows.append(tvshow)
 
-        return render(request, 'manage/tvshows/index.html', {'form': form, 'tvdb_shows': tvdb_shows, 'local_shows': local_shows})
+            context['shows'] = shows
+        return render(request, 'manage/tvshows/index.html', context)
     else:
 
-        return render(request, 'manage/tvshows/index.html', {'form': form})
+        return render(request, 'manage/tvshows/index.html', context)
