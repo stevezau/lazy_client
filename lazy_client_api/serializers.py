@@ -12,10 +12,11 @@ class DownloadItemSerializer(serializers.ModelSerializer):
     tvdbid_id = serializers.IntegerField(required=False)
     imdbid_id = serializers.IntegerField(required=False)
     ftppath = serializers.CharField(required=True)
+    priority = serializers.IntegerField(required=False)
 
     class Meta:
         model = DownloadItem
-        fields = ('title', 'imdbid_id', 'tvdbid_id', 'status', 'section', 'localpath', 'status')
+        fields = ('title', 'imdbid_id', 'tvdbid_id', 'status', 'section', 'localpath', 'status', 'priority')
 
 
 class ImdbItemSerializer(serializers.ModelSerializer):

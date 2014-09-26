@@ -10,7 +10,7 @@
     <div class="row no-border">
         <div class="col-xs-12">
             <div class="progress">
-                <div class=" progress-bar progress-bar-{{ percent_used|progressbar_color }} active" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width: {{ percent_used }}%">
+                <div class="progress-bar progress-bar-{{ percent_used|progressbar_color }} active" role="progressbar" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100" style="width: {{ percent_used }}%">
                     <span>
                         {{ percent_used|floatformat:2 }}% Used ({{ free_gb }} GB Free)
                     </span>

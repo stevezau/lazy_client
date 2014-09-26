@@ -98,7 +98,7 @@ class DownloadItem(models.Model):
     dateadded = models.DateTimeField(db_index=True, auto_now_add=True, blank=True)
     dlstart = models.DateTimeField(blank=True, null=True)
     remotesize = models.BigIntegerField(default=0, null=True)
-    priority = models.IntegerField(default=10, null=True)
+    priority = models.IntegerField(default=5, null=True)
     requested = models.BooleanField(default=False)
     localsize = models.IntegerField(default=0, null=True)
     message = models.TextField(blank=True, null=True)

@@ -17,6 +17,7 @@ $( document ).ready(function() {
        $(this).hide();
     })
 
+
     /////////////////
     /// Home Page ///
     /////////////////
@@ -67,7 +68,7 @@ $( document ).ready(function() {
         obj.addClass("glyphicon-refresh");
         obj.addClass("glyphicon-refresh-animate");
 
-        call_ajax("/api/downloads/add/", data, {"obj": obj}, search_download_success, search_download_error);
+        call_ajax("/api/downloads/add/", data, {"obj": obj}, search_download_success, search_download_error, "POST");
     });
 
     //////////////////////
@@ -106,6 +107,41 @@ $( document ).ready(function() {
     $(document).on('click', '[class^="item_retry_"]', function(event) {
         id = $(this).prop("class").match(/item_retry_.+[0-9]/).toString().replace("item_retry_", "");
         action_item(id, "retry")
+    });
+
+    $(document).on('click', '[class^="item_pri_low_"]', function(event) {
+        id = $(this).prop("class").match(/item_pri_low_.+[0-9]/).toString().replace("item_pri_low_", "");
+        item = $("#item_" + id);
+        url = "/api/downloads/" + id + "/";
+        data = {"priority": 10}
+        call_ajax(url, data, null, null, null, "PATCH")
+
+        item.attr("pri", "10")
+        item.find(".priority .value").text("Low");
+
+        sort_download(item)
+    });
+
+    $(document).on('click', '[class^="item_pri_medium_"]', function(event) {
+        id = $(this).prop("class").match(/item_pri_medium_.+[0-9]/).toString().replace("item_pri_medium_", "");
+        item = $("#item_" + id);
+        url = "/api/downloads/" + id + "/";
+        data = {"priority": 5}
+        call_ajax(url, data, null, null, null, "PATCH")
+        item.find(".priority .value").text("Medium");
+        item.attr("pri", "5")
+        sort_download(item)
+    });
+
+    $(document).on('click', '[class^="item_pri_high_"]', function(event) {
+        id = $(this).prop("class").match(/item_pri_high_.+[0-9]/).toString().replace("item_pri_high_", "");
+        item = $("#item_" + id);
+        url = "/api/downloads/" + id + "/";
+        data = {"priority": 1}
+        call_ajax(url, data, null, null, null, "PATCH")
+        item.find(".priority .value").text("High");
+        item.attr("pri", "1")
+        sort_download(item)
     });
 
     /////////////////////////
@@ -209,7 +245,8 @@ $( document ).ready(function() {
 /// Helper Methods ///
 //////////////////////
 
-function call_ajax(url, data, custom_data, succes_handler, error_handler) {
+function call_ajax(url, data, custom_data, succes_handler, error_handler, type) {
+
     $.ajax({
         url: url,
         data: data,
@@ -217,7 +254,7 @@ function call_ajax(url, data, custom_data, succes_handler, error_handler) {
         custom_data: custom_data,
         success: succes_handler,
         error: error_handler,
-        type: 'POST'});
+        type: type});
 }
 
 ///////////////////
@@ -321,11 +358,11 @@ function action_item(id, action) {
             item_id = $(obj).attr("id").replace("item_", "")
             url = "/api/downloads/" + item_id + "/action/";
             custom_data = {"action": action,"item_obj": item_obj, "multi_obj_id": multi_obj_id}
-            call_ajax(url, data, custom_data, downloads_success_handler, downloads_error_handler)
+            call_ajax(url, data, custom_data, downloads_success_handler, downloads_error_handler, "POST")
         });
     } else {
         custom_data = {"action": action,"item_obj": item_obj, "multi_obj_id": false}
-        call_ajax(url, data, custom_data, downloads_success_handler, downloads_error_handler)
+        call_ajax(url, data, custom_data, downloads_success_handler, downloads_error_handler, "POST")
     }
 
 }
@@ -423,4 +460,41 @@ function update_ep(current) {
              });
         }
     });
+}
+
+function sort_download(dlitem) {
+
+    id = parseInt(dlitem.attr("id").replace("item_", ""))
+    pri = parseInt(dlitem.attr("pri"))
+
+    dlitems = $('.download-item')
+
+    dlitem.detach()
+
+    inserted = false
+
+    $('.download-item').each(function(index) {
+        cur_obj = $(this)
+        cur_id = parseInt(cur_obj.attr("id").replace("item_", ""))
+        cur_pri = parseInt(cur_obj.attr("pri"))
+
+        if (pri == cur_pri) {
+            if (id < cur_id) {
+                cur_obj.before(dlitem)
+                inserted = true
+                return false
+            }
+        }
+
+        if (pri < cur_pri) {
+            //append previous
+            cur_obj.before(dlitem)
+            inserted = true
+            return false
+        }
+    });
+
+    if (!inserted) {
+        $('.media-list').append(dlitem)
+    }
 }

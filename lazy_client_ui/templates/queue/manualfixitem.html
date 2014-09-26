@@ -16,46 +16,39 @@
     </script>
 
     {% if object %}
-        <form id="formID" action="" method="post">
-        {% csrf_token %}
+        <h3>Manually Fix {{ object.title }}</h3>
+            <form id="formID" action="" method="post">
+            {% csrf_token %}
+                {% if object.video_files == None %}
+                    <div>No video files found to fix, back to <a href="{% url "downloads.index" "error" %}">errors</a></div>
+                {% else %}
+                    {{ form.errors }}
+                    {% for video_fields in form.get_vid_fields %}
+                        <div class='row row-item'>
+                            <div>
+                                {{ video_fields.video_file }}
+                                <div class="left">File: {{ video_fields.video_file.value }}</div>
+                                <div class="right">
+                                    Type: {{ video_fields.type }}
 
-            <h1>Manually Fix {{ object.title }}</h1>
+                                    <span class="tvdbid_id">{{ video_fields.tvdbid_id }}</span>
+                                    <span class="tvdbid_display">TVShow: {{ video_fields.tvdbid_display }}</span>
+                                    <span class="tvdbid_season_override">Season: {{ video_fields.tvdbid_season_override }}</span>
+                                    <span class="tvdbid_ep_override">Episode: {{ video_fields.tvdbid_ep_override }}</span>
 
-            {% if object.video_files == None %}
-                <div>No video files requiring your attention found</div>
+                                    <span class="imdbid_id">{{ video_fields.imdbid_id }}</span>
+                                    <span class="imdbid_display">Movie:{{ video_fields.imdbid_display }}</span>
 
-            {% else %}
-                <h3>Video files requiring attention</h3>
-                {{ form.errors }}
-                {% for video_fields in form.get_vid_fields %}
-                    <div class='download-item'>
-                        <div>
-                            {{ video_fields.video_file }}
-                            <div class="left">File: {{ video_fields.video_file.value }}</div>
-                            <div class="right">
-                                Type: {{ video_fields.type }}
-
-                                <span class="tvdbid_id">{{ video_fields.tvdbid_id }}</span>
-                                <span class="tvdbid_display">TVShow: {{ video_fields.tvdbid_display }}</span>
-                                <span class="tvdbid_season_override">Season: {{ video_fields.tvdbid_season_override }}</span>
-                                <span class="tvdbid_ep_override">Episode: {{ video_fields.tvdbid_ep_override }}</span>
-
-                                <span class="imdbid_id">{{ video_fields.imdbid_id }}</span>
-                                <span class="imdbid_display">Movie:{{ video_fields.imdbid_display }}</span>
-
+                                </div>
                             </div>
                         </div>
-                    </div>
-                {% endfor %}
-            {% endif %}
+                    {% endfor %}
+                {% endif %}
+                <div class="middle"><input type="submit" name="save" value="Save"></div>
+            </form>
 
-
-        <div class="middle"><input type="submit" name="save" value="Save"></div>
-        <div class="middle"><input type="submit" name="skip" value="Skip"></div>
-
-        </form>
     {% else %}
-        <h3>Unable to find object. Back to <a href="{% url "downloads.index" "error" %}">errors</a></h3>
+        <div class="alert-danger">Unable to find object. Back to <a href="{% url "downloads.index" "error" %}">errors</a></div>
     {% endif %}
 
 {% endblock %}

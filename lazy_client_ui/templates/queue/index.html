@@ -27,13 +27,20 @@
             <form id="formID">
             <div class="media-list">
                 {% csrf_token %}
-
                 {% if doregroup %}
-                    {% regroup object_list_regroup by tvdbid_id as object_list_grouped %}
+                    {% regroup object_list_regroup by tvdbid as object_list_grouped %}
                         {% for downloadgroup in object_list_grouped %}
-                            {% with download=downloadgroup.list.0 %}
-                               {% include "queue/downloaditem_detail.html" %}
-                            {% endwith %}
+                            {% if downloadgroup.grouper == None or downloadgroup.list|length == 1%}
+                                {% for download in downloadgroup.list %}
+                                    {% with downloadgroup=None %}
+                                        {% include "queue/downloaditem_detail.html" %}
+                                    {% endwith %}
+                                {% endfor %}
+                            {% else %}
+                                {% with download=downloadgroup.list.0 %}
+                                   {% include "queue/downloaditem_detail.html" %}
+                                {% endwith %}
+                            {% endif %}
                        {% endfor %}
                 {% else %}
                     {% for download in object_list %}
@@ -41,10 +48,10 @@
                     {% endfor %}
                {% endif %}
             </div>
-           </form>
+            </form>
 
         {% else %}
-            <div class="middle pad10">No items found with status of {{ type }}</div>
+            <div><p class="text-center"><strong>No items found with status of {{ type }}</strong></p></div>
         {% endif %}
 
 {% endblock %}

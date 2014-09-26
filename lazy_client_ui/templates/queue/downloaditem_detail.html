@@ -1,5 +1,12 @@
 {% load download_extras %}
-<div class="row row-item download-item" {% if downloadgroup.list and downloadgroup.list|length > 1 %}id="item_m{{ downloadgroup.grouper }}" multi="yes"{% else %}id="item_{{ download.id }}"{% endif %}>
+
+<div pri="{{ download.priority }}" class="row row-item download-item"
+        {% if downloadgroup.list and downloadgroup.list|length > 1 %}
+            id="item_m{{ downloadgroup.grouper.id }}" multi="yes"
+        {% else %}
+            id="item_{{ download.id }}"
+        {% endif %}
+        >
     <div class='col-md-12 download-row'>
         <div class="poster">
             {% if download.tvdbid.posterimg %}
@@ -22,7 +29,7 @@
                 <h4><span class="title">{{ download.title|format_torrent_title }}</span>
                     {% if download.get_year %}<small><i>({{ download.get_year }})</i></small>{% endif %}
 
-                    {% if downloadgroup.list|length == 1 or  downloadgroup.list|length == 0%}
+                    {% if downloadgroup.list|length == 1 or  downloadgroup.list|length == 0 or not downloadgroup %}
                         {% if download.get_type == 1 and download.get_season %}
                             <b>
                                 S{{ download.get_season }}
@@ -86,19 +93,38 @@
                 {% endif %}
 
                 {% if download.onlyget %}
-                    <h5>Only downloading</h5>
-                    <div class="multi-items">
-                    {% for season,eps in download.onlyget.items %}
-                        {% for ep in eps %}
-                            <div class="download-item-small">
-                            {% if ep == 0 %}
-                                <span class="inner">S{{ season }} x ALL</span>
-                            {% else %}
-                                <span class="inner">S{{ season }} x E{{ ep }}</span>
-                            {% endif %}
-                            </div>
-                        {% endfor %}
-                    {% endfor %}
+                   <div class="panel panel-info download-group">
+                        <div class="panel-heading arrow-toggle" data-toggle="collapse" data-target="#{{ download.id }}_items_only">
+                            <span><strong>Download following epsiodes</strong></span>
+                            <a class="arrow-toggle icon-arrow-grey pull-right collapsed" data-toggle="collapse" data-target="#{{ download.id }}_items_only" href="javascript:void(0);">
+                                <span class="glyphicon glyphicon-collapse-down icon-arrow-up icon-lg"></span>
+                                <span class="glyphicon glyphicon-collapse-up icon-arrow-down icon-lg"></span>
+                            </a>
+                        </div>
+                        <div id="{{ download.id }}_items_only" class="collapse">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <td>Season</td>
+                                        <td>Epsiode</td>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for season,eps in download.onlyget.items %}
+                                        {% for ep in eps %}
+                                            <tr>
+                                                <td>S{{ season }}</td>
+                                                {% if ep == 0 %}
+                                                    <td>ALL</td>
+                                                {% else %}
+                                                    <td>E{{ ep }}</td>
+                                                {% endif %}
+                                            </tr>
+                                        {% endfor %}
+                                    {% endfor %}
+                                    </tbody>
+                            </table>
+                        </div>
                     </div>
                 {% endif %}
 
@@ -107,9 +133,9 @@
                 {% endif %}
 
                 {% if downloadgroup.list and downloadgroup.list|length > 1 %}
-                    <div class="panel panel-default download-group">
+                    <div class="panel panel-info download-group">
                         <div class="panel-heading arrow-toggle" data-toggle="collapse" data-target="#{{ download.id }}_items">
-                            <span><strong>{{ downloadgroup.list|length }} Epsodes to download</strong></span>
+                            <span><strong>{{ downloadgroup.list|length }} Episodes to download</strong></span>
                             <a class="arrow-toggle icon-arrow-grey pull-right collapsed" data-toggle="collapse" data-target="#{{ download.id }}_items" href="javascript:void(0);">
                                 <span class="glyphicon glyphicon-collapse-down icon-arrow-up icon-lg"></span>
                                 <span class="glyphicon glyphicon-collapse-up icon-arrow-down icon-lg"></span>
@@ -152,17 +178,17 @@
                 <div class="button-bar btn-group-justified">
                     {% if downloadgroup.list and downloadgroup.list|length > 1 %}
                         <div class="btn-group">
-                            <button type="button" class="item_approve_m{{ downloadgroup.grouper }} btn btn-default btn-xl btn-responsive">
+                            <button type="button" class="item_approve_m{{ downloadgroup.grouper.id }} btn btn-default btn-xl btn-responsive">
                                 <span class="glyphicon glyphicon-ok"></span> Approve All
                             </button>
                         </div>
                         <div class="btn-group">
-                            <button type="button" class="item_delete_m{{ downloadgroup.grouper }} btn btn-default btn-xl btn-responsive">
+                            <button type="button" class="item_delete_m{{ downloadgroup.grouper.id }} btn btn-default btn-xl btn-responsive">
                                 <span class="glyphicon glyphicon-remove-circle"></span> Delete All
                             </button>
                         </div>
                         <div class="btn-group">
-                            <button type="button" class="item_ignore_m{{ downloadgroup.grouper }} btn btn-default btn-xl btn-responsive">
+                            <button type="button" class="item_ignore_m{{ downloadgroup.grouper.id }} btn btn-default btn-xl btn-responsive">
                                 <span class="glyphicon glyphicon-minus"></span> Ignore
                             </button>
                         </div>
@@ -183,6 +209,19 @@
                             </div>
                         {% endif %}
 
+                        {% if download.retries > 3 %}
+                            <div class="btn-group">
+                                <a class="btn btn-default btn-xl btn-responsive" href="{% url "queue.manualfixitem" download.id %}">
+                                    <span class="glyphicon glyphicon-wrench"></span> Manually Fix
+                                </a>
+                            </div>
+                            <div class="btn-group">
+                                <button type="button" class="item_retry_{{ download.id }} btn btn-default btn-xl btn-responsive">
+                                    <span class="glyphicon glyphicon-repeat"></span> Retry
+                                </button>
+                            </div>
+                        {% endif %}
+
                         {% if download.status != 4 %}
                             <div class="btn-group">
                                 <button type="button" class="item_delete_{{ download.id }} btn btn-default btn-xl btn-responsive">
@@ -199,11 +238,23 @@
                             </div>
                         {% endif %}
 
-                        {% if download.retries > 3 %}
+                        {% if download.status == 1 and download.retries < 3%}
                             <div class="btn-group">
-                                <button type="button" class="item_retry_{{ download.id }} btn btn-default btn-xl btn-responsive">
-                                    <span class="glyphicon glyphicon-repeat"></span> Retry
-                                </button>
+                                <button type="button" class="btn btn-default btn-xl btn-responsive dropdown-toggle priority" data-toggle="dropdown">
+                                Priority:<span class="value">{% if download.priority >= 10 %}
+                                        Low
+                                    {% elif download.priority >= 5 %}
+                                        Medium
+                                    {% else %}
+                                       High
+                                    {% endif %}
+                                </span> <span class="caret"></span>
+                               </button>
+                               <ul class="dropdown-menu" role="menu">
+                                  <li><a href="javascript:void(0);" class="item_pri_high_{{ download.id }}">High</a></li>
+                                  <li><a href="javascript:void(0);" class="item_pri_medium_{{ download.id }}">Medium</a></li>
+                                  <li><a href="javascript:void(0);" class="item_pri_low_{{ download.id }}">Low</a></li>
+                               </ul>
                             </div>
                         {% endif %}
 

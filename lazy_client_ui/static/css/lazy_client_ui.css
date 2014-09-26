@@ -339,6 +339,10 @@ body {
     white-space: pre-wrap;
 }
 
+.download-item {
+    background-color: white;
+}
+
 /* ##### */
 /* Items */
 /* ##### */
@@ -466,6 +470,9 @@ body {
     /* General */
     body { background-color: grey; }
 
+    .badge {
+        margin-left: 5px;
+    }
 
     .container.submenu {
         padding-bottom: 10px;

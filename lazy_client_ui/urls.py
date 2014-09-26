@@ -17,7 +17,6 @@ urlpatterns = patterns('',
     #Downloads
     url(r'^queue/log/(?P<pk>\w+)/$', queue.DownloadLog.as_view(), name='queue.log'),
     url(r'^queue/log/(?P<pk>\w+)/clear$', queue.downloadlog_clear, name='queue.log.clear'),
-    url(r'^queue/manualfix/$', queue.DownloadsManuallyFix.as_view(), name='queue.manualfix'),
     url(r'^queue/manualfix/(?P<pk>\w+)/$', queue.DownloadsManuallyFixItem.as_view(), name='queue.manualfixitem'),
     url(r'^queue/(?P<type>\w+)/$', queue.QueueManage.as_view(), name='queue.index'),
 
