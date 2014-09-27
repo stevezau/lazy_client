@@ -37,9 +37,9 @@ def report_all():
 
     report = {}
 
-    for dir in os.listdir(settings.TVHD):
+    for dir in os.listdir(settings.TV_PATH):
 
-        tvshow_path = os.path.join(settings.TVHD, dir)
+        tvshow_path = os.path.join(settings.TV_PATH, dir)
 
         try:
             scanner = TVShow(tvshow_path)
@@ -91,9 +91,9 @@ def fix_all():
 
     report = {}
 
-    for dir in os.listdir(settings.TVHD):
+    for dir in os.listdir(settings.TV_PATH):
 
-        tvshow_path = os.path.join(settings.TVHD, dir)
+        tvshow_path = os.path.join(settings.TV_PATH, dir)
 
         try:
             scanner = TVShow(tvshow_path)

@@ -33,7 +33,7 @@ class DownloadLog(DetailView):
             self.request.session.modified = True
             return HttpResponseRedirect(reverse('downloads.manualfixitem', kwargs={'pk': items[0]}))
 
-        return super(DownloadsManuallyFix, self).post(request, *args, **kwargs)
+        return super(DownloadLog, self).post(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super(DownloadLog, self).get_context_data(**kwargs)
@@ -42,33 +42,14 @@ class DownloadLog(DetailView):
         context['logs'] = logs
         return context
 
-class DownloadsManuallyFix(TemplateView):
+
+class DownloadsManuallyFixItemSuccess(DetailView):
+    template_name = 'queue/manualfixitem_saved.html'
     model = DownloadItem
-    template_name = "queue/manualfix.html"
-
-    def post(self, request, *args, **kwargs):
-        items = request.POST.getlist('item')
-
-        if items:
-            request.session["fixitems"] = items
-            self.request.session.modified = True
-            return HttpResponseRedirect(reverse('downloads.manualfixitem', kwargs={'pk': items[0]}))
-
-        return super(DownloadsManuallyFix, self).post(request, *args, **kwargs)
-
-    def get(self, request, *args, **kwargs):
-        #Lets get current item
-        items = self.request.session["fixitems"]
-
-        if len(items) > 0:
-            return HttpResponseRedirect(reverse('downloads.manualfixitem', kwargs={'pk': items[0]}))
-
-        return super(DownloadsManuallyFix, self).get(request, *args, **kwargs)
 
 
 class DownloadsManuallyFixItem(UpdateView):
     form_class = DownloadItemManualFixForm
-    success_url = reverse_lazy('downloads.manualfix')
     model = DownloadItem
     template_name = "queue/manualfixitem.html"
 
@@ -78,27 +59,10 @@ class DownloadsManuallyFixItem(UpdateView):
 
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
-        video_files = self.object.video_files
-
         form = DownloadItemManualFixForm(download_item=self.object)
-
         return self.render_to_response(self.get_context_data(form=form))
 
     def post(self, request, *args, **kwargs):
-
-        if 'skip' in request.POST:
-            #remove from the session
-            try:
-                for idx, val in enumerate(self.request.session["fixitems"]):
-                    if val == self.kwargs['pk']:
-                        del self.request.session["fixitems"][idx]
-                        self.request.session.modified = True
-                        break
-
-            except Exception as e:
-                logger.exception(e)
-
-            return HttpResponseRedirect(reverse('downloads.manualfix'))
 
         self.object = self.get_object()
         form = DownloadItemManualFixForm(request.POST or None, download_item=self.object)
@@ -183,18 +147,10 @@ class DownloadsManuallyFixItem(UpdateView):
 
             i += 1
 
-
-        #remove from the session
-        for idx, val in enumerate(self.request.session["fixitems"]):
-            if val == self.kwargs['pk']:
-                del self.request.session["fixitems"][idx]
-                self.request.session.modified = True
-                break
-
         self.object.retries = 0
         self.object.save()
 
-        return HttpResponseRedirect(self.get_success_url())
+        return HttpResponseRedirect(reverse_lazy('queue.manualfixitem.success', kwargs={'pk': self.object.id}))
 
 
 class QueueManage(ListView):

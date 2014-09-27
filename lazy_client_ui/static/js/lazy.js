@@ -110,38 +110,18 @@ $( document ).ready(function() {
     });
 
     $(document).on('click', '[class^="item_pri_low_"]', function(event) {
-        id = $(this).prop("class").match(/item_pri_low_.+[0-9]/).toString().replace("item_pri_low_", "");
-        item = $("#item_" + id);
-        url = "/api/downloads/" + id + "/";
-        data = {"priority": 10}
-        call_ajax(url, data, null, null, null, "PATCH")
-
-        item.attr("pri", "10")
-        item.find(".priority .value").text("Low");
-
-        sort_download(item)
+        id = $(this).prop("class").match(/item_pri_medium_.+[0-9]/).toString().replace("item_pri_medium_", "");
+        sort_download(id, 10)
     });
 
     $(document).on('click', '[class^="item_pri_medium_"]', function(event) {
         id = $(this).prop("class").match(/item_pri_medium_.+[0-9]/).toString().replace("item_pri_medium_", "");
-        item = $("#item_" + id);
-        url = "/api/downloads/" + id + "/";
-        data = {"priority": 5}
-        call_ajax(url, data, null, null, null, "PATCH")
-        item.find(".priority .value").text("Medium");
-        item.attr("pri", "5")
-        sort_download(item)
+        sort_download(id, 5)
     });
 
     $(document).on('click', '[class^="item_pri_high_"]', function(event) {
         id = $(this).prop("class").match(/item_pri_high_.+[0-9]/).toString().replace("item_pri_high_", "");
-        item = $("#item_" + id);
-        url = "/api/downloads/" + id + "/";
-        data = {"priority": 1}
-        call_ajax(url, data, null, null, null, "PATCH")
-        item.find(".priority .value").text("High");
-        item.attr("pri", "1")
-        sort_download(item)
+        sort_download(id, 1)
     });
 
     /////////////////////////
@@ -152,41 +132,45 @@ $( document ).ready(function() {
         source: lazyapi_url + "/search_imdb/",
         minLength: 3,
         select: function(event, ui) {
-            parent = $(this).parent().parent();
+            id = parseInt($(this).attr("name").toString().replace("_imdbid_display", ""));
+            file_obj = $("#file_" + id)
 
             if (ui.item == null) {
-                parent.find("input[name$='_imdbid_id']").val(null);
+                file_obj.find("input[name$='_imdbid_id']").val(null);
             } else {
-                parent.find("input[name$='_imdbid_id']").val(ui.item.id);
+                file_obj.find("input[name$='_imdbid_id']").val(ui.item.id);
             }
-    }
+        }
     });
 
     $("input[id$='_tvdbid_display']").autocomplete({
         source: lazyapi_url + "/search_tvdb/",
         minLength: 3,
         select: function(event, ui) {
-            parent = $(this).parent().parent();
+            id = parseInt($(this).attr("name").toString().replace("_tvdbid_display", ""));
+            file_obj = $("#file_" + id)
 
             if (ui.item == null) {
-                parent.find("input[id$='_tvdbid_id']").val(null)
-                parent.find("select[id$='_tvdbid_season_override']").empty()
-                parent.find("input[id$='_tvdbid_ep_override']").empty()
+                file_obj.find("input[id$='_tvdbid_id']").val(null)
+                file_obj.find("select[id$='_tvdbid_season_override']").empty()
+                file_obj.find("input[id$='_tvdbid_ep_override']").empty()
             } else {
-                parent.find("input[id$='_tvdbid_id']").val(ui.item.id)
-                update_season(this)
+                file_obj.find("input[id$='_tvdbid_id']").val(ui.item.id)
+                update_season(id)
             }
     }
     });
 
     // Update fields when the type is changed..
     $("select[name$='_type']").change(function() {
-        // We need to change the fields..a
-        update_fields(this)
+        id = parseInt($(this).attr("name").toString().replace("_type", ""));
+        update_fields(id)
+
     });
 
     $("select[name$='_tvdbid_season_override']").change(function() {
-        update_ep(this);
+        id = parseInt($(this).attr("name").toString().replace("_tvdbid_season_override", ""));
+        update_ep(id);
     });
 
 
@@ -230,15 +214,6 @@ $( document ).ready(function() {
             xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
         }
     });
-
-	$(document).ajaxStart(function() {
-		  $('#loading').show();
-	
-		}).ajaxStop(function() {
-		  $('#loading').hide();
-		 
-		});
-
 });
 
 //////////////////////
@@ -246,7 +221,6 @@ $( document ).ready(function() {
 //////////////////////
 
 function call_ajax(url, data, custom_data, succes_handler, error_handler, type) {
-
     $.ajax({
         url: url,
         data: data,
@@ -293,12 +267,60 @@ function search_error(obj, message) {
     search_alert(obj, message, "danger")
 }
 
-/////////////////////////////
-/// Download Item Buttons ///
-/////////////////////////////
+////////////////////////////////
+/// Download Item Functions ///
+///////////////////////////////
 
-function downloads_success_handler(data, textStatus, jqXHR)
-{
+function sort_download(id, pri) {
+
+    item = $("#item_" + id);
+    url = "/api/downloads/" + id + "/";
+    data = {"priority": pri}
+    call_ajax(url, data, null, null, null, "PATCH")
+
+    item.attr("pri", pri)
+
+    if (pri >= 10) {
+        item.find(".priority .value").text("Low");
+    } else if (pri >= 5) {
+        item.find(".priority .value").text("Medium");
+    } else {
+        item.find(".priority .value").text("High");
+    }
+
+    dlitems = $('.download-item')
+
+    item.detach()
+
+    inserted = false
+
+    $('.download-item').each(function(index) {
+        cur_obj = $(this)
+        cur_id = parseInt(cur_obj.attr("id").replace("item_", ""))
+        cur_pri = parseInt(cur_obj.attr("pri"))
+
+        if (pri == cur_pri) {
+            if (id < cur_id) {
+                cur_obj.before(item)
+                inserted = true
+                return false
+            }
+        }
+
+        if (pri < cur_pri) {
+            //append previous
+            cur_obj.before(item)
+            inserted = true
+            return false
+        }
+    });
+
+    if (!inserted) {
+        $('.media-list').append(item)
+    }
+}
+
+function downloads_success_handler(data, textStatus, jqXHR) {
     num = parseInt($('button.active > span').text())
 
     if (!isNaN(num)) {
@@ -319,7 +341,6 @@ function downloads_success_handler(data, textStatus, jqXHR)
             $(multi_obj).delay("fast").fadeOut('fast');
         }
     }
-
 };
 
 function downloads_error_handler(jqXHR, textStatus, errorThrown)
@@ -367,47 +388,43 @@ function action_item(id, action) {
 
 }
 
-function set_error(item_obj, msg) {
-    error_div = $(item_obj).find(".error-container")
-    error_div.empty()
-    error_div.html("<div class='error'>" + msg + "</div>")
-}
-
 /////////////////////////
 /// Handle Manual Fix ///
 /////////////////////////
-function update_fields(type_obj) {
+function update_fields(id) {
 
-    value = $(type_obj).find(":selected").text();
-
-    parent = $(type_obj).parent().parent();
+    file_obj = $("#file_" + id)
+    type_obj = file_obj.find("select[name='" + id + "_type']")
+    value = type_obj.find(":selected").text();
+    div_str = "#div_id_" + id
 
     // TVShow
     if (value == "TVShow") {
-        parent.find(".imdbid_display").hide();
 
-        parent.find(".tvdbid_display").show();
-        parent.find(".tvdbid_season_override").show();
-        parent.find(".tvdbid_ep_override").show();
+        file_obj.find(div_str + "_imdbid_display").hide();
+        file_obj.find(div_str + "_tvdbid_display").show();
+        file_obj.find(div_str + "_tvdbid_season_override").show();
+
+        file_obj.find(div_str + "_tvdbid_ep_override").show();
     }
 
     // Movie
     if (value == "Movie") {
-        parent.find(".tvdbid_display").hide();
-        parent.find(".tvdbid_season_override").hide();
-        parent.find(".tvdbid_ep_override").hide();
+        file_obj.find(div_str + "_tvdbid_display").hide();
+        file_obj.find(div_str + "_tvdbid_season_override").hide();
+        file_obj.find(div_str + "_tvdbid_ep_override").hide();
 
-        parent.find(".imdbid_display").show();
+        file_obj.find(div_str + "_imdbid_display").show();
     }
 }
 
 
-function update_season(current) {
+function update_season(id) {
+    file_obj = $("#file_" + id)
 
-    parent = $(current).parent().parent();
-    showid = parent.find("input[name$='_tvdbid_id']").val()
-    season_override = parent.find("select[name$='_tvdbid_season_override']");
-    ep_override = parent.find("select[name$='_tvdbid_ep_override']");
+    showid = file_obj.find("input[name$='_tvdbid_id']").val()
+    season_override = file_obj.find("select[name$='_tvdbid_season_override']");
+    ep_override = file_obj.find("select[name$='_tvdbid_ep_override']");
 
     $(season_override).empty();
     $(ep_override).empty();
@@ -426,25 +443,13 @@ function update_season(current) {
     });
 }
 
-function getContent() {
-	var geturl = $('.content').attr('action');
-	var post = $('.content').attr('post');
 
-	if (post && post != '') {
-		geturl = geturl + post;
-	}
+function update_ep(id) {
+    file_obj = $("#file_" + id)
 
-	$.get(geturl, function( data ) {
-		$('.content').html( data );
-	});
-}
-
-function update_ep(current) {
-    parent = $(current).parent().parent();
-
-    season_override_obj = parent.find("select[name$='_tvdbid_season_override']");
-    ep_override_obj = parent.find("select[name$='_tvdbid_ep_override']");
-    tvdb_id_obj = parent.find("input[name$='_tvdbid_id']");
+    season_override_obj = file_obj.find("select[name$='_tvdbid_season_override']");
+    ep_override_obj = file_obj.find("select[name$='_tvdbid_ep_override']");
+    tvdb_id_obj = file_obj.find("input[name$='_tvdbid_id']");
 
     season = $(season_override_obj).val();
     tvdb_id = $(tvdb_id_obj).val();
@@ -462,39 +467,3 @@ function update_ep(current) {
     });
 }
 
-function sort_download(dlitem) {
-
-    id = parseInt(dlitem.attr("id").replace("item_", ""))
-    pri = parseInt(dlitem.attr("pri"))
-
-    dlitems = $('.download-item')
-
-    dlitem.detach()
-
-    inserted = false
-
-    $('.download-item').each(function(index) {
-        cur_obj = $(this)
-        cur_id = parseInt(cur_obj.attr("id").replace("item_", ""))
-        cur_pri = parseInt(cur_obj.attr("pri"))
-
-        if (pri == cur_pri) {
-            if (id < cur_id) {
-                cur_obj.before(dlitem)
-                inserted = true
-                return false
-            }
-        }
-
-        if (pri < cur_pri) {
-            //append previous
-            cur_obj.before(dlitem)
-            inserted = true
-            return false
-        }
-    });
-
-    if (!inserted) {
-        $('.media-list').append(dlitem)
-    }
-}

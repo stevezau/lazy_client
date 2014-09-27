@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 class MovieRenamer:
 
-    dest_folder = settings.HD
+    dest_folder = settings.MOVIE_PATH
 
     download_item = None
 

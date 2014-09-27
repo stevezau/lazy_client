@@ -317,9 +317,9 @@ body {
   border-top-right-radius: 0;
 }
 
-/* ################### */
-/* Search Items (Queue) */
-/* #################### */
+/* ########## */
+/* Manual Fix */
+/* ########## */
 
 
 /* ###################### */
@@ -341,6 +341,10 @@ body {
 
 .download-item {
     background-color: white;
+}
+
+.download-item .description {
+    margin-bottom: 10px;
 }
 
 /* ##### */
@@ -396,6 +400,10 @@ body {
     }
 
     .container.submenu {
+        padding-bottom: 10px;
+    }
+
+    .container.body {
         padding-bottom: 10px;
     }
 
@@ -486,6 +494,7 @@ body {
 
     .container.body {
         min-height: 330px;
+        padding-bottom: 10px;
     }
 
     .container {

@@ -39,18 +39,20 @@
                 </a>
             </div>
             <div id="ftp" class="collapse in">
-                <table class="table">
-                    {% if ftp_results %}
-                        {% for ftp_result in ftp_results.results %}
-                            <tr>
-                                <td class="icon"><a class="glyphicon glyphicon-download add-download" site="ftp" torrent="{{ ftp_result.path }}" href="javascript:void(0);"></a></td>
-                                <td class="result">{{ ftp_result.name }}  <div class="size">{{ ftp_result.size|filesizeformat }}</div></td>
-                            </tr>
-                        {% endfor %}
+
+                    {% if ftp_results.results %}
+                        <table class="table">
+                            {% for ftp_result in ftp_results.results %}
+                                <tr>
+                                    <td class="icon"><a class="glyphicon glyphicon-download add-download" site="ftp" torrent="{{ ftp_result.path }}" href="javascript:void(0);"></a></td>
+                                    <td class="result">{{ ftp_result.name }}  <div class="size">{{ ftp_result.size|filesizeformat }}</div></td>
+                                </tr>
+                            {% endfor %}
+                        </table>
                     {% else %}
-                        <div class="center-block"><p>No results found</p></div>
+                         <p class="lead">No results found</p>
                     {% endif %}
-                </table>
+
             </div>
         </div>
     {% endif %}

@@ -62,7 +62,7 @@ class FindMissingReportContent(TemplateView):
         context = super(FindMissingReportContent, self).get_context_data(**kwargs)
         context['selectable'] = True
         tvshow = kwargs.get("tvshow")
-        tvshow_path = os.path.join(settings.TVHD, tvshow)
+        tvshow_path = os.path.join(settings.TV_PATH, tvshow)
 
         report = missingscanner.show_report(tvshow_path)
         context['report'] = report
@@ -107,7 +107,7 @@ def fix_missing_seasons(items):
 
     for tvshow_name, seasons in fix.items():
         try:
-            showpath = os.path.join(settings.TVHD, tvshow_name)
+            showpath = os.path.join(settings.TV_PATH, tvshow_name)
 
             if showpath and not showpath == "":
 
@@ -179,70 +179,6 @@ def report_all(request):
 
     return response
 
-def download_torrent(items):
-    status = 200
-    response = HttpResponse(content_type="text/plain")
-
-    download_torrents = []
-    torrent_request = {"download": download_torrents}
-
-    ftp_downloads = []
-
-    for item in items:
-        try:
-            site, __, torrent = item.partition("~")
-
-            #lets build download request
-            if site.upper() == "FTP":
-                ftp_downloads.append(torrent)
-            else:
-                req = {'site': site, "title": torrent}
-                download_torrents.append(req)
-        except lazyapi.LazyServerExcpetion as e:
-            response.write("Unable to process request as %s") % str(e)
-            response.status_code = 210
-            return response
-
-    #Ftp Downloads
-    if len(ftp_downloads) > 0:
-        for ftp_path in ftp_downloads:
-            #Lets add to the queue directly
-            new_download_item = DownloadItem()
-            new_download_item.status = DownloadItem.QUEUE
-            new_download_item.ftppath = ftp_path
-            new_download_item.requested = True
-            new_download_item.save()
-            response.write("SUCCESS: %s has been added to the queue\n" % new_download_item.title)
-
-    #Torrent Downloads
-    if len(download_torrents) > 0:
-        results = lazyapi.download_torrents(torrent_request)
-
-        for result in results:
-            if result['status'] == "finished":
-                response.write("ERROR: Unable to download %s as %s\n" % (result['title'], result['message']))
-                continue
-
-            try:
-                #Now add it to the queue
-                new_download_item = DownloadItem()
-                new_download_item.status = DownloadItem.QUEUE
-                new_download_item.ftppath = result['ftp_path']
-                new_download_item.requested = True
-                new_download_item.save()
-
-                response.write("SUCCESS: %s has been added to the queue\n" % result['title'])
-            except AlradyExists:
-                response.write("SUCCESS: %s already exists in the queue\n" % result['title'])
-            except AlradyExists_Updated:
-                response.write("SUCCESS: %s already exists in the queue\n" % result['title'])
-            except Exception as e:
-                logger.exception(e)
-                status = 210
-                response.write("ERROR: Unable to download %s as %s\n" % (result['title'], str(e)))
-
-    response.status_code = status
-    return response
 
 
 def update(request, type):
@@ -273,8 +209,10 @@ def find(request):
         if form.is_valid():
             search = form.cleaned_data['search']
 
+            ftp_results = {}
+
             try:
-                ftp_results = {'results': lazyapi.search_ftp(search)}
+                ftp_results['results'] = lazyapi.search_ftp(search)
 
                 for result in ftp_results['results']:
                     result['name'] = os.path.split(result['path'])[-1]

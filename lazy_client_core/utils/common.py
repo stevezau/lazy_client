@@ -66,13 +66,11 @@ def get_lazy_errors():
         settings.MEDIA_ROOT,
         settings.DATA_PATH,
         settings.INCOMING_PATH,
-        settings.TVHD,
-        settings.TVHD_TEMP,
-        settings.XVID,
-        settings.XVID_TEMP,
-        settings.REQUESTS_TEMP,
-        settings.HD,
-        settings.HD_TEMP
+        settings.MOVIE_PATH,
+        settings.TV_PATH,
+        settings.TV_PATH_TEMP,
+        settings.MOVIE_PATH_TEMP,
+        settings.REQUESTS_PATH_TEMP,
     ]:
 
         if not os.path.exists(path):

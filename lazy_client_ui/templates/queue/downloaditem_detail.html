@@ -129,7 +129,10 @@
                 {% endif %}
 
                 {% if download.message %}
-                    <div><pre>{{ download.message }}</pre></div>
+                    <div class="panel panel-info">
+                        <div class="panel-heading">Message</div>
+                        <div class="panel-body"><pre>{{ download.message }}</pre></div>
+                    </div>
                 {% endif %}
 
                 {% if downloadgroup.list and downloadgroup.list|length > 1 %}

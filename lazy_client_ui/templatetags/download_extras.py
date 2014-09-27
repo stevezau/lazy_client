@@ -52,11 +52,20 @@ def format_torrent_title(title):
 
     title = ""
 
+    series = False
+
+    if 'doco_channel' in parser.details:
+        title += "%s: " % parser.details['doco_channel']
+
     if 'series' in parser.details:
-        title = parser.details['series']
+        title += parser.details['series']
+        series = True
 
     if 'title' in parser.details:
-        title += " %s" % parser.details['title']
+        if series:
+            title += ": %s" % parser.details['title']
+        else:
+            title += " %s" % parser.details['title']
 
     if 'date' in parser.details:
         title += " %s" % parser.details['date'].strftime('%m.%d.%Y')

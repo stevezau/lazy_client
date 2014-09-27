@@ -59,8 +59,8 @@ class Command(BaseCommand):
         if options['removedups'] or options['all']:
             logger.info('Removing duplicate files within movie folder')
 
-            for dir in os.listdir(settings.HD):
-                path = os.path.join(settings.HD, dir)
+            for dir in os.listdir(settings.MOVIE_PATH):
+                path = os.path.join(settings.MOVIE_PATH, dir)
 
                 if not os.path.isdir(path):
                     continue
@@ -159,8 +159,8 @@ class Command(BaseCommand):
         if options['all'] or options['removedups']:
             logger.info('Cleaning Folders')
 
-            for dir in os.listdir(settings.HD):
-                path = os.path.join(settings.HD, dir)
+            for dir in os.listdir(settings.MOVIE_PATH):
+                path = os.path.join(settings.MOVIE_PATH, dir)
 
                 if not os.path.exists(path):
                     #was prob deleted, lets continue

@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 class TVRenamer:
 
-    dest_folder_base = settings.TVHD
+    dest_folder_base = settings.TV_PATH
     tvdbapi = Tvdb()
     download_item = None
 
@@ -95,7 +95,6 @@ class TVRenamer:
                         video_file_path = video_file['file']
 
                         if video_file_path == tvshow_file:
-                            logger.debug(video_file)
                             if 'tvdbid_id' in video_file:
                                 try:
                                     tvdbcache_obj_override = TVShow.objects.get(id=int(video_file['tvdbid_id']))
@@ -173,7 +172,15 @@ class TVRenamer:
 
             #Ok now lets sort out the file names etc
             #Docos first
-            if 'doco_channel' in tvshow_file_metaparser.details and not tvdbcache_obj:
+            is_doco = False
+
+            if 'doco_channel' in tvshow_file_metaparser.details:
+                if tvdbcache_obj and tvshow_file_season and tvshow_file_ep:
+                    is_doco = False
+                else:
+                    is_doco = True
+
+            if is_doco:
                 #Ok we have a doco that was not found on thetvdb.. lets shove it into the Docs folder
                 dest_folder = os.path.join(self.dest_folder_base, tvshow_file_metaparser.details['doco_channel'])
                 self.create_docs_folder(dest_folder)

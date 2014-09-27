@@ -8,11 +8,16 @@ from django.core.exceptions import ObjectDoesNotExist
 from lazy_client_core.models import TVShowMappings
 from lazy_common import metaparser
 from lazy_client_core.models import TVShow
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import Layout, Div, Submit, HTML, Button, Row, Field, MultiField
+from crispy_forms.bootstrap import AppendedText, PrependedText, FormActions, StrictButton
+from crispy_forms.bootstrap import InlineField
 
 
 logger = logging.getLogger(__name__)
 
 TYPE_CHOICES = (
+    (metaparser.TYPE_UNKNOWN, "Select Type"),
     (metaparser.TYPE_TVSHOW, 'TVShow'),
     (metaparser.TYPE_MOVIE, 'Movie'),
 )
@@ -80,12 +85,11 @@ class DownloadItemManualFixForm(forms.Form):
         i = 0
 
         for vid_file in self.object.video_files:
-
             vid_fields_current = {}
 
             for name in self.fields:
                 if name.startswith('%s_' % i):
-                    vid_fields_current[name[2:]] = self[name]
+                    vid_fields_current[name.replace("%s_" % i, "")] = self[name]
 
             vid_fields.append(vid_fields_current)
             i += 1
@@ -96,9 +100,19 @@ class DownloadItemManualFixForm(forms.Form):
         self.object = kwargs.pop('download_item')
         super(DownloadItemManualFixForm, self).__init__(*args, **kwargs)
 
+        self.helper = FormHelper()
+        self.helper.form_class = 'form-inline manualfix'
+        self.helper.field_template = 'bootstrap3/layout/inline_field.html'
+        self.helper.error_text_inline = True
+        self.helper.help_text_inline = False
+        self.helper.form_method = "POST"
+        self.helper.form_show_labels = False
+
         type = self.object.get_type()
 
         video_files = self.object.video_files
+
+        self.helper.layout = Layout()
 
         if video_files:
             for i, video_file in enumerate(video_files):
@@ -111,6 +125,7 @@ class DownloadItemManualFixForm(forms.Form):
                 #TVShow Fields
                 self.fields['%s_tvdbid_id' % i] = forms.CharField(widget=forms.HiddenInput)
                 self.fields['%s_tvdbid_display' % i] = forms.CharField()
+                self.fields['%s_tvdbid_display' % i].label = None
                 self.fields['%s_tvdbid_season_override' % i] = DynamicChoiceField(validators=[validate_ep_season])
                 self.fields['%s_tvdbid_ep_override' % i] = DynamicChoiceField(validators=[validate_ep_season])
 
@@ -118,8 +133,34 @@ class DownloadItemManualFixForm(forms.Form):
                 self.fields['%s_imdbid_id' % i] = forms.CharField(widget=forms.HiddenInput)
                 self.fields['%s_imdbid_display' % i] = forms.CharField()
 
+                self.helper.layout.extend([
+                    Div(
+                        HTML("<div class='panel-heading'><strong>File:</strong> %s</div>" % video_file['file'].replace(self.object.localpath, "").lstrip("/")),
+                        Div(
+                            '%s_type' % i,
+                            '%s_video_file' % i,
+                            '%s_tvdbid_id' % i,
+                            Field('%s_tvdbid_display' % i, placeholder="Enter TVShow Name"),
+                            '%s_tvdbid_season_override' % i,
+                            '%s_tvdbid_ep_override' % i,
+                            '%s_imdbid_id' % i,
+                            Field('%s_imdbid_display' % i, placeholder="Enter Movie Name"),
+                            css_class="panel-body",
+                        ),
+                        css_class="panel panel-info",
+                        css_id="file_%s" % i
+                    )
+                ])
+
+            self.helper.layout.extend([
+                Div(
+                    Submit('Submit', 'Submit'),
+                    Button('Back', 'Back', css_class="btn-primary", onclick="window.history.back()"),
+                    css_class="center-block text-center"
+                )
+            ])
+
             parser = self.object.metaparser()
-            print parser.details
 
             #Pre-populate movie fields
             if 'type' in parser.details and parser.details['type'] == "movie" and self.object.imdbid:
@@ -147,14 +188,17 @@ class DownloadItemManualFixForm(forms.Form):
                             pass
 
                     #set the seasons
-                    tvdb_seasons = self.object.tvdbid.get_seasons()
+                    tvdb_seasons = self.object.tvdbid.get_seasons(xem=False)
 
                     if len(tvdb_seasons) > 0:
                         seasons = []
                         seasons.append(('Select Season', 'Select Season'))
 
                         for season in tvdb_seasons:
-                            seasons.append((str(season), str(season)))
+                            if season == 0:
+                                seasons.append((str(season), "Specials"))
+                            else:
+                                seasons.append((str(season), "Season %s" % season))
 
                         self.fields['%s_tvdbid_season_override' % i].choices = seasons
 
@@ -165,14 +209,14 @@ class DownloadItemManualFixForm(forms.Form):
                             if 'ep_override' in video_file and video_file['ep_override'] >= 0:
                                 #lets set the eps as well
                                 ep_override = video_file['ep_override']
-                                tvdb_eps = self.object.tvdbid.get_eps(int(season))
+                                tvdb_eps = self.object.tvdbid.get_eps(int(season), xem=False)
 
                                 if len(tvdb_eps) > 0:
                                     eps = []
                                     eps.append(('Select Ep', 'Select Ep'))
 
                                     for ep in tvdb_eps:
-                                        eps.append((str(ep), str(ep)))
+                                        eps.append((str(ep), "Ep - %s " % ep))
 
                                     self.fields['%s_tvdbid_ep_override' % i].choices = eps
                                     self.fields['%s_tvdbid_ep_override' % i].initial = ep_override
@@ -200,10 +244,10 @@ class FindMissing(forms.Form):
         super(FindMissing, self).__init__(*args, **kwargs)
 
         choices = []
-        dirs = os.listdir(settings.TVHD)
+        dirs = os.listdir(settings.TV_PATH)
 
         for dir in dirs:
-            if os.path.isdir(os.path.join(settings.TVHD, dir)):
+            if os.path.isdir(os.path.join(settings.TV_PATH, dir)):
                 choice = (dir, dir)
                 choices.append(choice)
 
@@ -211,11 +255,6 @@ class FindMissing(forms.Form):
 
     class Meta:
         fields = ('search')
-
-from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Layout, Div, Submit, HTML, Button, Row, Field
-from crispy_forms.bootstrap import AppendedText, PrependedText, FormActions, StrictButton
-from crispy_forms.bootstrap import InlineField
 
 
 class Find(forms.Form):
@@ -252,4 +291,4 @@ class FindTVShow(forms.Form):
             Submit('submit', 'Search', css_class='btn-default'),
         )
 
-    search = forms.CharField(label="Search for TVShow", max_length=200)
+    search = forms.CharField(max_length=200)

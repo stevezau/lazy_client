@@ -108,6 +108,8 @@ class Command(BaseCommand):
             except ManuallyFixException as e:
                 msg = "Unable to auto rename the below files, please manually fix"
 
+                dlitem.video_files = None
+
                 for f in e.fix_files:
                     msg += "\n File: %s Error: %s" % (f['file'], f['error'])
 
@@ -210,10 +212,10 @@ class Command(BaseCommand):
             #Lets rename stuff that didnt come from lazy
             if extract_all:
                 #TVShows
-                self._extract_others(settings.TVHD_TEMP, metaparser.TYPE_TVSHOW)
+                self._extract_others(settings.TV_PATH_TEMP, metaparser.TYPE_TVSHOW)
 
                 #Movies
-                self._extract_others(settings.HD_TEMP, metaparser.TYPE_MOVIE)
+                self._extract_others(settings.MOVIE_PATH_TEMP, metaparser.TYPE_MOVIE)
 
         finally:
             release_lock()

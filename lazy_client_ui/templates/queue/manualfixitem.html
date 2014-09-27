@@ -7,48 +7,23 @@
 {% endblock %}
 
 {% block content %}
-    <script language="javascript" type="text/javascript">
-        $( document ).ready(function() {
-            $("select[name$='_type']").each(function() {
-                update_fields(this);
-            });
-        })
-    </script>
-
     {% if object %}
-        <h3>Manually Fix {{ object.title }}</h3>
-            <form id="formID" action="" method="post">
-            {% csrf_token %}
-                {% if object.video_files == None %}
-                    <div>No video files found to fix, back to <a href="{% url "downloads.index" "error" %}">errors</a></div>
-                {% else %}
-                    {{ form.errors }}
-                    {% for video_fields in form.get_vid_fields %}
-                        <div class='row row-item'>
-                            <div>
-                                {{ video_fields.video_file }}
-                                <div class="left">File: {{ video_fields.video_file.value }}</div>
-                                <div class="right">
-                                    Type: {{ video_fields.type }}
-
-                                    <span class="tvdbid_id">{{ video_fields.tvdbid_id }}</span>
-                                    <span class="tvdbid_display">TVShow: {{ video_fields.tvdbid_display }}</span>
-                                    <span class="tvdbid_season_override">Season: {{ video_fields.tvdbid_season_override }}</span>
-                                    <span class="tvdbid_ep_override">Episode: {{ video_fields.tvdbid_ep_override }}</span>
-
-                                    <span class="imdbid_id">{{ video_fields.imdbid_id }}</span>
-                                    <span class="imdbid_display">Movie:{{ video_fields.imdbid_display }}</span>
-
-                                </div>
-                            </div>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-                <div class="middle"><input type="submit" name="save" value="Save"></div>
-            </form>
-
+        <h3 class="text-center">Manually Fix<div class="center-block text-center"><small>{{ object.title }}</small></div></h3>
+           {% load crispy_forms_tags %}
+            {% crispy form %}
     {% else %}
         <div class="alert-danger">Unable to find object. Back to <a href="{% url "downloads.index" "error" %}">errors</a></div>
     {% endif %}
 
+{% endblock %}
+
+{% block footer %}
+    <script language="javascript" type="text/javascript">
+        $( document ).ready(function() {
+            $("select[name$='_type']").each(function() {
+                id = parseInt($(this).attr("name").toString().replace("_type", ""));
+                update_fields(id);
+            });
+        })
+    </script>
 {% endblock %}

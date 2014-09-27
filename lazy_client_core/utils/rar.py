@@ -98,7 +98,7 @@ class RarArchive(Archive):
 
         if not check_sfv:
 
-            first_archive = self.get_first_archive()
+            first_archive = self.get_first_archive().replace("\\", "")
             base, __ = os.path.split(first_archive)
 
             p = subprocess.Popen(["unrar", "t", first_archive], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -113,5 +113,9 @@ class RarArchive(Archive):
                 elif line.startswith("Cannot find volume "):
                     archive = line.replace("Cannot find volume ", "")
                     bad_archives.append(archive)
+                elif "packed data CRC failed in volume" in line:
+                    m = re.search('.+packed data CRC failed in volume (.+)', line)
+                    if m:
+                        bad_archives.append(m.group(1))
 
         return bad_archives

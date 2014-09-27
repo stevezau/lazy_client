@@ -39,14 +39,12 @@ INCOMING_PATH = os.path.join(DATA_PATH, "_incoming")
 
 # Folders, shouldnt need to edit this
 
-TVHD_TEMP = os.path.join(INCOMING_PATH, "TVShows")
-HD_TEMP = os.path.join(INCOMING_PATH, "Movies")
-XVID_TEMP = os.path.join(INCOMING_PATH, "Movies")
-REQUESTS_TEMP = os.path.join(INCOMING_PATH, "Requests")
+TV_PATH_TEMP = os.path.join(INCOMING_PATH, "TVShows")
+MOVIE_PATH_TEMP = os.path.join(INCOMING_PATH, "Movies")
+REQUESTS_PATH_TEMP = os.path.join(INCOMING_PATH, "Requests")
 
-TVHD = os.path.join(DATA_PATH, "TVShows")
-HD = os.path.join(DATA_PATH, "Movies")
-XVID = os.path.join(DATA_PATH, "Movies")
+TV_PATH = os.path.join(DATA_PATH, "TVShows")
+MOVIE_PATH = os.path.join(DATA_PATH, "Movies")
 
 # Shouldnt need to change these
 MEDIA_ROOT = os.path.join(BASE_DIR, "static/media")

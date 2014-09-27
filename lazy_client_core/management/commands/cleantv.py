@@ -68,7 +68,7 @@ class Command(BaseCommand):
             logger.info('Performing doco fix')
 
             for doco_dict in metaparser.DOCO_REGEX:
-                doco_folder = os.path.join(settings.TVHD, doco_dict['name'])
+                doco_folder = os.path.join(settings.TV_PATH, doco_dict['name'])
 
                 if os.path.exists(doco_folder):
 
@@ -146,8 +146,8 @@ class Command(BaseCommand):
 
         if options['updatecache'] or options['all']:
 
-            for dir in os.listdir(settings.TVHD):
-                path = os.path.join(settings.TVHD, dir)
+            for dir in os.listdir(settings.TV_PATH):
+                path = os.path.join(settings.TV_PATH, dir)
 
                 #lets see if it already belongs to a tvshow
                 try:
@@ -182,8 +182,8 @@ class Command(BaseCommand):
         if options['all'] or options['removedups']:
             logger.info('Finding duplicate shows')
 
-            for dir in os.listdir(settings.TVHD):
-                path = os.path.join(settings.TVHD, dir)
+            for dir in os.listdir(settings.TV_PATH):
+                path = os.path.join(settings.TV_PATH, dir)
 
                 #lets see if it already belongs to a tvshow
                 tvobjs = TVShow.objects.all().filter(localpath=path)

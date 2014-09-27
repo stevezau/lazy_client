@@ -1,6 +1,7 @@
 from django.conf.urls import patterns, url
 from django.views.generic import RedirectView
 from django.core.urlresolvers import reverse_lazy
+from django.views.generic import TemplateView
 
 from lazy_client_ui.views import queue, config, other, manage
 from lazy_client_ui.views import home
@@ -17,6 +18,7 @@ urlpatterns = patterns('',
     #Downloads
     url(r'^queue/log/(?P<pk>\w+)/$', queue.DownloadLog.as_view(), name='queue.log'),
     url(r'^queue/log/(?P<pk>\w+)/clear$', queue.downloadlog_clear, name='queue.log.clear'),
+    url(r'^queue/manualfix/(?P<pk>\w+)/success/$', queue.DownloadsManuallyFixItemSuccess.as_view(), name="queue.manualfixitem.success"),
     url(r'^queue/manualfix/(?P<pk>\w+)/$', queue.DownloadsManuallyFixItem.as_view(), name='queue.manualfixitem'),
     url(r'^queue/(?P<type>\w+)/$', queue.QueueManage.as_view(), name='queue.index'),
 

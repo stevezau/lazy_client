@@ -585,11 +585,14 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
 
         #Figure out the local path
         if instance.localpath is None:
-            try:
-                path = getattr(settings, section + "_TEMP")
-                instance.localpath = os.path.join(path, instance.title)
-            except:
+            if section == "XVID" or section == "HD":
+                path = settings.MOVIE_PATH_TEMP
+            elif section == "TVHD" or section == "TV":
+                path = settings.TV_PATH_TEMP
+            else:
                 raise Exception("Unable to find section path in config: %s" % section)
+
+            instance.localpath = os.path.join(path, instance.title)
 
         parser = instance.metaparser()
         title = None
@@ -1008,8 +1011,8 @@ class TVShow(models.Model):
         #Lets try find it by ID on TheTVDB.com
         try:
             tvdbapi = Tvdb(convert_xem=True)
-            tvdbshow_obj = tvdbapi[os.path.basename(tvshow_path)]
-            tvdbcache_obj = TVShow.objects.get(id=tvdbshow_obj)
+            tvdb_obj = tvdbapi[os.path.basename(tvshow_path)]
+            tvdbcache_obj = TVShow.objects.get(id=tvdb_obj)
             logger.debug("Found matching tvdbcache item %s" % tvdbcache_obj.id)
             return tvdbcache_obj
         except:
@@ -1067,7 +1070,7 @@ class TVShow(models.Model):
 
                 #Lets loop through each ep..
                 for ep in reversed(tvdb_obj[season].keys()):
-                    ep_obj = self.tvdbshow_obj[season][ep]
+                    ep_obj = self.tvdb_obj[season][ep]
 
                     aired_date = ep_obj['firstaired']
 
@@ -1146,16 +1149,24 @@ class TVShow(models.Model):
 
         return missing
 
-    def get_seasons(self):
-        tvdb_obj = self.get_tvdb_obj()
+    def get_seasons(self, xem=True):
+        if xem:
+            tvdb_obj = self.get_tvdb_obj()
+        else:
+            tvdb_obj = Tvdb()
 
         if tvdb_obj:
-            tvdb_obj = self.tvdbapi[self.id]
+            tvdb_obj = tvdb_obj[self.id]
+
             return tvdb_obj.keys()
 
-    def get_eps(self, season):
-        tvdb_obj = self.tvdbapi[self.id][season]
-        return tvdb_obj.keys()
+    def get_eps(self, season, xem=True):
+        if xem:
+            tvdb_obj = self.get_tvdb_obj()
+        else:
+            tvdb_obj = Tvdb()
+
+        return tvdb_obj[self.id][season].keys()
 
     def get_titles(self, refresh=True):
 
@@ -1214,18 +1225,20 @@ class TVShow(models.Model):
         if self.id:
             try:
                 self.tvdb_obj = self.tvdbapi[self.id]
-                logger.info("Found on thetvdb %s" % self.tvdbshow_obj['id'])
-                return self.tvdbshow_obj
+                logger.info("Found on thetvdb %s" % self.tvdb_obj['id'])
+                return self.tvdb_obj
             except:
                 pass
         elif self.title:
+            print "title"
             try:
-                self.tvdbshow_obj = self.tvdbapi[self.title]
-                logger.info("Found matching tvdbcache item %s" % self.tvdbshow_obj['id'])
-                return self.tvdbshow_obj
+                self.tvdb_obj = self.tvdbapi[self.title]
+                logger.info("Found matching tvdbcache item %s" % self.tvdb_obj['id'])
+                return self.tvdb_obj
             except:
                 pass
         elif self.alt_names:
+            print "alt name"
             for name in self.alt_name:
                 try:
                     self.tvdb_obj = self.tvdbapi[name]

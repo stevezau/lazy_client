@@ -50,7 +50,7 @@ class APITestsDownloadItemTestCase(TestCase):
                 'imdbid_id': 1837642,
                 'ftppath': '/TVHD/Person.of.Interest.S03E11.720p.HDTV.X264-DIMENSION',
                 'section': 'TVHD',
-                'localpath': os.path.join(settings.TVHD_TEMP, 'Person.of.Interest.S03E11.720p.HDTV.X264-DIMENSION'),
+                'localpath': os.path.join(settings.TV_PATH_TEMP, 'Person.of.Interest.S03E11.720p.HDTV.X264-DIMENSION'),
                 'status': DownloadItem.PENDING
                 }
         self.do_check_download_item(data, expected_data, 'tvhd')
@@ -66,7 +66,7 @@ class APITestsDownloadItemTestCase(TestCase):
                 'imdbid_id': 1837642,
                 'ftppath': '/TVHD/Revenge.S03E10.720p.HDTV.X264-DIMENSION',
                 'section': 'TVHD',
-                'localpath': os.path.join(settings.TVHD_TEMP, 'Revenge.S03E10.720p.HDTV.X264-DIMENSION'),
+                'localpath': os.path.join(settings.TV_PATH_TEMP, 'Revenge.S03E10.720p.HDTV.X264-DIMENSION'),
                 'status': DownloadItem.QUEUE,
                 }
 
@@ -84,7 +84,7 @@ class APITestsDownloadItemTestCase(TestCase):
                 'imdbid_id': 1136608,
                 'ftppath': '/HD/District.9.2009.MULTi.TRUEFRENCH.1080p.BluRay.x264-FiDELiO',
                 'section': 'HD',
-                'localpath': os.path.join(settings.HD_TEMP, 'District.9.2009.MULTi.TRUEFRENCH.1080p.BluRay.x264-FiDELiO'),
+                'localpath': os.path.join(settings.MOVIE_PATH_TEMP, 'District.9.2009.MULTi.TRUEFRENCH.1080p.BluRay.x264-FiDELiO'),
                 'status': DownloadItem.QUEUE,
                 }
 
@@ -101,7 +101,7 @@ class APITestsDownloadItemTestCase(TestCase):
                 'imdbid_id': 1670345,
                 'ftppath': '/HD/Now.You.See.Me.2013.MULTi.TRUEFRENCH.EXTENDED.1080p.BluRay.x264-FiDELiO',
                 'section': 'HD',
-                'localpath': os.path.join(settings.HD_TEMP, 'Now.You.See.Me.2013.MULTi.TRUEFRENCH.EXTENDED.1080p.BluRay.x264-FiDELiO'),
+                'localpath': os.path.join(settings.MOVIE_PATH_TEMP, 'Now.You.See.Me.2013.MULTi.TRUEFRENCH.EXTENDED.1080p.BluRay.x264-FiDELiO'),
                 'status': DownloadItem.QUEUE,
                 }
 

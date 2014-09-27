@@ -2,10 +2,16 @@
 ### NOW ###
 ###########
 
+-NEW VRSION RESET ALL RETRIES
+-Add shows from ihnore.py as ignoed in lazy
+
 -amazing race AU does not detect on thetvdb.com
 -make searchtvdb look for local tvshows first..(via database)
 -convert AU to australia etc when searching tvdb
 
+-ADD SUPPORT FOR SUBS
+
+MANUALLY FIX ALL EPS DEFIANCE
 
 --upggrade scripts remove duplicates in ignore.yml
 
@@ -21,25 +27,7 @@ improve QTS lazy script
 
 -Test Cases
 
--multiple files found, allow manual fix
 -manual rename for files not found
-
--download fails as torrent already exists..
-
-##############
-### Future ###
-##############
--mobile ui
-
-CLEANUP SECTION
---delete via watcehd flag
---show a list with the number of missing eps next to it
---show never watched tvshows
-
----update and Remove duplicate movies
----update and Remove duplicate tv shows
----Cleanup empty tvshow folders
----cleanup empty movie folders
 
 
 
