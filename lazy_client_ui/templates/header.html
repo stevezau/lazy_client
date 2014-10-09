@@ -1,5 +1,4 @@
 <div class="container header">
-    {% if user.is_authenticated %}
     {% load sitetree %}
     <div class="navbar navbar-inverse" role="navigation">
         <div class="container-fluid">
@@ -32,12 +31,11 @@
     </div>
 </div>
 
-    {% if lazy_errors %}
-        {% for error in lazy_errors %}
-        <div id="inner-message" class="alert alert-close alert-danger">
-            <button type="button" class="close" data-dismiss="alert">&times;</button>
-          ERROR: {{ error }}
-        </div>
-        {% endfor %}
-    {% endif %}
+{% if lazy_errors %}
+    {% for error in lazy_errors %}
+    <div id="inner-message" class="alert alert-close alert-danger">
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+      ERROR: {{ error }}
+    </div>
+    {% endfor %}
 {% endif %}
