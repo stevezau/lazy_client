@@ -7,9 +7,119 @@
 
 
 {% block content %}
+<div class="modal fade" id="ignoreModal" tabindex="-1" role="dialog" aria-labelledby="basicModal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="myModalLabel">Delete ALL epsiodes and files for {{object.title }}</h4>
+            </div>
+            <div class="modal-body">
+                <h4>You have chosen to ignore this show. Would you like to remove all the epsiodes related to this show?</h4>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger tvshow_delete_all" spinner="tiny"><span class="btn-text">Delete</span></button>
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Keep</button>
+        </div>
+    </div>
+  </div>
+</div>
+
 {% load download_extras %}
+    <div class="text-center">
+        <h3>Manage TVShow</h3>
+        <p class="text-center"><small>
+            <span class="text-nowrap"><span class="glyphicon glyphicon-star text-yellow" title="Favorite Show"></span> = Favorite Show</span>
+            <span class="text-nowrap"><span class="glyphicon glyphicon-ban-circle text-danger" title="Ignored Show"></span> = Ignored Show</span>
+            <span class="text-nowrap"><span class="glyphicon glyphicon-hdd text-success" title="Existing epsiodes found"></span> = Existing epsiodes found</span>
+        </small></p>
+    </div>
+<hr/>
+    <div class="tvshow download-item" id="{{ object.id }}">
+    <div class="col-xs-12">
+        <div class="poster">
+            <a href="http://thetvdb.com/index.php?tab=series&id={{ object.id }}" target="_blank">
+                {% if object.posterimg %}
 
+                    <img class="poster" src="{{ object.posterimg.url }}">
+                {% else %}
+                    <img class="poster pull-left" src="{{ STATIC_URL }}images/noimg.gif" class="pull-left">
+                {% endif %}
+            </a>
+        </div>
 
+        <div class="detail">
+            <div class="top">
+                <h4>
+                    <span class="title">{{ object.title }}</span>
+                    <span class="glyphicon glyphicon-star text-yellow {% if not object.favorite %}hidden{% endif %}" title="Favorite Show"></span>
+                    <span class="glyphicon glyphicon-ban-circle text-danger {% if not object.ignored %}hidden{% endif %}" title="Ignored Show"></span>
+                    {% if object.exists %}<span class="glyphicon glyphicon-hdd text-success" title="Existing epsiodes found"></span>{% endif %}
+                </h4>
+                <span class="label-bar">
+                    {% for quality in download.get_quality %}
+                        <span class="label label-primary">{{ quality }}</span>
+                    {% endfor %}
+
+                    {% for genre in object.get_genres_list %}
+                        <span class="label label-warning">{{ genre|title }}</span>
+                    {% endfor %}
+
+                    {% for network in object.get_networks %}
+                         <span class="label label-default">{{ network|title }}</span>
+                    {% endfor %}
+                </span>
+
+                <div class="information">
+                    <div>
+                        <h5><strong>Status:</strong>
+                            {% if object.get_status == 1 %}
+                                 <small>Continuing</small>
+                            {% elif object.get_status == 2 %}
+                                <small>Ended</small>
+                            {% else %}
+                                <small>Unknown</small>
+                            {% endif %}
+                        </h5>
+                    </div>
+                    {% if object.get_status == 1 %}
+                        {% tvshow_next_aired tvshow %}
+                    {% endif %}
+                </div>
+                <hr/>
+
+                <div class="description">
+                    {% if object.description %}
+                        {% if flavour == "mobile" %}{{ object.description|truncatesmart:300 }}{% else %}{{ object.description|truncatesmart:500 }}{% endif %}
+                    {% else %}
+                        No description available
+                    {% endif %}
+                </div>
+            </div>
+            <div class="bottom">
+                <hr/>
+                <div class="button-bar btn-group-justified">
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-default btn-xl btn-responsive tvshow_toggle_fav">
+                            <span class="glyphicon glyphicon-star"></span><span class="btn-text"> {% if object.favorite %}Remove Favorite{% else %}Add Favorite{% endif %}</span>
+                        </button>
+                    </div>
+                    <div class="btn-group">
+                        <button href="" type="button" class="btn btn-default btn-xl btn-responsive tvshow_toggle_ignore">
+                            <span class="glyphicon glyphicon-ban-circle"></span><span class="btn-text"> {% if object.ignored %}Remove Ignored{% else %}Ignore Show{% endif %}</span>
+                        </button>
+                    </div>
+                    <div class="btn-group">
+                        <button href="" type="button" class="btn btn-default btn-xl btn-responsive tvshow_show_missing">
+                            <span class="glyphicon glyphicon-wrench"></span><span class="btn-text"> Find Missing Epsiodes</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="tvshow-missing"></div>
+            </div>
+        </div>
+    </div>
+</div>
 
 
 {% endblock %}

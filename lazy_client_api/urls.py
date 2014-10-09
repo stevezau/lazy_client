@@ -9,12 +9,12 @@ urlpatterns = patterns('',
     url(r'^downloads/$', DownloadItemList.as_view(), name="download_api"),
     url(r'^downloads/add/$', 'lazy_client_api.views.downloads', name="server_api"),
     url(r'^downloads/(?P<pk>[0-9]+)/$', DownloadItemDetail.as_view(), name="download_api_detail"),
-    url(r'^downloads/(?P<pk>[0-9]+)/action/$', 'lazy_client_api.views.download_action', name="download_api_detail_ignore"),
+    url(r'^downloads/(?P<pk>[0-9]+)/action/$', 'lazy_client_api.views.download_action', name="api.downloads.action"),
 
     url(r'^imdb/$', ImdbItemList.as_view(), name="imdb_api"),
     url(r'^tvdb/$', TvdbItemList.as_view(), name="tvdb_api"),
-    url(r'^tvdb/(?P<pk>[0-9]+)/$', TvdbDetail.as_view(), name="tvdb_api_detail"),
-    url(r'^tvdb/(?P<pk>[0-9]+)/$', ImdbDetail.as_view(), name="tvdb_api_detail"),
+    url(r'^tvshow/(?P<pk>[0-9]+)/$', TVShowDetail.as_view(), name="api.tvshow"),
+    url(r'^tvshow/(?P<pk>[0-9]+)/action/$', 'lazy_client_api.views.tvshow_action', name="api.tvshow.detail"),
 
     #Search imdb.com
     url(r'^search_imdb/$', 'lazy_client_api.views.search_imdb', name='search_imdb'),

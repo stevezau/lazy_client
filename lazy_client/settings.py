@@ -115,7 +115,8 @@ TVSHOW_AUTOFIX_REPLACEMENTS = {
     "'": "",
     "(": "",
     ")": "",
-    "-": "",
+    ":": "",
+    "-": " ",
     "!": "",
 }
 
@@ -216,6 +217,21 @@ LOGGING = {
             'level':'ERROR',
         },
         'GuessMovieTitleFromPosition': {
+            'handlers':['console'],
+            'propagate': True,
+            'level':'INFO',
+        },
+        'GuessProperties': {
+            'handlers':['console'],
+            'propagate': True,
+            'level':'INFO',
+        },
+        'GuessReleaseGroup': {
+            'handlers':['console'],
+            'propagate': True,
+            'level':'INFO',
+        },
+        'GuessEpisodesRexps': {
             'handlers':['console'],
             'propagate': True,
             'level':'INFO',

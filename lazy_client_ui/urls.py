@@ -22,19 +22,6 @@ urlpatterns = patterns('',
     url(r'^queue/manualfix/(?P<pk>\w+)/$', queue.DownloadsManuallyFixItem.as_view(), name='queue.manualfixitem'),
     url(r'^queue/(?P<type>\w+)/$', queue.QueueManage.as_view(), name='queue.index'),
 
-    #Config - Redirect
-    url(r'^config$', RedirectView.as_view(url=reverse_lazy('config.tvmap.index')), name='config.redirect'),
-    url(r'^config/update/(?P<type>\w+)/$', config.update, name='config.update'),
-
-    #Config - Approved Shows
-    url(r'^config/approved/$', config.ApprovedIndexView.as_view(), name='config.approved.index'),
-    url(r'^config/approved/list$', config.ApprovedListView.as_view(), name='config.approved.list'),
-    url(r'^config/approved/add$', config.ApprovedCreate.as_view(), name='config.approved.add'),
-
-    #Config - Ignored Shows
-    url(r'^config/ignore/$', config.IgnoredIndexView.as_view(), name='config.ignore.index'),
-    url(r'^config/ignore/list$', config.IgnoredListView.as_view(), name='config.ignore.list'),
-    url(r'^config/ignore/add$', config.IgnoredCreate.as_view(), name='config.ignore.add'),
 
     #Config - Show Mappings
     url(r'^config/tvmap/$', config.TVMappingsIndexView.as_view(), name='config.tvmap.index'),
@@ -52,7 +39,13 @@ urlpatterns = patterns('',
     #Manage - TVShows
     url(r'^manage/tvshows/$', manage.tvshows, name='manage.tvshows.find'),
     url(r'^manage/tvshows/(?P<pk>\w+)/$', manage.TVShowDetail.as_view(), name='manage.tvshow.detail'),
+    url(r'^manage/tvshows/(?P<pk>\w+)/missing/$', manage.TVShowMissing.as_view(), name='manage.tvshow.missing'),
     url(r'^other/findmissing/(?P<tvshow>(.+))/content$', other.FindMissingReportContent.as_view(), name='other.findmissing.report.content'),
+
+    #Manage - Movies
+    url(r'^manage/movies/$', manage.movies, name='manage.movies.find'),
+    #url(r'^manage/tvshows/(?P<pk>\w+)/$', manage.TVShowDetail.as_view(), name='manage.tvshow.detail'),
+    #url(r'^other/findmissing/(?P<tvshow>(.+))/content$', other.FindMissingReportContent.as_view(), name='other.findmissing.report.content'),
 
 
     #Config - Jobs

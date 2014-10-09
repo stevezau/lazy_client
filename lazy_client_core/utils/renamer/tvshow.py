@@ -154,6 +154,8 @@ class TVRenamer:
             if 'episodeNumber' in tvshow_file_metaparser.details:
                 tvshow_file_ep = tvshow_file_metaparser.details['episodeNumber']
 
+            xem_exists = False
+
             if tvdbcache_obj:
                 if not season_override and not ep_override:
                     #Lets try convert via thexem
@@ -161,6 +163,7 @@ class TVRenamer:
                         xem_season, xem_ep = self.tvdbapi.get_xem_show_convert(tvdbcache_obj.id, tvshow_file_season, tvshow_file_ep)
 
                         if xem_season is not None and xem_ep is not None:
+                            xem_exists = True
                             self.log("Found entry on thexem, converted the season and ep to %s x %s" % (xem_season, xem_ep))
                             tvshow_file_season = int(xem_season)
                             tvshow_file_ep = int(xem_ep)

@@ -85,7 +85,7 @@ class RarArchive(Archive):
 
                 while(len(names_list)>i):
                     file_path = os.path.join(self.path, names_list[i])
-                    calc_sfv_value=self.crc(file_path)
+                    calc_sfv_value = self.crc(file_path)
 
                     if sfv_list[i].lstrip('0')==calc_sfv_value:
                         logger.debug("CRC check passed: %s" % file_path)

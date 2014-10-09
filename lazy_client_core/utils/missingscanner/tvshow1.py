@@ -520,7 +520,7 @@ class TVShowScanner:
 
         return None
 
-    def _season_exists_on_server(self, season):
+    def __add_new_download(self, season):
 
         self.log("Checking if season is on the ftp: %s   %s" % (self.tvshow_name, season))
 

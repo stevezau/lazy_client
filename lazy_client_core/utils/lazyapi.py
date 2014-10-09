@@ -19,15 +19,20 @@ default_sites = [
     'SCC_0DAY',
     'SCC_ARCHIVE',
     'REVTT',
+    'REVTT_PACKS',
     'HD',
     'TL',
     'TL_PACKS',
     ]
 
 def download_torrents(torrents):
+    old_timeout = requests.session.timeout
+    requests.session.timeout = 100 #seconds
+
     try:
         headers = {'Content-type': 'application/json', "Accept": "application/json"}
         downloads = {"download": torrents}
+
         r = requests.post(urlparse.urljoin(lazy_server_api, "download_torrents/"), data=json.dumps(downloads), headers=headers)
         json_response = r.json()
 
@@ -41,6 +46,8 @@ def download_torrents(torrents):
         raise LazyServerExcpetion(str(e))
     except HTTPError as e:
         raise LazyServerExcpetion(str(e))
+    finally:
+        requests.session.timeout = old_timeout
 
 def search_ftp(search):
     payload = {

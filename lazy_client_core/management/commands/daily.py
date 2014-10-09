@@ -9,6 +9,7 @@ from django.conf import settings
 import os
 logger = logging.getLogger(__name__)
 from lazy_client_core.utils import common
+from lazy_client_core.models import TVShow
 
 
 class Command(BaseCommand):
@@ -37,3 +38,6 @@ class Command(BaseCommand):
         celerybeat_log = os.path.join(settings.BASE_DIR, "logs/celery_beat.log")
         if os.path.getsize(celerybeat_log) > max_bytes:
             common.truncate_file(celerybeat_log, max_bytes)
+
+        #Task 3- Lets set the favs
+        TVShow.update_favs()

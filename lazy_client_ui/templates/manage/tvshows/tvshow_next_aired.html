@@ -1,0 +1,16 @@
+{% if season and ep %}
+    {% load download_extras %}
+    <div>
+        <h5><strong>Next Epsiode:</strong>
+            <small>{% if date %}{{ date|timeuntil2 }}{% endif %} - <strong>S{{ season }} E{{ ep }}</strong>
+                {% if title %} - <i>{{ title }}</i>{% endif %}
+
+
+            </small>
+        </h5>
+    </div>
+    {% else %}
+    <div>
+        <h5><strong>Next Epsiode: To be announced</strong></h5>
+    </div>
+{% endif %}

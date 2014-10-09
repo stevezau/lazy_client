@@ -23,9 +23,22 @@ body {
     }
 }
 
+.row {
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+.col-centered {
+    float: none;
+    margin: 0 auto;
+}
 
 .table {
     margin-bottom: 0px;
+}
+
+.text-yellow {
+    color: #F5ED2C;
 }
 
 .glyphicon-refresh-animate {
@@ -43,14 +56,19 @@ body {
     to { transform: scale(1) rotate(360deg);}
 }
 
-
+.spinner {
+    position: relative;
+    display: inline-block;
+    width: 17px;
+    height: 10px;
+}
 /* Error messages */
 #message {
     display: box;
     flex-align: center;
     flex-pack: center;
     position: fixed;
-    top: 0;
+    top: 70px;
     left: 0;
     width: 100%;
     z-index:99;
@@ -70,6 +88,10 @@ body {
     border: 0px !important;
 }
 
+/* TVShows */
+.tvshow .panel {
+    margin-top: 20px;
+}
 
 /* ##### */
 /* Forms */
@@ -192,7 +214,11 @@ body {
     max-width: 34px;
 }
 
-
+.search-item .rating-star {
+    height: 22px;
+    width: 22px;
+    background-size: 18px 18px;
+}
 
 
 /* ######## */
@@ -347,6 +373,16 @@ body {
     margin-bottom: 10px;
 }
 
+.download-item h4 {
+    margin-bottom: 0px;
+    margin-top: 0px;
+}
+
+.download-item hr {
+    margin-bottom: 10px;
+    margin-top: 10px;
+}
+
 /* ##### */
 /* Items */
 /* ##### */
@@ -427,6 +463,7 @@ body {
 
     .download-item .poster img {
         max-width: 60px;
+        max-height: 70px
     }
 
     .download-item .multi-items table tr td {
@@ -435,6 +472,7 @@ body {
 
     .download-item h4 {
         margin-top: 0px;
+        min-height: 70px;
     }
 
     .download-item .download-group {
@@ -457,15 +495,27 @@ body {
 
     /* search items */
     .search-item .poster {
-        max-width: 120px;
+        max-width: 80px;
         vertical-align: top;
         padding-right: 10px;
         float: left;
     }
 
+    .search-item h4 {
+        margin-top: 0px;
+    }
+
     .search-item .detail {
     }
 
+    /* tvshows */
+    .tvshow h4 {
+        min-height: 0;
+    }
+
+    .tvshow .top {
+        min-height: 70px;
+    }
 }
 
 @media screen and (min-width: 700px)  {
@@ -530,7 +580,7 @@ body {
 
     /* search items */
     .search-item .poster {
-        max-width: 180px;
+        max-width: 120px;
         display: table-cell;
         vertical-align: top;
         padding-right: 10px;
@@ -540,7 +590,11 @@ body {
         display: table-cell;
     }
 
-
+    .search-item .title {
+        margin-top: 0px;
+        vertical-align: top;
+    }
+    
     /* Download Items */
     .download-item {
         display: table;
@@ -555,7 +609,7 @@ body {
     }
 
     .download-item .poster {
-        max-width: 200px;
+        width: 180px;
         display: table-cell;
         vertical-align: top;
         padding-right: 10px;
@@ -598,6 +652,10 @@ body {
     /* Search */
     .search .size {
         float: right;
+    }
+
+    .tvshow.search-item .button-bar {
+        padding-top: 10px
     }
 }
 

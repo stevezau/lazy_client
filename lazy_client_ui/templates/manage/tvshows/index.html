@@ -8,68 +8,106 @@
 
 {% block content %}
 {% load download_extras %}
-<div class="row">
-    <div class="col-md-4 col-md-offset-4 col-xs-12">
-        {% load crispy_forms_tags %}
-        <div class="text-center">
-            {% crispy form %}
+<div class="manage-tvshow">
+    <div class="row">
+        <div class="col-xs-12 col-sm-10 col-md-7 col-centered">
+            {% load crispy_forms_tags %}
+            <div class="text-center">
+                {% crispy form %}
+            </div>
         </div>
     </div>
-</div>
+    <div class="row">
+        <div class="col-xs-12 col-sm-10 col-md-7 col-centered text-center">
+            <div class="btn-group">
+                <a class="btn btn-default" spinner="tiny" href="?show=approved">Show Favorites</a>
+                <a class="btn btn-default" spinner="tiny" href="?show=ignored">Show Ignored</a>
+            </div>
+        </div>
+    </div>
 <hr/>
-
-{% if shows %}
-    {% load download_extras %}
-    <div><p class="text-center"><strong>Select show below to manage</strong></p></div>
-    {% for show in shows %}
-        <div class="row search-item row-item">
-            <div class="col-xs-12">
-                <div class="poster">
-                    {% if show.posterimg %}
-                            <img class="poster" src="{{ show.posterimg.url }}">
-                        </span>
-                    {% else %}
-                        <img class="poster pull-left" src="{{ STATIC_URL }}images/noimg.gif" class="pull-left">
-                    {% endif %}
-                </div>
-
-                <div class="detail">
-                    <h4><span class="title">{{ show.title }}</span></h4>
-                    <span class="label-bar">
-                        {% for quality in download.get_quality %}
-                            <span class="label label-primary">{{ quality }}</span>
-                        {% endfor %}
-
-                        {% for genre in show.get_genres_list %}
-                            <span class="label label-warning">{{ genre|title }}</span>
-                        {% endfor %}
-
-                        {% for network in show.get_networks %}
-                             <span class="label label-default">{{ network|title }}</span>
-                        {% endfor %}
-                    </span>
-
-                    <div class="description">
-                        {% if show.description %}
-                            {% if flavour == "mobile" %}{{ show.description|truncatesmart:300 }}{% else %}{{ show.description|truncatesmart:500 }}{% endif %}
+    {% if shows %}
+        {% load download_extras %}
+        <div>
+            <p class="text-center"><strong>Found {{ shows|length }} shows</strong></p>
+            <p class="text-center"><strong>Click manage to update show settings</strong></p>
+            <p class="text-center"><small>
+                <span class="text-nowrap"><span class="glyphicon glyphicon-star text-yellow" title="Favorite Show"></span> = Favorite Show</span>
+                <span class="text-nowrap"><span class="glyphicon glyphicon-ban-circle text-danger" title="Ignored Show"></span> = Ignored Show</span>
+                <span class="text-nowrap"><span class="glyphicon glyphicon-hdd text-success" title="Existing epsiodes found"></span> = Existing epsiodes found</span>
+            </small></p>
+            </div>
+        {% for show in shows %}
+            <div class="row tvshow search-item row-item">
+                <div class="col-xs-12">
+                    <div class="poster">
+                        {% if show.posterimg %}
+                                <img class="poster" src="{{ show.posterimg.url }}">
+                            </span>
                         {% else %}
-                            No description available
+                            <img class="poster pull-left" src="{{ STATIC_URL }}images/noimg.gif" class="pull-left">
                         {% endif %}
                     </div>
-                    <div class="bottom">
-                        <div class="button-bar btn-group-justified">
-                            <div class="btn-group">
-                                <a href="{% url 'manage.tvshow.detail' show.id %}" type="button" class="btn btn-default btn-xl btn-responsive">
-                                    <span class="glyphicon glyphicon glyphicon-th"></span> Manage
-                                </a>
+
+                    <div class="detail">
+                        <h4>
+                            <span class="title">{{ show.title }}</span>
+                            {% if show.favorite %}<span class="glyphicon glyphicon-star text-yellow" title="Favorite Show"></span>{% endif %}
+                            {% if show.ignored %}<span class="glyphicon glyphicon-ban-circle text-danger" title="Ignored Show"></span>{% endif %}
+                            {% if show.exists %}<span class="glyphicon glyphicon-hdd text-success" title="Existing epsiodes found"></span>{% endif %}
+                        </h4>
+                        <span class="label-bar">
+                            {% for quality in download.get_quality %}
+                                <span class="label label-primary">{{ quality }}</span>
+                            {% endfor %}
+
+                            {% for genre in show.get_genres_list %}
+                                <span class="label label-warning">{{ genre|title }}</span>
+                            {% endfor %}
+
+                            {% for network in show.get_networks %}
+                                 <span class="label label-default">{{ network|title }}</span>
+                            {% endfor %}
+                        </span>
+
+                        <div class="description">
+                            {% if show.description %}
+                                {% if flavour == "mobile" %}{{ show.description|truncatesmart:300 }}{% else %}{{ show.description|truncatesmart:500 }}{% endif %}
+                            {% else %}
+                                No description available
+                            {% endif %}
+                        </div>
+                        <div>
+                            <div class="button-bar btn-group-justified">
+                                <div class="btn-group" style="max-width: 400px">
+                                    <a href="{% url 'manage.tvshow.detail' show.id %}" type="button" class="btn btn-default btn-xl btn-responsive">
+                                        <span class="glyphicon glyphicon glyphicon-th"></span> Manage
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+        {% endfor %}
+    {% else %}
+        <div class="row">
+            <div class="col-xs-12 col-sm-10 col-md-7 col-centered">
+                <div>
+                    <p><strong>This page will search for existing shows and also search www.thetvdb.com for new shows. </strong></p>
+                    <p><strong>With the results you manage the settings such as:</strong></p>
+                </div>
+                <div>
+                    <ul>
+                        <li>Adding new show</li>
+                        <li>Show the next epsiode aired date</li>
+                        <li>Automatically find and download missing Epsiodes</li>
+                        <li>Mark as Favorite</li>
+                        <li>Ignore Show</li>
+                    </ul>
+                </div>
+            </div>
         </div>
-    {% endfor %}
-{% endif %}
-
-
+    {% endif %}
+</div>
 {% endblock %}

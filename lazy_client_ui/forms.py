@@ -270,7 +270,7 @@ class Find(forms.Form):
         self.helper.form_method = "GET"
         self.helper.layout = Layout(
             'search',
-            Submit('submit', 'Search', css_class='btn-default'),
+            StrictButton('Search', type="submit", spinner="tiny", css_class='btn-primary'),
         )
 
     search = forms.CharField(label="Search", max_length=200)
@@ -288,7 +288,7 @@ class FindTVShow(forms.Form):
         self.helper.help_text_inline = False
         self.helper.layout = Layout(
             'search',
-            Submit('submit', 'Search', css_class='btn-default'),
+            StrictButton('Search', type="submit", spinner="tiny", css_class='btn-primary'),
         )
 
     search = forms.CharField(max_length=200)

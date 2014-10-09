@@ -9,9 +9,10 @@ from flexget.utils.imdb import ImdbSearch
 from lazy_client_core.models import DownloadItem, TVShow, Movie
 from lazy_client_api.serializers import DownloadItemSerializer, ImdbItemSerializer, TvdbItemSerializer
 from lazy_common.tvdb_api import Tvdb
-from lazy_client_core.exceptions import AlradyExists_Updated, AlradyExists
+from lazy_client_core.exceptions import AlradyExists_Updated, AlradyExists, Ignored
 from rest_framework.decorators import api_view
 from django.core.exceptions import ObjectDoesNotExist
+from rest_framework import status
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,8 @@ class DownloadItemList(generics.ListCreateAPIView):
             serializer = DownloadItemSerializer(e.existingitem)
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-
+        except Ignored as e:
+            return Response({"status": "failed", "message": str(e)}, status=status.HTTP_202_ACCEPTED)
 
 
 class DownloadItemDetail(generics.RetrieveUpdateDestroyAPIView):
@@ -61,7 +63,7 @@ class TvdbItemList(generics.ListCreateAPIView):
     queryset = TVShow.objects.all()[1:10]
     serializer_class = TvdbItemSerializer
 
-class TvdbDetail(generics.RetrieveUpdateDestroyAPIView):
+class TVShowDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = TVShow.objects.all()
     serializer_class = TvdbItemSerializer
 
@@ -158,6 +160,89 @@ def downloads(request):
     #error not found
     error = {'status': 'failed', 'detail': "invalid action"}
     return Response(error, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def tvshow_action(request, pk):
+    if request.method == "POST":
+        if 'action' not in request.DATA:
+            error = {'status': 'failed', 'detail': "invalid action"}
+            return Response(error, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            tvshow = TVShow.objects.get(id=pk)
+        except ObjectDoesNotExist:
+            error = {'status': 'failed', 'detail': "unable to find tvshow"}
+            return Response(error, status=status.HTTP_400_BAD_REQUEST)
+
+        action = request.DATA['action']
+
+        if action == "delete_all":
+            tvshow.delete_all()
+            return Response({'status': 'success', 'detail': "delete all epsiodes"})
+
+        if action == "fix_missing":
+            #Check for existing running job
+            fix_missing = {}
+
+            if 'fix' not in request.DATA:
+                error = {'status': 'failed', 'detail': "no eps to fix"}
+                return Response(error, status=status.HTTP_400_BAD_REQUEST)
+
+            for season_str in request.DATA['fix']:
+                try:
+                    season = int(season_str)
+                except:
+                    continue
+
+                eps = []
+
+                for ep in request.DATA['fix'][season_str]:
+                    try:
+                        eps.append(int(ep))
+                    except:
+                        continue
+
+                if len(eps) > 0:
+                    fix_missing[season] = eps
+
+            if len(fix_missing) == 0:
+                error = {'status': 'failed', 'detail': "no eps to fix"}
+                return Response(error, status=status.HTTP_400_BAD_REQUEST)
+
+            #Ok now lets fix it.
+
+            return Response({'status': 'success', 'detail': "delete all epsiodes"})
+
+        #Now launch the job.
+
+
+        if action == "toggle_fav":
+            if tvshow.favorite:
+                tvshow.set_favorite(False)
+            else:
+                tvshow.set_favorite(True)
+
+            tvshow.save()
+            return Response({'status': 'success', 'detail': "favorite state toggled", "state": tvshow.favorite})
+
+        if action == "toggle_ignore":
+            if tvshow.ignored:
+                tvshow.ignored = False
+            else:
+                tvshow.ignored = True
+
+            tvshow.save()
+            return Response({'status': 'success', 'detail': "ignored state toggled", "state": tvshow.ignored})
+
+        if action == "get_missing":
+            if not tvshow.localpath:
+                return Response({'status': 'failed', 'detail': "path does not exist",})
+
+            missing = tvshow.get_missing()
+            return Response({'status': 'success', 'detail': "", "missing": missing})
+
+    return Response({'status': 'fail', 'detail': "invalid action"}, status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(['POST'])
 def download_action(request, pk):

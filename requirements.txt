@@ -12,7 +12,7 @@ django-picklefield
 django-mobile
 easy_extract
 django-celery-transactions
-guessit
+guessit==0.9.1
 pillow
 netaddr
 django-crispy-forms

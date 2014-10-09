@@ -2,32 +2,36 @@
 ### NOW ###
 ###########
 
--NEW VRSION RESET ALL RETRIES
--Add shows from ihnore.py as ignoed in lazy
+-clear out cache for metaparser after upgrade of metaparser version
 
 -amazing race AU does not detect on thetvdb.com
 -make searchtvdb look for local tvshows first..(via database)
 -convert AU to australia etc when searching tvdb
 
+-lazy-server, remove torrents that dont exist anymore on ftp
+
+-during extraction if it exist son XEM then make sure we can convert the ep or set to failed
+
+
 -ADD SUPPORT FOR SUBS
 
-MANUALLY FIX ALL EPS DEFIANCE
+-MANUALLY FIX ALL EPS DEFIANCE
+--improve fix select (found s1e1 in queue of the last skip but still did serches?)
 
 --upggrade scripts remove duplicates in ignore.yml
-
---improve fix select (found s1e1 in queue of the last skip but still did serches?)
---Movies and flexget config.. movies for FIX release
 
 when checking pre-scan make it faster as it has to go through alot of the ftp invidual
 already downloaded updated in fix ep/season.. make it display has already been downloaded before
 
-request handler
-remove TV/HD etc
-improve QTS lazy script
-
--Test Cases
+-improve QTS lazy script
 
 -manual rename for files not found
 
 
 
+
+## TESTS ##
+
+1. Add some in database
+2. test onlyget
+3. test

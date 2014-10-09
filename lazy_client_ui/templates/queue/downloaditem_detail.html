@@ -86,7 +86,14 @@
                 {% endwith %}
             {% endif %}
 
-                {% include "queue/downloaditem_desc.html" %}
+            <hr>
+            <div class="description">
+                {% if download.tvdbid.description %}
+                    {% if flavour == "mobile" %}{{ download.tvdbid.description|truncatesmart:300 }}{% else %}{{ download.tvdbid.description }}{% endif %}
+                {% elif download.imdbid.description %}
+                   {% if flavour == "mobile" %}{{ download.imdbid.description|truncatesmart:70 }}{% else %}{{ download.imdbid.description}}{% endif %}
+                {% endif %}
+            </div>
 
                 {% if download.status == 4 %}
                     <div><b>Extracted and Moved: {{ download.dlstart }}</b></div>
