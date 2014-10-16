@@ -5,7 +5,7 @@ import logging
 from django.core.management import call_command
 from celery.task.base import periodic_task
 from lazy_client_core.utils.mirror import FTPMirror
-from lazy_client_core.utils import missingscanner
+from lazy_client_core.models.tvshow import fix_missing_job
 
 logger = logging.getLogger(__name__)
 

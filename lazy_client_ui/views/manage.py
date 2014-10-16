@@ -3,7 +3,6 @@ import os
 from django.shortcuts import render
 from lazy_client_ui.forms import FindTVShow
 from django.http import HttpResponseRedirect, HttpResponse
-from lazy_client_core.utils import missingscanner
 from lazy_client_core.models import TVShow
 from lazy_common.tvdb_api import Tvdb
 from django.shortcuts import redirect
@@ -30,6 +29,15 @@ def tvshows(request):
             if request.GET['show'] == "ignored":
                 context['shows'] = TVShow.objects.filter(ignored=True)
 
+            if request.GET['show'] == "ended":
+                shows = []
+                for show in TVShow.objects.filter(status=TVShow.ENDED).exclude(localpath__isnull=True).exclude(localpath__exact=''):
+                    if os.path.exists(show.localpath):
+                        shows.append(show)
+
+                context['shows'] = shows
+                context['show_delete'] = True
+
             return render(request, 'manage/tvshows/index.html', context)
 
         if form.is_valid():
@@ -46,6 +54,7 @@ def tvshows(request):
             for show in tvdb.search(search):
                 if show['id'] not in local_ids:
                     tvshow = TVShow(show['id'])
+                    tvshow.save()
                     tvshow.update_from_tvdb(update_imdb=False)
                     shows.append(tvshow)
 
@@ -62,7 +71,19 @@ class TVShowMissing(DetailView):
     model = TVShow
     template_name = "manage/tvshows/tvshow_missing.html"
 
+
+class TVShowMissingResults(DetailView):
+    model = TVShow
+    template_name = "manage/tvshows/tvshow_missing_results.html"
+
+
+class TVShowMissingLog(DetailView):
+    model = TVShow
+    template_name = "manage/tvshows/log.html"
+
+
 def movies(request):
 
     return render(request, 'manage/movies/index.html', {})
+
 

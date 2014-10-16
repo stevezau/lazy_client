@@ -33,6 +33,10 @@ class Command(BaseCommand):
                             dest='updatecache',
                             default=False,
                             help='Update TVDB cache'),
+                        make_option('--fixpaths', action='store_true',
+                            dest='fixpaths',
+                            default=False,
+                            help='Update TVDB cache'),
                         make_option('--removedups', action='store_true',
                             dest='removedups',
                             default=False,
@@ -109,22 +113,15 @@ class Command(BaseCommand):
 
             for tvdb_obj in TVShow.objects.all():
 
-                #Step 1 - Lets remove all tvdbcache objects with path that does not exist
-                if tvdb_obj.localpath:
-                    if not os.path.exists(str(tvdb_obj.localpath)):
-                        logger.info("%s: folder does not exist anymore" % tvdb_obj.title)
-                        tvdb_obj.localpath = None
-                        tvdb_obj.save()
-
-                #Step 2 - Lets remove all imdbcache objects with path is zero size
-                if os.path.exists(str(tvdb_obj.localpath)):
-                    size = get_size(tvdb_obj.localpath)
+                #Step 1 - Lets remove all imdbcache objects with path is zero size
+                if os.path.exists(str(tvdb_obj.get_local_path())):
+                    size = get_size(tvdb_obj.get_local_path())
                     if size < 204800:
-                        logger.info("%s: empty folder, deleteing" % tvdb_obj.localpath)
-                        delete(tvdb_obj.localpath)
+                        logger.info("%s: empty folder, deleteing" % tvdb_obj.get_local_path())
+                        delete(tvdb_obj.get_local_path())
                         tvdb_obj.localpath = None
 
-                #Step 3 - Get the latest info
+                #Step 2 - Get the latest info
                 try:
                     #Do we need to update it
                     curTime = datetime.now()
@@ -144,20 +141,28 @@ class Command(BaseCommand):
                 tvdb_obj.save()
 
 
-        if options['updatecache'] or options['all']:
+        if options['updatecache'] or options['fixpaths'] or options['all']:
 
             for dir in os.listdir(settings.TV_PATH):
+                dir_clean = TVShow.clean_title(dir)
                 path = os.path.join(settings.TV_PATH, dir)
 
                 #lets see if it already belongs to a tvshow
                 try:
-                    tvobj = TVShow.objects.get(localpath=path)
+                    TVShow.objects.get(localpath=path)
                 except ObjectDoesNotExist:
                     #does not exist
                     logger.info("FOLDER: %s is not associated with any tvdb object.. lets try fix" % dir)
                     try:
-                        showobj = tvdbapi[dir]
+                        show = TVShow.find_by_title(dir_clean)
 
+                        if show:
+                            show.localpath = path
+                            show.save()
+                            logger.info("FOLDER: %s found tvshow by title id %s" % (dir, show.id))
+                            continue
+
+                        showobj = tvdbapi[dir]
                         tvdbid = int(showobj['id'])
 
                         try:

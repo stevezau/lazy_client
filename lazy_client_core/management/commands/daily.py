@@ -10,7 +10,8 @@ import os
 logger = logging.getLogger(__name__)
 from lazy_client_core.utils import common
 from lazy_client_core.models import TVShow
-
+from lazy_common.tvdb_api import Tvdb
+from lazy_common.tvdb_api.tvdb_exceptions import tvdb_error
 
 class Command(BaseCommand):
 
@@ -41,3 +42,35 @@ class Command(BaseCommand):
 
         #Task 3- Lets set the favs
         TVShow.update_favs()
+
+        #Task 4 - Update tvshow objects older then 2 weeks
+        time_threshold = datetime.datetime.now() - datetime.timedelta(days=14)
+        tvshows = TVShow.objects.all().filter(updated__lt=time_threshold)
+
+        tvdb = Tvdb()
+
+        for tvshow in tvshows:
+            #First lets make sure we can get the object on thetvdb, it could of been deleted
+            if tvshow.get_tvdb_obj() is None:
+                try:
+                    tvdb[int(tvshow.id)]
+                except tvdb_error as e:
+                    if "HTTP Error 404" in str(e):
+                        tvshow.delete()
+                        continue
+                except KeyError:
+                    tvshow.delete()
+                    continue
+                except IndexError:
+                    tvshow.delete()
+                    continue
+            else:
+                tvshow.update_from_tvdb()
+
+            if "Duplicate of" in tvshow.title:
+                tvshow.delete()
+                continue
+
+            if tvshow.title is None or tvshow.title == "" or tvshow.title == " " or len(tvshow.title) == 0:
+                tvshow.delete()
+                continue

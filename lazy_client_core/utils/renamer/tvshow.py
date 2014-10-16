@@ -298,16 +298,10 @@ class TVRenamer:
             else:
                 tvshow_file_ep_id = "S%sE%s" % (str(tvshow_file_season).zfill(2), str(tvshow_file_ep).zfill(2))
 
-            #Now lets figure out the dest_folder
-            if tvdbcache_obj.localpath:
-                #we already have a set path..
-                dest_folder = tvdbcache_obj.localpath
-            else:
-                dest_folder = os.path.join(self.dest_folder_base, common.strip_illegal_chars(tvdbcache_obj.title))
-                tvdbcache_obj.localpath = dest_folder
-                tvdbcache_obj.save()
+            dest_folder = tvdbcache_obj.get_local_path()
 
             season_folder = common.find_season_folder(dest_folder, int(tvshow_file_season))
+
 
             if season_folder:
                 dest_folder = season_folder

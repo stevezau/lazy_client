@@ -1,14 +1,26 @@
 {% with missing=object.get_missing_details %}
 <form id="fixmissing-form">
     <div class="panel panel-info">
-        <div class="panel-heading">Missing Epsiodes</div>
+        <div class="panel-heading">Show Missing Epsiodes</div>
         <div class="panel-body">
-            <p>The following epsiodes are missing. Check the epsiodes you want and click fix and the media server will try and find them</p>
+            {% if object.fix_report %}
+                {% if object.fix_job_running %}
+                    <p class="alert alert-warning">Still searching for missing epsiodes, please see results above</p>
+                {% else %}
+                    <p class="alert alert-success">Finished searching for missing epsiodes, please see results above</p>
+                {% endif %}
+            {% else %}
+                <p>The following epsiodes are missing. Check the epsiodes you want and click fix and the media server will try and find them</p>
+            {% endif %}
         </div>
             {% if missing %}
                 <ul class="nav nav-tabs" role="tablist">
                     {% for season, eps in missing.items %}
-                        <li {% if forloop.first %}class="active"{% endif %}><a href="#season{{ season }}" role="tab" data-toggle="tab">Season {{ season }}<span class="badge">{{ eps|length }}</span></a></li>
+                        <li {% if forloop.first %}class="active"{% endif %}>
+                            <a href="#season{{ season }}" role="tab" data-toggle="tab">{% if flavour == "mobile" %}S{% else %}Season{% endif %} {{ season }}
+                                <span class="badge">{{ eps|length }}</span>
+                            </a>
+                        </li>
                     {% endfor %}
                 </ul>
                 <div class="tab-content">
@@ -17,7 +29,7 @@
                             <table class="table table-striped table-responsive table-hover">
                                 <thead>
                                     <tr>
-                                        <td>Fix</td>
+                                        <td><input type="checkbox" class="select_all_missing"></td>
                                         <td>Ep</td>
                                         <td style="width: 100%;">Name</td>
                                         <td>Air Date</td>
@@ -26,7 +38,13 @@
                                 <tbody>
                                     {% for id, ep in eps.items %}
                                         <tr>
-                                            <td><input type="checkbox" name="{{ season }}" value="{{ ep.episodenumber }}"></td>
+                                            <td>
+                                                {% if ep.status|lower == "already exists" or ep.status|lower == "downloading" %}
+                                                    <input type="checkbox" name="{{ season }}" value="{{ ep.episodenumber }}" disabled>
+                                                {% else %}
+                                                    <input type="checkbox" name="{{ season }}" value="{{ ep.episodenumber }}">
+                                                {% endif %}
+                                            </td>
                                             <td>{{ ep.episodenumber }}</td>
                                             <td>{{ ep.episodename }}</td>
                                             <td class="text-nowrap">{{ ep.firstaired }}</td>
@@ -37,7 +55,12 @@
                         </div>
                     {% endfor %}
                 </div>
-                <div class="text-center"><button type="button" class="btn btn-primary fix_missing" spinner="tiny">Fix Selected</button></div>
+                <div class="button-bar text-center">
+                    <div class="btn-group">
+                        <button href="" type="button" class="btn btn-primary btn-xl btn-responsive fix_missing">
+                           <span class="btn-text">Fix Selected</span>
+                        </button>
+                    </div>
             {% else %}
                 None missing
             {% endif %}

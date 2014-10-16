@@ -8,6 +8,24 @@
 
 {% block content %}
 {% load download_extras %}
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="basicModal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="myModalLabel">Delete ALL epsiodes and files for {{ object.title }}</h4>
+            </div>
+            <div class="modal-body">
+                <h4>Are you sure you would like to remove all the epsiodes related to this show?</h4>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger tvshow_delete_all" spinner="tiny"><span class="btn-text">Delete</span></button>
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Keep</button>
+        </div>
+    </div>
+  </div>
+</div>
+
 <div class="manage-tvshow">
     <div class="row">
         <div class="col-xs-12 col-sm-10 col-md-7 col-centered">
@@ -22,6 +40,8 @@
             <div class="btn-group">
                 <a class="btn btn-default" spinner="tiny" href="?show=approved">Show Favorites</a>
                 <a class="btn btn-default" spinner="tiny" href="?show=ignored">Show Ignored</a>
+                <a class="btn btn-default" spinner="tiny" href="?show=ended">Show Ended</a>
+                <a class="btn btn-default" spinner="tiny" href="?show=ignored">Auto Cleanup</a>
             </div>
         </div>
     </div>
@@ -51,7 +71,7 @@
 
                     <div class="detail">
                         <h4>
-                            <span class="title">{{ show.title }}</span>
+                            <span class="title">{{ show.title|title }}</span>
                             {% if show.favorite %}<span class="glyphicon glyphicon-star text-yellow" title="Favorite Show"></span>{% endif %}
                             {% if show.ignored %}<span class="glyphicon glyphicon-ban-circle text-danger" title="Ignored Show"></span>{% endif %}
                             {% if show.exists %}<span class="glyphicon glyphicon-hdd text-success" title="Existing epsiodes found"></span>{% endif %}
@@ -81,9 +101,23 @@
                             <div class="button-bar btn-group-justified">
                                 <div class="btn-group" style="max-width: 400px">
                                     <a href="{% url 'manage.tvshow.detail' show.id %}" type="button" class="btn btn-default btn-xl btn-responsive">
-                                        <span class="glyphicon glyphicon glyphicon-th"></span> Manage
+                                        <span class="glyphicon glyphicon glyphicon-th"></span>  Manage
                                     </a>
                                 </div>
+                                {% if show_ignore %}
+                                    <div class="btn-group" style="max-width: 400px">
+                                        <button href="" type="button" class="btn btn-default btn-xl btn-responsive tvshow_delete_prompt">
+                                            <span class="glyphicon glyphicon-ban-circle"></span><span class="btn-text">Delete Epsiodes</span>
+                                        </button>
+                                    </div>
+                                {% endif %}
+                                {% if show_delete %}
+                                    <div class="btn-group" style="max-width: 400px">
+                                        <button href="" type="button" class="btn btn-default btn-xl btn-responsive tvshow_delete_prompt">
+                                            <span class="glyphicon glyphicon-ban-circle"></span><span class="btn-text">Delete Epsiodes</span>
+                                        </button>
+                                    </div>
+                                {% endif %}
                             </div>
                         </div>
                     </div>

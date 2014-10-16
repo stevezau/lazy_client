@@ -3,7 +3,7 @@ from django.views.generic import RedirectView
 from django.core.urlresolvers import reverse_lazy
 from django.views.generic import TemplateView
 
-from lazy_client_ui.views import queue, config, other, manage
+from lazy_client_ui.views import queue, config, find, manage
 from lazy_client_ui.views import home
 
 urlpatterns = patterns('',
@@ -28,30 +28,21 @@ urlpatterns = patterns('',
     url(r'^config/tvmap/add$', config.TVMappingsCreate.as_view(), name='config.tvmap.add'),
     url(r'^config/tvmap/list$', config.TVMappingsListView.as_view(), name='config.tvmap.list'),
 
-    #Other - Redirect
-    #url(r'^other/update/report_all/$', other.report_all, name='other.findmissing.report_all'),
-    #url(r'^other/update/fix_all/$', other.fix_all, name='other.findmissing.fix_all'),
-    url(r'^other/update/(?P<type>\w+)/$', other.update, name='other.update'),
-
     #Other - Find
-    url(r'^find/$', other.find, name='find'),
+    url(r'^find/$', find.find, name='find'),
 
     #Manage - TVShows
     url(r'^manage/tvshows/$', manage.tvshows, name='manage.tvshows.find'),
     url(r'^manage/tvshows/(?P<pk>\w+)/$', manage.TVShowDetail.as_view(), name='manage.tvshow.detail'),
     url(r'^manage/tvshows/(?P<pk>\w+)/missing/$', manage.TVShowMissing.as_view(), name='manage.tvshow.missing'),
-    url(r'^other/findmissing/(?P<tvshow>(.+))/content$', other.FindMissingReportContent.as_view(), name='other.findmissing.report.content'),
+    url(r'^manage/tvshows/(?P<pk>\w+)/missing/results/$', manage.TVShowMissingResults.as_view(), name='manage.tvshow.missing.results'),
+    url(r'^manage/tvshows/(?P<pk>\w+)/missing/log/$', manage.TVShowMissingLog.as_view(), name='manage.tvshow.missing.log'),
+
 
     #Manage - Movies
     url(r'^manage/movies/$', manage.movies, name='manage.movies.find'),
     #url(r'^manage/tvshows/(?P<pk>\w+)/$', manage.TVShowDetail.as_view(), name='manage.tvshow.detail'),
     #url(r'^other/findmissing/(?P<tvshow>(.+))/content$', other.FindMissingReportContent.as_view(), name='other.findmissing.report.content'),
-
-
-    #Config - Jobs
-    url(r'^other/jobs/$', other.JobIndexView.as_view(), name='other.jobs.index'),
-    url(r'^other/jobs/list/$', other.JobListView.as_view(), name='other.jobs.list'),
-    url(r'^other/jobs/get/(?P<pk>(.+))/$', other.JobDetailView.as_view(), name='other.jobs.get'),
 
 )
 

@@ -1,0 +1,68 @@
+{% if object.fix_report %}
+    <div class="panel panel-info">
+        <div class="panel-heading">Results from trying to fix missings epsiodes {% if object.fix_job_running %}<span class="label label-warning">Still Searching</span>{% else %}<span class="label label-success">Finished</span>{% endif %}</div>
+        <div class="panel-body">
+
+        </div>
+            {% if object.fix_report %}
+                <ul class="nav nav-tabs" role="tablist">
+                    {% for season, eps in object.fix_report.iteritems %}
+                        <li {% if forloop.first %}class="active"{% endif %}>
+                            <a href="#season{{ season }}" role="tab" data-toggle="tab">{% if flavour == "mobile" %}S{% else %}Season{% endif %} {{ season }}
+                                <span class="badge">{{ eps|length }}</span>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <div class="tab-content">
+                    {% for season, eps in object.fix_report.iteritems %}
+                        <div class="tab-pane {% if forloop.first %}active{% endif %}" id="season{{ season }}">
+                            <table class="table table-striped table-responsive table-hover">
+                                <thead>
+                                    <tr>
+                                        <td>Ep</td>
+                                        <td>Status</td>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for ep, status in eps.iteritems %}
+                                        <tr>
+                                            <td>{{ ep }}</td>
+                                            <td class="text-nowrap">{{ status }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="button-bar btn-group-justified">
+                    {% if object.fix_job_running %}
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-primary btn-xl btn-responsive tvshow_show_missing_results">
+                                <span class="btn-text">Refresh</span>
+                            </button>
+                        </div>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-primary btn-xl btn-responsive cancel_missing">
+                                <span class="btn-text">Cancel Search</span>
+                            </button>
+                        </div>
+                    {% else %}
+                        <div class="btn-group">
+                            <button href="" type="button" class="btn btn-primary btn-xl btn-responsive clear_missing_results">
+                               <span class="btn-text">Clear</span>
+                            </button>
+                        </div>
+                        <div class="btn-group">
+                            <a href="missing/log/" type="button" class="btn btn-primary btn-xl btn-responsive results_log">
+                               <span class="btn-text">Show Log</span>
+                            </a>
+                        </div>
+                    {% endif %}
+            {% else %}
+                None missing
+            {% endif %}
+        </div>
+    </div>
+{% endif %}

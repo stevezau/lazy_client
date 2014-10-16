@@ -37,6 +37,46 @@ function ConvertFormToJSON(form){
 
 
 $( document ).ready(function() {
+    /////////////////////////
+    /// AJAX DJANGO SEND ////
+    /////////////////////////
+
+    $(document).ajaxSend(function(event, xhr, settings) {
+        function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie != '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = jQuery.trim(cookies[i]);
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        function sameOrigin(url) {
+            // url could be relative or scheme relative or absolute
+            var host = document.location.host; // host + port
+            var protocol = document.location.protocol;
+            var sr_origin = '//' + host;
+            var origin = protocol + sr_origin;
+            // Allow absolute or scheme relative URLs to same origin
+            return (url == origin || url.slice(0, origin.length + 1) == origin + '/') ||
+                (url == sr_origin || url.slice(0, sr_origin.length + 1) == sr_origin + '/') ||
+                // or any other URL that isn't scheme relative or absolute i.e relative.
+                !(/^(\/\/|http:|https:).*/.test(url));
+        }
+        function safeMethod(method) {
+            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+        }
+
+        if (!safeMethod(settings.type) && sameOrigin(settings.url)) {
+            xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+        }
+    });
 
     $(document).on('click', '.alert-close', function(event) {
        $(this).hide();
@@ -103,7 +143,7 @@ $( document ).ready(function() {
         }
     }
 
-    /* Actions Buttons */
+    /* Download Items */
     $(document).on('click', '[class^="item_approve_"]', function(event) {
         btn = $(this);
         id = $(this).prop("class").match(/item_approve.+[0-9]/).toString().replace("item_approve_", "");
@@ -149,6 +189,38 @@ $( document ).ready(function() {
         sort_download(id, 1);
     });
 
+
+    $('[class^="seconds_left_"]').each(function(event) {
+        obj = $(this)
+        id = obj.prop("class").match(/seconds_left_.+[0-9]/).toString().replace("seconds_left_", "");
+
+        spinner = obj.find('.spinner')
+        if (spinner) { spinner.spin("tiny") }
+
+        toggle_success = function (data, textStatus, jqXHR) {
+            seconds = data['detail'];
+
+            left = "Time Remaining: Unknown"
+
+            if (seconds == 0) {
+                left = "Time Remaining: Finsihed"
+            } else if (seconds > 0) {
+                left = "Time Remaining: " + millisecondsToStr(seconds * 1000)
+            }
+
+            this.custom_data.spinner.remove()
+            this.custom_data.obj.text(left)
+        };
+
+        toggle_error = function (jqXHR, textStatus, errorThrown) {
+            //do nothing
+        };
+
+        call_ajax("/api/downloads/" + id + "/action/", {'action': "seconds_left"}, {"obj": obj, "spinner": spinner}, toggle_success, toggle_error, "POST", null);
+    });
+
+
+    /* TVShow Management */
     $(document).on('click', '.tvshow_delete_all', function(event) {
         btn = $(this);
         id = $(".tvshow").attr("id");
@@ -168,6 +240,10 @@ $( document ).ready(function() {
         call_ajax("/api/tvshow/" + id + "/action/", {'action': "delete_all"}, null, toggle_success, toggle_error, "POST", btn);
     });
 
+    $(document).on('click', '.tvshow_delete_prompt', function(event) {
+        $('#deleteModal').modal()
+    });
+
     $(document).on('click', '.tvshow_toggle_fav', function(event) {
         btn = $(this);
         id = $(this).parents(".tvshow").attr("id");
@@ -176,14 +252,17 @@ $( document ).ready(function() {
 
         toggle_success = function (data, textStatus, jqXHR) {
             state = data['state'];
-            span = this.custom_data.obj.find(".tvshow_toggle_fav .btn-text");
+            fav_span = this.custom_data.obj.find(".tvshow_toggle_fav .btn-text");
+            ignore_span = this.custom_data.obj.find(".tvshow_toggle_ignore .btn-text");
 
             if (state) {
+                this.custom_data.obj.find('h4 .glyphicon-ban-circle').addClass("hidden");
                 this.custom_data.obj.find('h4 .glyphicon-star').removeClass("hidden");
-                span.text("Remove Favorite");
+                fav_span.text("Remove Favorite");
+                ignore_span.text("Ignore Show");
             } else {
                 this.custom_data.obj.find('h4 .glyphicon-star').addClass("hidden");
-                span.text("Add Favorite");
+                fav_span.text("Add Favorite");
             }
         };
 
@@ -202,18 +281,21 @@ $( document ).ready(function() {
 
         toggle_success = function (data, textStatus, jqXHR) {
             state = data['state'];
-            span = this.custom_data.obj.find(".tvshow_toggle_ignore .btn-text");
+            fav_span = this.custom_data.obj.find(".tvshow_toggle_fav .btn-text");
+            ignore_span = this.custom_data.obj.find(".tvshow_toggle_ignore .btn-text");
 
             if (state) {
+                this.custom_data.obj.find('h4 .glyphicon-star').addClass("hidden");
                 this.custom_data.obj.find('h4 .glyphicon-ban-circle').removeClass("hidden");
-                span.text("Remove Ignored");
+                ignore_span.text("Remove Ignored");
+                fav_span.text("Add Favorite");
 
                 if ($(".tvshow .glyphicon-hdd").length) {
                     $('#ignoreModal').modal()
                 }
             } else {
                 this.custom_data.obj.find('h4 .glyphicon-ban-circle').addClass("hidden");
-                span.text("Ignore Show");
+                ignore_span.text("Ignore Show");
             }
         };
 
@@ -226,14 +308,57 @@ $( document ).ready(function() {
 
     $(document).on('click', '.tvshow_show_missing', function(event) {
         btn = $(this);
-
         button_spin(btn);
-        $.get("missing/", function( data ) {
-            $("#tvshow-missing").html( data );
-                button_unspin(btn);
-            $("#tvshow-missing").removeClass("hidden");
-            $.scrollTo($("#tvshow-missing"), { duration: 0});
-        });
+        load_html("missing/", $("#tvshow-missing"), btn)
+    });
+    $(document).on('click', '.tvshow_show_missing_results', function(event) {
+        btn = $(this);
+        button_spin(btn);
+        load_html("missing/results/", $("#tvshow-fix-results"), btn)
+    });
+
+
+    $(document).on('click', '.clear_missing_results', function(event) {
+        btn = $(this);
+        id = $(".tvshow").attr("id");
+
+        toggle_success = function (data, textStatus, jqXHR) {
+            status = data['status']
+            if (status == "success") {
+                $("#tvshow-fix-results").addClass("hidden");
+                $(".tvshow_show_missing").attr('disabled',false);
+            } else {
+                add_alert("Error clearing as " + data['detail'])
+            }
+        };
+
+        toggle_error = function (jqXHR, textStatus, errorThrown) {
+           add_alert("Error clearing as " + errorThrown)
+        };
+
+        call_ajax("/api/tvshow/" + id + "/action/", {'action': "clear_results"}, null, toggle_success, toggle_error, "POST", btn);
+    });
+
+
+    $(document).on('click', '.cancel_missing', function(event) {
+        btn = $(this);
+        id = $(".tvshow").attr("id");
+
+        toggle_success = function (data, textStatus, jqXHR) {
+            status = data['status']
+            if (status == "success") {
+                $("#tvshow-fix-results").addClass("hidden")
+                $(".tvshow_show_missing").attr('disabled',false);
+            } else {
+                add_alert("Error cancelling as " + data['detail'])
+            }
+        };
+
+        toggle_error = function (jqXHR, textStatus, errorThrown) {
+           add_alert("Error cancelling as " + errorThrown)
+        };
+
+        call_ajax("/api/tvshow/" + id + "/action/", {'action': "cancel_missing"}, null, toggle_success, toggle_error, "POST", btn);
     });
 
     $(document).on('click', '.fix_missing', function(event) {
@@ -241,16 +366,33 @@ $( document ).ready(function() {
         id = $(".tvshow").attr("id");
 
         toggle_success = function (data, textStatus, jqXHR) {
-            add_alert("yes")
+            status = data['status']
+            if (status == "success") {
+                $('#fixModal').modal()
+                $("#tvshow-missing").addClass("hidden")
+                $(".tvshow_show_missing").attr('disabled',true);
+                load_html("missing/results/", $("#tvshow-fix-results"), btn)
+            } else {
+                add_alert("Error searching for missing eps as " + data['detail'])
+            }
         };
 
         toggle_error = function (jqXHR, textStatus, errorThrown) {
-            add_alert("Failed setting ignore status: " + errorThrown)
+           add_alert("Error searching for missing eps as " + errorThrown)
         };
 
         var formdata = $('#fixmissing-form').serializeFormJSON()
 
-        call_ajax("/api/tvshow/" + id + "/action/", {'action': "fix_missing", 'fix': formdata}, null, toggle_success, toggle_error, "POST", null);
+        call_ajax("/api/tvshow/" + id + "/action/", {'action': "fix_missing", 'fix': formdata}, null, toggle_success, toggle_error, "POST", btn);
+    });
+
+    $(document).on('click', '.select_all_missing', function(event) {
+        if ($(this).prop('checked')) {
+            $('input:checkbox').filter(':visible').prop('checked', true);
+        } else {
+            $('input:checkbox').filter(':visible').prop('checked', false);
+        }
+
     });
 
 
@@ -305,46 +447,6 @@ $( document ).ready(function() {
     });
 
 
-    /////////////////////////
-    /// AJAX DJANGO SEND ////
-    /////////////////////////
-
-    $(document).ajaxSend(function(event, xhr, settings) {
-        function getCookie(name) {
-            var cookieValue = null;
-            if (document.cookie && document.cookie != '') {
-                var cookies = document.cookie.split(';');
-                for (var i = 0; i < cookies.length; i++) {
-                    var cookie = jQuery.trim(cookies[i]);
-                    // Does this cookie string begin with the name we want?
-                    if (cookie.substring(0, name.length + 1) == (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }
-        function sameOrigin(url) {
-            // url could be relative or scheme relative or absolute
-            var host = document.location.host; // host + port
-            var protocol = document.location.protocol;
-            var sr_origin = '//' + host;
-            var origin = protocol + sr_origin;
-            // Allow absolute or scheme relative URLs to same origin
-            return (url == origin || url.slice(0, origin.length + 1) == origin + '/') ||
-                (url == sr_origin || url.slice(0, sr_origin.length + 1) == sr_origin + '/') ||
-                // or any other URL that isn't scheme relative or absolute i.e relative.
-                !(/^(\/\/|http:|https:).*/.test(url));
-        }
-        function safeMethod(method) {
-            return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
-        }
-
-        if (!safeMethod(settings.type) && sameOrigin(settings.url)) {
-            xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
-        }
-    });
 });
 
 //////////////////////
@@ -565,6 +667,14 @@ function update_fields(id) {
     }
 }
 
+function load_html(url, target, btn) {
+    $.get(url, function( data ) {
+        target.html( data );
+        button_unspin(btn);
+        target.removeClass("hidden");
+    });
+}
+
 
 function update_season(id) {
     file_obj = $("#file_" + id);
@@ -675,4 +785,37 @@ function button_spin(btn, size) {
     }
 
 
+}
+
+function millisecondsToStr (milliseconds) {
+    // TIP: to find current time in milliseconds, use:
+    // var  current_time_milliseconds = new Date().getTime();
+
+    function numberEnding (number) {
+        return (number > 1) ? 's' : '';
+    }
+
+    var temp = Math.floor(milliseconds / 1000);
+    var years = Math.floor(temp / 31536000);
+    if (years) {
+        return years + ' year' + numberEnding(years);
+    }
+    //TODO: Months! Maybe weeks?
+    var days = Math.floor((temp %= 31536000) / 86400);
+    if (days) {
+        return days + ' day' + numberEnding(days);
+    }
+    var hours = Math.floor((temp %= 86400) / 3600);
+    if (hours) {
+        return hours + ' hour' + numberEnding(hours);
+    }
+    var minutes = Math.floor((temp %= 3600) / 60);
+    if (minutes) {
+        return minutes + ' minute' + numberEnding(minutes);
+    }
+    var seconds = temp % 60;
+    if (seconds) {
+        return seconds + ' second' + numberEnding(seconds);
+    }
+    return 'less than a second'; //'just now' //or other string you like;
 }

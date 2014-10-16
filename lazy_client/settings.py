@@ -118,6 +118,9 @@ TVSHOW_AUTOFIX_REPLACEMENTS = {
     ":": "",
     "-": " ",
     "!": "",
+    ",": " ",
+    ".": " ",
+    "?": "",
 }
 
 ILLEGAL_CHARS_REGEX = '[:\"*?<>|]+'
@@ -221,6 +224,16 @@ LOGGING = {
             'propagate': True,
             'level':'INFO',
         },
+        'GuessYear': {
+            'handlers':['console'],
+            'propagate': True,
+            'level':'INFO',
+        },
+        'GuessLanguage': {
+            'handlers':['console'],
+            'propagate': True,
+            'level':'INFO',
+        },
         'GuessProperties': {
             'handlers':['console'],
             'propagate': True,
@@ -266,7 +279,7 @@ LOGGING = {
         },
         'tvdb_api': {
             'handlers': ['console', 'logfile', 'mail_admins'],
-            'level': 'DEBUG',
+            'level': 'INFO',
         },
         '': {
             'handlers': ['console', 'logfile', 'mail_admins'],

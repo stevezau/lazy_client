@@ -180,13 +180,30 @@ def tvshow_action(request, pk):
             tvshow.delete_all()
             return Response({'status': 'success', 'detail': "delete all epsiodes"})
 
+        if action == "clear_results":
+            tvshow.fix_report = ""
+            tvshow.save()
+            return Response({'status': 'success', 'detail': ""})
+
+        if action == "cancel_missing":
+            try:
+                tvshow.cancel_fix_missing()
+            except Exception as e:
+                return Response({'status': 'failed', 'detail': str(e)})
+
+            return Response({'status': 'success', 'detail': "killed job"})
+
         if action == "fix_missing":
             #Check for existing running job
             fix_missing = {}
+            print request.DATA
 
             if 'fix' not in request.DATA:
                 error = {'status': 'failed', 'detail': "no eps to fix"}
-                return Response(error, status=status.HTTP_400_BAD_REQUEST)
+                return Response(error, status=status.HTTP_200_OK)
+
+            if tvshow.ignored:
+                return Response({'status': 'failed', 'detail': "show marked as ignored"})
 
             for season_str in request.DATA['fix']:
                 try:
@@ -207,14 +224,14 @@ def tvshow_action(request, pk):
 
             if len(fix_missing) == 0:
                 error = {'status': 'failed', 'detail': "no eps to fix"}
-                return Response(error, status=status.HTTP_400_BAD_REQUEST)
+                return Response(error, status=status.HTTP_200_OK)
 
-            #Ok now lets fix it.
-
-            return Response({'status': 'success', 'detail': "delete all epsiodes"})
-
-        #Now launch the job.
-
+            from lazy_client_core.models.tvshow import AlreadyRunningException
+            try:
+                tvshow.fix_missing(fix_missing)
+                return Response({'status': 'success', 'detail': ""})
+            except AlreadyRunningException:
+                return Response({'status': 'failed', 'detail': "Already searching for missing jobs, you can only run one at a time."})
 
         if action == "toggle_fav":
             if tvshow.favorite:
@@ -226,16 +243,16 @@ def tvshow_action(request, pk):
             return Response({'status': 'success', 'detail': "favorite state toggled", "state": tvshow.favorite})
 
         if action == "toggle_ignore":
-            if tvshow.ignored:
-                tvshow.ignored = False
+            if tvshow.is_ignored():
+                tvshow.set_ignored(False)
             else:
-                tvshow.ignored = True
+                tvshow.set_ignored(True)
 
             tvshow.save()
             return Response({'status': 'success', 'detail': "ignored state toggled", "state": tvshow.ignored})
 
         if action == "get_missing":
-            if not tvshow.localpath:
+            if not tvshow.get_local_path():
                 return Response({'status': 'failed', 'detail': "path does not exist",})
 
             missing = tvshow.get_missing()
@@ -266,11 +283,13 @@ def download_action(request, pk):
                     series_data = dlitem.metaparser()
 
                     if series_data:
-                        ignoretitle = series_data.details['series'].replace(" ", ".")
-                        common.ignore_show(ignoretitle)
-                        dlitem.delete()
+                        #ignoretitle = series_data.details['series'].replace(" ", ".")
+                        #common.ignore_show(ignoretitle)
+                        #dlitem.delete()
+                        pass
                     else:
-                        dlitem.delete()
+                        pass
+                        #dlitem.delete()
 
                     return Response({'status': 'success', 'detail': "ignored show %s" % ignoretitle})
                 else:
@@ -279,6 +298,17 @@ def download_action(request, pk):
             except ObjectDoesNotExist:
                 error = {'status': 'failed', 'detail': "unable to find download item"}
                 return Response(error, status=status.HTTP_400_BAD_REQUEST)
+
+        if action == "seconds_left":
+            try:
+                dlitem = DownloadItem.objects.get(pk=pk)
+
+                from lazy_client_core.utils import lazyapi
+                seconds_left = lazyapi.seconds_left(dlitem.title)
+
+                return Response({'status': 'success', 'detail': seconds_left})
+            except ObjectDoesNotExist as e:
+                return Response({'status': 'success', 'detail': -1})
 
         if action == "approve":
             try:

@@ -138,7 +138,10 @@
                 {% if download.message %}
                     <div class="panel panel-info">
                         <div class="panel-heading">Message</div>
-                        <div class="panel-body"><pre>{{ download.message }}</pre></div>
+                        <div class="panel-body">
+<pre>{{ download.message }}{% if download.message == "Waiting for item to download on server" %}
+<span title="{{ download.title }}" class="seconds_left_{{ download.id }}">Time Remaining: <span class='spinner'></span></span>{% endif %}</pre>
+                        </div>
                     </div>
                 {% endif %}
 
@@ -186,6 +189,12 @@
 
             <div class="bottom">
                 <div class="button-bar btn-group-justified">
+                        <div class="btn-group">
+                            <button type="button" class="item_ignore_m{{ download.id }} btn btn-default btn-xl btn-responsive">
+                                <span class="glyphicon glyphicon-minus"></span> Ignore
+                            </button>
+                        </div>
+
                     {% if downloadgroup.list and downloadgroup.list|length > 1 %}
                         <div class="btn-group">
                             <button type="button" class="item_approve_m{{ downloadgroup.grouper.id }} btn btn-default btn-xl btn-responsive">

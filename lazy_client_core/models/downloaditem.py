@@ -75,8 +75,8 @@ class DownloadItem(models.Model):
     requested = models.BooleanField(default=False)
     localsize = models.IntegerField(default=0, null=True)
     message = models.TextField(blank=True, null=True)
-    imdbid = models.ForeignKey('Movie', blank=True, null=True, on_delete=models.DO_NOTHING)
-    tvdbid = models.ForeignKey('TVShow', blank=True, null=True, on_delete=models.DO_NOTHING)
+    imdbid = models.ForeignKey('Movie', blank=True, null=True, on_delete=models.SET_NULL)
+    tvdbid = models.ForeignKey('TVShow', blank=True, null=True, on_delete=models.SET_NULL)
     onlyget = JSONField(blank=True, null=True)
     video_files = JSONField(blank=True, null=True)
 
@@ -86,6 +86,10 @@ class DownloadItem(models.Model):
         parser = self.metaparser()
         if 'season' in parser.details:
             return parser.details['season']
+
+    def get_seasons(self):
+        parser = self.metaparser()
+        return parser.get_seasons()
 
     def get_eps(self):
         parser = self.metaparser()
@@ -269,8 +273,7 @@ class DownloadItem(models.Model):
 
 
     def log(self, msg):
-
-        logger.debug(msg)
+        line = None
 
         try:
             frm = inspect.stack()[1]
@@ -283,6 +286,12 @@ class DownloadItem(models.Model):
 
         except:
             logmsg = msg
+
+        if line:
+            logger.debug("%s:%s: %s " % (caller, line, msg))
+        else:
+            logger.debug(msg)
+
 
         self.downloadlog_set.create(download_id=self.id, message=logmsg)
 
@@ -345,7 +354,8 @@ class DownloadItem(models.Model):
         else:
             #we need to append the ep
             if add_season in self.onlyget:
-                self.onlyget[add_season].append(add_ep)
+                if 0 not in self.onlyget[add_season]:
+                    self.onlyget[add_season].append(add_ep)
             else:
                 self.onlyget[add_season] = []
                 self.onlyget[add_season].append(add_ep)

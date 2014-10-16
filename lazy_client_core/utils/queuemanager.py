@@ -233,7 +233,7 @@ class QueueManager():
                             if "FileNotFound" in resp or "file not found" in resp:
                                 if dlItem.requested:
                                     logger.debug("Unable to get size and files for %s" % dlItem.ftppath)
-                                    dlItem.message = 'Waiting for item to appear on ftp'
+                                    dlItem.message = 'Waiting for item to download on server'
                                     dlItem.save()
                                     continue
 
@@ -249,7 +249,7 @@ class QueueManager():
 
                             if dlItem.requested and str(e) == "Unable to get size and files on the FTP":
                                 logger.debug(e)
-                                dlItem.rmessage = 'Waiting for item to appear on ftp'
+                                dlItem.rmessage = 'Waiting for item to download on server'
                                 dlItem.save()
                             else:
                                 dlItem.log(e)

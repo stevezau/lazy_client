@@ -25,6 +25,26 @@ default_sites = [
     'TL_PACKS',
     ]
 
+
+def seconds_left(title):
+    try:
+        headers = {'Content-type': 'application/json', "Accept": "application/json"}
+        data = {"title": title}
+
+        r = requests.post(urlparse.urljoin(lazy_server_api, "seconds_remaining/"), data=json.dumps(data), headers=headers)
+
+        try:
+            json_response = r.json()
+            return json_response['data']
+        except:
+            return -1
+
+    except ConnectionError as e:
+        return -1
+    except HTTPError as e:
+        return -1
+
+
 def download_torrents(torrents):
     old_timeout = requests.session.timeout
     requests.session.timeout = 100 #seconds
@@ -69,10 +89,11 @@ def search_ftp(search):
         raise LazyServerExcpetion(str(e))
 
 
-def search_torrents(search, sites=default_sites):
+def search_torrents(search, sites=default_sites, max_results=100):
     payload = {
         'sites': sites,
         'search': search,
+        'max_results': max_results,
     }
 
     try:

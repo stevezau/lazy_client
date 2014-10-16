@@ -12,7 +12,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-                <h4 class="modal-title" id="myModalLabel">Delete ALL epsiodes and files for {{object.title }}</h4>
+                <h4 class="modal-title" id="myModalLabel">Delete ALL epsiodes and files for {{ object.title }}</h4>
             </div>
             <div class="modal-body">
                 <h4>You have chosen to ignore this show. Would you like to remove all the epsiodes related to this show?</h4>
@@ -24,6 +24,42 @@
     </div>
   </div>
 </div>
+
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="basicModal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="myModalLabel">Delete ALL epsiodes and files for {{ object.title }}</h4>
+            </div>
+            <div class="modal-body">
+                <h4>Are you sure you would like to remove all the epsiodes related to this show?</h4>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger tvshow_delete_all" spinner="tiny"><span class="btn-text">Delete</span></button>
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Keep</button>
+        </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="fixModal" tabindex="-1" role="dialog" aria-labelledby="basicModal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="myModalLabel">Search for missing epsiodes for {{object.title|title }}</h4>
+            </div>
+            <div class="modal-body">
+                <h4>The media manager will now search for the missing epsiodes. This can take several minutes, plasee check back here for the status of the search</h4>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Ok</button>
+        </div>
+    </div>
+  </div>
+</div>
+
 
 {% load download_extras %}
     <div class="text-center">
@@ -51,7 +87,7 @@
         <div class="detail">
             <div class="top">
                 <h4>
-                    <span class="title">{{ object.title }}</span>
+                    <span class="title">{{ object.title|title }}</span>
                     <span class="glyphicon glyphicon-star text-yellow {% if not object.favorite %}hidden{% endif %}" title="Favorite Show"></span>
                     <span class="glyphicon glyphicon-ban-circle text-danger {% if not object.ignored %}hidden{% endif %}" title="Ignored Show"></span>
                     {% if object.exists %}<span class="glyphicon glyphicon-hdd text-success" title="Existing epsiodes found"></span>{% endif %}
@@ -101,19 +137,29 @@
                 <div class="button-bar btn-group-justified">
                     <div class="btn-group">
                         <button type="button" class="btn btn-default btn-xl btn-responsive tvshow_toggle_fav">
-                            <span class="glyphicon glyphicon-star"></span><span class="btn-text"> {% if object.favorite %}Remove Favorite{% else %}Add Favorite{% endif %}</span>
+                            <span class="glyphicon glyphicon-star"></span><span class="btn-text">{% if object.favorite %}Remove Favorite{% else %}Add Favorite{% endif %}</span>
                         </button>
                     </div>
                     <div class="btn-group">
                         <button href="" type="button" class="btn btn-default btn-xl btn-responsive tvshow_toggle_ignore">
-                            <span class="glyphicon glyphicon-ban-circle"></span><span class="btn-text"> {% if object.ignored %}Remove Ignored{% else %}Ignore Show{% endif %}</span>
+                            <span class="glyphicon glyphicon-ban-circle"></span><span class="btn-text">{% if object.ignored %}Remove Ignored{% else %}Ignore Show{% endif %}</span>
                         </button>
                     </div>
                     <div class="btn-group">
-                        <button href="" type="button" class="btn btn-default btn-xl btn-responsive tvshow_show_missing">
-                            <span class="glyphicon glyphicon-wrench"></span><span class="btn-text"> Find Missing Epsiodes</span>
+                        <button href="" type="button" class="btn btn-default btn-xl btn-responsive tvshow_delete_prompt">
+                            <span class="glyphicon glyphicon-ban-circle"></span><span class="btn-text">Delete Epsiodes</span>
                         </button>
                     </div>
+                    <div class="btn-group">
+                        <button href="" type="button" class="btn btn-default btn-xl btn-responsive tvshow_show_missing" {% if object.fix_report %}disabled{% endif %}>
+                            <span class="glyphicon glyphicon-wrench"></span><span class="btn-text">Show Missing Epsiodes</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="tvshow-fix-results">
+                    {% if object.fix_report %}
+                        {% include 'manage/tvshows/tvshow_missing_results.html' %}
+                    {% endif %}
                 </div>
                 <div id="tvshow-missing"></div>
             </div>
