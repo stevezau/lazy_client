@@ -25,6 +25,7 @@ def send_json(api_url, method, params):
     f = urllib2.urlopen(req)
     response = f.read()
     f.close()
+    return json.loads(response)
 
 def send_notification(api_url, title, message):
 
@@ -49,6 +50,20 @@ def add_file(f):
             send_json(xbmc_api_url, "VideoLibrary.Scan", data)
         except:
             pass
+
+def get_file_playcount(f):
+
+    for xbmc_api_url in xbmc_api_urls:
+        data = {"file": f, "media": "video", "properties": ["playcount"]}
+
+        try:
+            response = send_json(xbmc_api_url, "Files.GetFileDetails", data)
+            count = response['result']['filedetails']['playcount']
+            return count
+        except:
+            pass
+
+        return 0
 
 
 

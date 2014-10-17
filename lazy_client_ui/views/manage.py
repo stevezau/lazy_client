@@ -3,7 +3,7 @@ import os
 from django.shortcuts import render
 from lazy_client_ui.forms import FindTVShow
 from django.http import HttpResponseRedirect, HttpResponse
-from lazy_client_core.models import TVShow
+from lazy_client_core.models import TVShow, TVShowMappings
 from lazy_common.tvdb_api import Tvdb
 from django.shortcuts import redirect
 from django.views.generic import TemplateView, ListView, DetailView, UpdateView
@@ -25,9 +25,11 @@ def tvshows(request):
         if 'show' in request.GET:
             if request.GET['show'] == "approved":
                 context['shows'] = TVShow.objects.filter(favorite=True)
+                context['show_fav'] = True
 
             if request.GET['show'] == "ignored":
                 context['shows'] = TVShow.objects.filter(ignored=True)
+                context['show_ignore'] = True
 
             if request.GET['show'] == "ended":
                 shows = []
@@ -38,12 +40,23 @@ def tvshows(request):
                 context['shows'] = shows
                 context['show_delete'] = True
 
+            if request.GET['show'] == "cleanup":
+                context['shows'] = TVShow.objects.filter(favorite=True)
+                context['show_fav'] = True
+
+                #We need to do a cleanup suggestion
+
+
+
             return render(request, 'manage/tvshows/index.html', context)
 
         if form.is_valid():
             search = form.cleaned_data['search']
 
-            shows = list(TVShow.objects.filter(title__icontains=search, ).extra(order_by=['-localpath']))
+            show_mappings = list(TVShowMappings.objects.filter(title__icontains=search, ))
+            show_ids = [s.tvdbid_id for s in show_mappings]
+            found_shows = TVShow.objects.filter(id__in=show_ids)
+            shows = [show for show in found_shows]
 
             tvdb = Tvdb()
 
@@ -57,6 +70,9 @@ def tvshows(request):
                     tvshow.save()
                     tvshow.update_from_tvdb(update_imdb=False)
                     shows.append(tvshow)
+
+            from operator import itemgetter, attrgetter, methodcaller
+            shows = sorted(shows, key=methodcaller('exists'), reverse=True)
 
             if len(shows) == 1:
                 return redirect('manage.tvshow.detail', pk=shows[0].id)

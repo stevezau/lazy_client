@@ -26,10 +26,10 @@ default_sites = [
     ]
 
 
-def seconds_left(title):
+def seconds_left(dlitem):
     try:
         headers = {'Content-type': 'application/json', "Accept": "application/json"}
-        data = {"title": title}
+        data = {"title": dlitem.title, "ftppath": dlitem.ftppath}
 
         r = requests.post(urlparse.urljoin(lazy_server_api, "seconds_remaining/"), data=json.dumps(data), headers=headers)
 

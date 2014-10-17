@@ -82,6 +82,35 @@ class DownloadItem(models.Model):
 
     parser = None
 
+    def is_season_pack(self):
+        parser = self.metaparser()
+
+        if parser:
+            #We don't want Disk or Part seasons
+            if re.search('(?i)D[0-9]+|DVD[0-9]+', self.title):
+                return False
+
+            if parser.details['type'] == "season_pack" or parser.details['type'] == "season_pack_multi" and 'series' in parser.details:
+                return True
+            return False
+
+    def is_downloading(self, season, ep):
+        seasons = self.get_seasons()
+
+        if seasons and season in seasons:
+            if self.is_season_pack():
+                if self.onlyget:
+                    #check for this ep
+                    if season in self.onlyget and ep in self.onlyget[season]:
+                        return True
+                else:
+                    #downloading all eps
+                    return True
+            else:
+                if ep in self.get_eps():
+                    return True
+        return False
+
     def get_season(self):
         parser = self.metaparser()
         if 'season' in parser.details:

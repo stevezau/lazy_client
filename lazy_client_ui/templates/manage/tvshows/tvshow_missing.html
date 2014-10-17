@@ -16,7 +16,7 @@
             {% if missing %}
                 <ul class="nav nav-tabs" role="tablist">
                     {% for season, eps in missing.items %}
-                        <li {% if forloop.first %}class="active"{% endif %}>
+                        <li {% if forloop.first %}class="active"{% endif %} class="">
                             <a href="#season{{ season }}" role="tab" data-toggle="tab">{% if flavour == "mobile" %}S{% else %}Season{% endif %} {{ season }}
                                 <span class="badge">{{ eps|length }}</span>
                             </a>
@@ -32,21 +32,17 @@
                                         <td><input type="checkbox" class="select_all_missing"></td>
                                         <td>Ep</td>
                                         <td style="width: 100%;">Name</td>
+                                        <td></td>
                                         <td>Air Date</td>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for id, ep in eps.items %}
                                         <tr>
-                                            <td>
-                                                {% if ep.status|lower == "already exists" or ep.status|lower == "downloading" %}
-                                                    <input type="checkbox" name="{{ season }}" value="{{ ep.episodenumber }}" disabled>
-                                                {% else %}
-                                                    <input type="checkbox" name="{{ season }}" value="{{ ep.episodenumber }}">
-                                                {% endif %}
-                                            </td>
+                                            <td>{% if not ep.downloading %}<input type="checkbox" name="{{ season }}" value="{{ ep.episodenumber }}">{% endif %}</td>
                                             <td>{{ ep.episodenumber }}</td>
                                             <td>{{ ep.episodename }}</td>
+                                            <td>{% if ep.downloading %}<span class="label label-primary">Downloading</span>{% endif %}</td>
                                             <td class="text-nowrap">{{ ep.firstaired }}</td>
                                         </tr>
                                     {% endfor %}

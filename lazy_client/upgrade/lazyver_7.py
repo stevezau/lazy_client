@@ -1,19 +1,63 @@
 __author__ = 'steve'
-from lazy_client_core.models import TVShow, Movie
+from lazy_client_core.models import TVShow, Movie, TVShowMappings
 from lazy_client_core.models import DownloadItem
 import logging
 from django.db.models import Q
 from lazy_common.tvdb_api import Tvdb
+from lazy_common.tvdb_api.tvdb_exceptions import tvdb_error
 from django.conf import settings
 import shutil
+import datetime
 
 logger = logging.getLogger(__name__)
 
 def upgrade():
 
+    #Delete all mappings
+    for mapping in TVShowMappings.objects.all():
+        mapping.delete()
+
+    #Reset error downloads
     for dlitem in DownloadItem.objects.filter(~Q(status=DownloadItem.COMPLETE), retries__gt=settings.DOWNLOAD_RETRY_COUNT).order_by('priority','id'):
         dlitem.retries = 0
         dlitem.save()
+
+    #Delete all metaparser cache
+    from lazy_common.models import MetaParserCache
+    for p in MetaParserCache.objects.all():
+        p.delete()
+
+    #Update tvshow objects
+    tvshows = TVShow.objects.all()
+
+    tvdb = Tvdb()
+
+    for tvshow in tvshows:
+        #First lets make sure we can get the object on thetvdb, it could of been deleted
+        if tvshow.get_tvdb_obj() is None:
+            try:
+                tvdb[int(tvshow.id)]
+            except tvdb_error as e:
+                if "HTTP Error 404" in str(e):
+                    tvshow.delete()
+                    continue
+            except KeyError:
+                tvshow.delete()
+                continue
+            except IndexError:
+                tvshow.delete()
+                continue
+        else:
+            tvshow.update_from_tvdb()
+
+        if "Duplicate of" in tvshow.title:
+            tvshow.delete()
+            continue
+
+        if tvshow.title is None or tvshow.title == "" or tvshow.title == " " or len(tvshow.title) == 0:
+            tvshow.delete()
+            continue
+
 
     #Lets set the favs
     TVShow.update_favs()
@@ -38,9 +82,10 @@ def upgrade():
     for line in open(settings.FLEXGET_IGNORE, "r"):
         if line.startswith("    - ^"):
             show_name = line.replace("    - ^", "").replace(".", " ").strip()
+            show_name = TVShow.clean(show_name)
 
             try:
-                found = TVShow.objects.get(title=show_name)
+                found = TVShow.find_by_title(show_name)
                 found.ignored = True
                 found.save()
                 found_count += 1

@@ -9,18 +9,16 @@
         >
     <div class='col-md-12 download-row'>
         <div class="poster">
-            {% if download.tvdbid.posterimg %}
+            {% if download.tvdbid %}
                 <a href="http://thetvdb.com/index.php?tab=series&id={{ download.tvdbid.id }}" target="_blank">
-                    <img src="{{ download.tvdbid.posterimg.url }}">
+                    <img src="{% if download.tvdbid.postimg %}{{ download.tvdbid.posterimg.url }}{% else %}{{ STATIC_URL }}images/noimg.gif{% endif %}">
+                </a>
+            {% elif download.imdbid.posterimg %}
+                <a href="http://www.imdb.com/title/tt{{ download.imdbid.id }}/" target="_blank">
+                    <img src="{{ download.imdbid.posterimg.url }}">
                 </a>
             {% else %}
-                {% if download.imdbid.posterimg %}
-                    <a href="http://www.imdb.com/title/tt{{ download.imdbid.id }}/" target="_blank">
-                        <img src="{{ download.imdbid.posterimg.url }}">
-                    </a>
-                {% else %}
-                    <img src="{{ STATIC_URL }}images/noimg.gif">
-                {% endif %}
+                <img src="{{ STATIC_URL }}images/noimg.gif">
             {% endif %}
         </div>
 
@@ -32,10 +30,16 @@
                     {% if downloadgroup.list|length == 1 or  downloadgroup.list|length == 0 or not downloadgroup %}
                         {% if download.get_type == 1 and download.get_season %}
                             <b>
-                                S{{ download.get_season }}
-                                {% for ep in download.get_eps %}
-                                    E{{ ep }}
-                                {% endfor %}
+                                {% if download.get_seasons|length > 1 %}
+                                    {% for season in download.get_seasons %}
+                                        S{{ season }}
+                                    {% endfor %}
+                                {% else %}
+                                    S{{ download.get_season }}
+                                    {% for ep in download.get_eps %}
+                                        E{{ ep }}
+                                    {% endfor %}
+                                {% endif %}
                             </b>
                         {% endif %}
                     {% endif %}
@@ -136,13 +140,8 @@
                 {% endif %}
 
                 {% if download.message %}
-                    <div class="panel panel-info">
-                        <div class="panel-heading">Message</div>
-                        <div class="panel-body">
-<pre>{{ download.message }}{% if download.message == "Waiting for item to download on server" %}
-<span title="{{ download.title }}" class="seconds_left_{{ download.id }}">Time Remaining: <span class='spinner'></span></span>{% endif %}</pre>
-                        </div>
-                    </div>
+<pre class="alert alert-warning">{{ download.message }}{% if download.message == "Waiting for item to download on server" %}
+<span class="seconds_left_{{ download.id }}">Time Remaining: <span class='spinner'></span></span>{% endif %}</pre>
                 {% endif %}
 
                 {% if downloadgroup.list and downloadgroup.list|length > 1 %}

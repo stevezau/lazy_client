@@ -323,6 +323,8 @@ LOGIN_EXEMPT_URLS = (
     'api'
 )
 
+LOGIN_URL = "/login"
+
 ROOT_URLCONF = 'lazy_client.urls'
 
 WSGI_APPLICATION = 'lazy_client.wsgi.application'

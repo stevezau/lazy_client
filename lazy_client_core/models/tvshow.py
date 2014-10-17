@@ -500,6 +500,9 @@ class TVShow(models.Model):
 
         tvdbobj = self.get_tvdb_obj()
 
+        from lazy_client_core.models import DownloadItem
+        dlitems = DownloadItem.objects.filter(tvdbid_id=self.id).exclude(status=DownloadItem.COMPLETE)
+
         for cur_season in self.get_seasons():
             if cur_season == 0:
                 continue
@@ -520,7 +523,12 @@ class TVShow(models.Model):
                     except:
                         eps_dict[ep] = {'episodenumber': ep}
 
-                    eps_dict[ep]['status'] = "Missing"
+                    eps_dict[ep]['downloading'] = False
+
+                    #We alrady downloaing it?
+                    for dlitem in dlitems:
+                        if dlitem.is_downloading(cur_season, ep):
+                            eps_dict[ep]['downloading'] = True
 
                 missing[cur_season] = eps_dict
 
@@ -852,6 +860,10 @@ class TVShowScanner(Thread):
     def abort(self):
         self.aborted = True
 
+    def valid_series_title(self, title):
+        if self.tvshow_obj.is_valid_name(title):
+            return True
+
     def is_season_pack(self, title):
         parser = metaparser.get_parser_cache(title, metaparser.TYPE_TVSHOW)
 
@@ -862,10 +874,6 @@ class TVShowScanner(Thread):
         if parser.details['type'] == "season_pack" or parser.details['type'] == "season_pack_multi" and 'series' in parser.details:
             return True
         return False
-
-    def valid_series_title(self, title):
-        if self.tvshow_obj.is_valid_name(title):
-            return True
 
     def valid_torrent_title(self, torrent):
         parser = metaparser.get_parser_cache(torrent, type=metaparser.TYPE_TVSHOW)

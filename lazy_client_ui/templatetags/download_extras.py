@@ -4,6 +4,7 @@ import datetime
 
 register = template.Library()
 
+
 @register.filter(name='progressbar_color')
 def progressbar_color(percent):
     if percent > 90:
@@ -74,6 +75,7 @@ def format_torrent_title(title):
         title += "%s: " % parser.details['doco_channel']
 
     if 'series' in parser.details:
+
         title += parser.details['series']
         series = True
 

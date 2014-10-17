@@ -304,7 +304,7 @@ def download_action(request, pk):
                 dlitem = DownloadItem.objects.get(pk=pk)
 
                 from lazy_client_core.utils import lazyapi
-                seconds_left = lazyapi.seconds_left(dlitem.title)
+                seconds_left = lazyapi.seconds_left(dlitem)
 
                 return Response({'status': 'success', 'detail': seconds_left})
             except ObjectDoesNotExist as e:

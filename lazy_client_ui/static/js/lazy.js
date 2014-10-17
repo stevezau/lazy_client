@@ -221,26 +221,39 @@ $( document ).ready(function() {
 
 
     /* TVShow Management */
+    $('#deleteModal').on('hide.bs.modal', function(e) {
+        $("#deleteModal .tvshow_delete_all").attr("showid", null)
+    });
+
     $(document).on('click', '.tvshow_delete_all', function(event) {
         btn = $(this);
-        id = $(".tvshow").attr("id");
+        id = btn.attr("showid")
 
         obj = $("#" + id);
 
         toggle_success = function (data, textStatus, jqXHR) {
-            $('#ignoreModal').modal('hide');
+            $('#deleteModal').modal('hide');
+            $("#deleteModal .tvshow_delete_all").attr("showid", null)
+            $("#" + this.custom_data.id).find(".glyphicon-hdd").addClass("hidden")
+            $("#" + this.custom_data.id).find(".tvshow_delete_prompt").attr("disabled", true)
         };
 
         toggle_error = function (jqXHR, textStatus, errorThrown) {
-            $('#ignoreModal').modal('hide');
+            $('#deleteModal').modal('hide');
+            $("#deleteModal .tvshow_delete_all").attr("showid", null)
             add_alert("Failed deleting all epsiodes: " + errorThrown);
 
         };
 
-        call_ajax("/api/tvshow/" + id + "/action/", {'action': "delete_all"}, null, toggle_success, toggle_error, "POST", btn);
+        call_ajax("/api/tvshow/" + id + "/action/", {'action': "delete_all"}, {"id": id}, toggle_success, toggle_error, "POST", btn);
     });
 
     $(document).on('click', '.tvshow_delete_prompt', function(event) {
+        id = $(this).closest(".tvshow").attr("id");
+        obj = $("#" + id)
+
+        $("#deleteModal .tvshow_delete_all").attr("showid", id)
+        $("#deleteModal .tvshow_title").text(obj.find(".title").text())
         $('#deleteModal').modal()
     });
 
@@ -260,6 +273,7 @@ $( document ).ready(function() {
                 this.custom_data.obj.find('h4 .glyphicon-star').removeClass("hidden");
                 fav_span.text("Remove Favorite");
                 ignore_span.text("Ignore Show");
+                this.custom_data.obj.find('.tvshow_show_missing').attr("disabled", false)
             } else {
                 this.custom_data.obj.find('h4 .glyphicon-star').addClass("hidden");
                 fav_span.text("Add Favorite");
@@ -287,14 +301,18 @@ $( document ).ready(function() {
             if (state) {
                 this.custom_data.obj.find('h4 .glyphicon-star').addClass("hidden");
                 this.custom_data.obj.find('h4 .glyphicon-ban-circle').removeClass("hidden");
+                this.custom_data.obj.find('.tvshow_show_missing').attr("disabled", true)
                 ignore_span.text("Remove Ignored");
                 fav_span.text("Add Favorite");
 
-                if ($(".tvshow .glyphicon-hdd").length) {
+                if (this.custom_data.obj.find(".glyphicon-hdd").is(":visible")) {
+                    $("#ignoreModal .tvshow_delete_all").attr("showid", id)
+                    $("#ignoreModal .tvshow_title").text(this.custom_data.obj.find(".title").text())
                     $('#ignoreModal').modal()
                 }
             } else {
                 this.custom_data.obj.find('h4 .glyphicon-ban-circle').addClass("hidden");
+                this.custom_data.obj.find('.tvshow_show_missing').attr("disabled", false)
                 ignore_span.text("Ignore Show");
             }
         };
@@ -365,9 +383,12 @@ $( document ).ready(function() {
         btn = $(this);
         id = $(".tvshow").attr("id");
 
+        obj = $("#" + id)
+
         toggle_success = function (data, textStatus, jqXHR) {
             status = data['status']
             if (status == "success") {
+                $("#fixModal .tvshow_title").text(this.custom_data.obj.find(".title").text())
                 $('#fixModal').modal()
                 $("#tvshow-missing").addClass("hidden")
                 $(".tvshow_show_missing").attr('disabled',true);
@@ -383,7 +404,7 @@ $( document ).ready(function() {
 
         var formdata = $('#fixmissing-form').serializeFormJSON()
 
-        call_ajax("/api/tvshow/" + id + "/action/", {'action': "fix_missing", 'fix': formdata}, null, toggle_success, toggle_error, "POST", btn);
+        call_ajax("/api/tvshow/" + id + "/action/", {'action': "fix_missing", 'fix': formdata}, {"obj": obj}, toggle_success, toggle_error, "POST", btn);
     });
 
     $(document).on('click', '.select_all_missing', function(event) {
@@ -787,35 +808,41 @@ function button_spin(btn, size) {
 
 }
 
-function millisecondsToStr (milliseconds) {
-    // TIP: to find current time in milliseconds, use:
-    // var  current_time_milliseconds = new Date().getTime();
+function two(x) {return ((x>9)?"":"0")+x}
+function three(x) {return ((x>99)?"":"0")+((x>9)?"":"0")+x}
 
-    function numberEnding (number) {
-        return (number > 1) ? 's' : '';
+function millisecondsToStr(ms) {
+    var sec = Math.floor(ms / 1000)
+    ms = ms % 1000
+    t = three(ms)
+
+    var min = Math.floor(sec / 60)
+    sec = sec % 60
+
+    t = ""
+
+    if (sec > 0) {
+        t = two(sec) + " seconds "
     }
 
-    var temp = Math.floor(milliseconds / 1000);
-    var years = Math.floor(temp / 31536000);
-    if (years) {
-        return years + ' year' + numberEnding(years);
+    var hr = Math.floor(min/60)
+    min = min % 60
+
+    if (min > 0) {
+        t = two(min) + " minutes " + t
     }
-    //TODO: Months! Maybe weeks?
-    var days = Math.floor((temp %= 31536000) / 86400);
-    if (days) {
-        return days + ' day' + numberEnding(days);
+
+    var day = Math.floor(hr/60)
+
+    hr = hr % 60
+
+    if (hr > 0) {
+     t = two(hr) + " hours " + t
     }
-    var hours = Math.floor((temp %= 86400) / 3600);
-    if (hours) {
-        return hours + ' hour' + numberEnding(hours);
+
+    if (day > 0) {
+       t = day + " days" + t
     }
-    var minutes = Math.floor((temp %= 3600) / 60);
-    if (minutes) {
-        return minutes + ' minute' + numberEnding(minutes);
-    }
-    var seconds = temp % 60;
-    if (seconds) {
-        return seconds + ' second' + numberEnding(seconds);
-    }
-    return 'less than a second'; //'just now' //or other string you like;
+
+    return t
 }
