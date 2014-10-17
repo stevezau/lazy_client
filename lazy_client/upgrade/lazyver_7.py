@@ -39,12 +39,15 @@ def upgrade():
                 tvdb[int(tvshow.id)]
             except tvdb_error as e:
                 if "HTTP Error 404" in str(e):
+                    logger.info("Deleting %s due to 404 error" % tvshow.title)
                     tvshow.delete()
                     continue
             except KeyError:
+                logger.info("Deleting %s due to KeyError" % tvshow.title)
                 tvshow.delete()
                 continue
             except IndexError:
+                logger.info("Deleting %s due to IndexError" % tvshow.title)
                 tvshow.delete()
                 continue
         else:
@@ -55,6 +58,7 @@ def upgrade():
             continue
 
         if tvshow.title is None or tvshow.title == "" or tvshow.title == " " or len(tvshow.title) == 0:
+            logger.info("Deleting %s" % tvshow.title)
             tvshow.delete()
             continue
 
