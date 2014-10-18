@@ -82,6 +82,20 @@ $( document ).ready(function() {
        $(this).hide();
     });
 
+
+    $(document).on('click', '.select_all_panel', function(event) {
+        checkbox = $(this)
+        checked = checkbox.prop('checked')
+        panel = checkbox.parent().parent()
+
+        if (checked) {
+            panel.find('input:checkbox').filter(':visible').prop('checked', true);
+        } else {
+            panel.find('input:checkbox').filter(':visible').prop('checked', false);
+        }
+        event.stopPropagation()
+    });
+
     /* input spinner for a links */
     $(document).on('click', '[spinner]', function(event) {
         button_spin($(this), $(this).attr("spinner"))
@@ -413,9 +427,7 @@ $( document ).ready(function() {
         } else {
             $('input:checkbox').filter(':visible').prop('checked', false);
         }
-
     });
-
 
 
     /////////////////////////

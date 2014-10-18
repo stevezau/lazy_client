@@ -54,9 +54,7 @@ FLEXGET_APPROVED = "/home/media/.flexget/approve.yml"
 FLEXGET_IGNORE = "/home/media/.flexget/ignore.yml"
 
 
-XBMC_API_URLS = [
-    'http://localhost:8080/jsonrpc'
-]
+XBMC_API_URLS = 'http://localhost:8080/jsonrpc'
 
 FREE_SPACE = 30 #GB
 

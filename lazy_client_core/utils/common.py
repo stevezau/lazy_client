@@ -343,7 +343,10 @@ def move_file(src, dest):
     from lazy_client_core.utils import xbmc
     shutil.move(src, dest)
 
-    xbmc.add_file(dest)
+    try:
+        xbmc.add_file(dest)
+    except:
+        pass
 
 
 def ignore_show(title):

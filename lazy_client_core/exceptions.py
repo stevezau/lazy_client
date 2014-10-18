@@ -3,6 +3,19 @@ Created on 14/02/2011
 
 @author: Steve
 '''
+
+class InvalidXBMCURL(Exception):
+    """
+
+    """
+
+
+class XBMCConnectionError(Exception):
+    """
+
+    """
+
+
 class AlradyExists(Exception):
     """Exception raised for errors in the input.
 

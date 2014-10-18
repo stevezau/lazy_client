@@ -14,7 +14,7 @@ IF SHOW ignored, u cant do find missing
 NEW VERSION ACTIONS
 -remove ignore.yml
 -change to --disable-tracking
-
+-update XBMC_API_URL
 
 
 -Make Actions movies etc lower rating on imdb accept on lazy server

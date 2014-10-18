@@ -316,6 +316,18 @@ def download_action(request, pk):
             except ObjectDoesNotExist as e:
                 return Response({'status': 'success', 'detail': -1})
 
+        if action == "seconds_left":
+            try:
+                dlitem = DownloadItem.objects.get(pk=pk)
+
+                from lazy_client_core.utils import lazyapi
+                seconds_left = lazyapi.seconds_left(dlitem)
+
+                return Response({'status': 'success', 'detail': seconds_left})
+            except ObjectDoesNotExist as e:
+                return Response({'status': 'success', 'detail': -1})
+
+
         if action == "approve":
             try:
                 dlitem = DownloadItem.objects.get(pk=pk)

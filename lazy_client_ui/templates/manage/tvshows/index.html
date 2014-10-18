@@ -3,15 +3,17 @@
 
 {% block title %}{{ type }}{% endblock %}
 {% block submenu %}
+    {% include "manage/tvshows/submenu.html" %}
 {% endblock %}
 
 
 {% block content %}
 {% load download_extras %}
-{% include 'manage/tvshows/delete_modal.html' %}
-{% include 'manage/tvshows/ignore_modal.html' %}
-
 <div class="manage-tvshow">
+    {% include 'manage/tvshows/delete_modal.html' %}
+    {% include 'manage/tvshows/ignore_modal.html' %}
+
+
     <div class="row">
         <div class="col-xs-12 col-sm-10 col-md-7 col-centered">
             {% load crispy_forms_tags %}
@@ -20,17 +22,9 @@
             </div>
         </div>
     </div>
-    <div class="row">
-        <div class="col-xs-12 col-sm-10 col-md-7 col-centered text-center">
-            <div class="btn-group btn-group-justified">
-                <a class="btn btn-default btn-responsive" spinner="tiny" href="?show=approved">Show Favorites</a>
-                <a class="btn btn-default btn-responsive" spinner="tiny" href="?show=ignored">Show Ignored</a>
-                <a class="btn btn-default btn-responsive" spinner="tiny" href="?show=ended">Show Ended</a>
-                <a class="btn btn-default btn-responsive" spinner="tiny" href="?show=ignored">Auto Cleanup</a>
-            </div>
-        </div>
-    </div>
-<hr/>
+
+    <hr/>
+
     {% if shows %}
         {% load download_extras %}
         <div>

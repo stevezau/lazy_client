@@ -166,7 +166,13 @@ body {
     text-decoration: none;
 }
 
+/* ###### */
+/* Cleanup */
+/* ###### */
 
+.cleanup .panel-heading {
+    padding-left: 8px;
+}
 
 /* ###### */
 /* Search */

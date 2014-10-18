@@ -4,15 +4,31 @@ import json
 import urllib2
 from django.conf import settings
 import os
+from lazy_client_core.exceptions import XBMCConnectionError, InvalidXBMCURL
+from datetime import datetime
 
-xbmc_api_urls = []
+
+xbmc_api_url = None
+last_fail = None
 
 try:
-    xbmc_api_urls = settings.XBMC_API_URLS
+    xbmc_api_url = settings.XBMC_API_URL
 except:
     pass
 
-def send_json(api_url, method, params):
+def send_json(method, params, api_url=xbmc_api_url):
+    global last_fail
+
+    if None is xbmc_api_url:
+        raise InvalidXBMCURL("Invalid XBMC URL/IP")
+
+    if None is not last_fail:
+        now = datetime.now()
+        seconds = (now-last_fail).total_seconds()
+
+        if seconds < 60:
+            raise XBMCConnectionError("Has been known to fail in past")
+        pass
 
     data = json.dumps({
         "id": 1,
@@ -22,19 +38,21 @@ def send_json(api_url, method, params):
     })
 
     req = urllib2.Request(api_url, data, {'Content-Type': 'application/json'})
-    f = urllib2.urlopen(req)
-    response = f.read()
-    f.close()
-    return json.loads(response)
 
-def send_notification(api_url, title, message):
+    try:
+        f = urllib2.urlopen(req)
+        response = f.read()
+        f.close()
+        return json.loads(response)
+    except Exception as e:
+        last_fail = datetime.now()
+        raise XBMCConnectionError(str(e))
+
+def send_notification(title, message):
 
     data = {"title": title, "message": message}
 
-    try:
-        send_json(api_url, "GUI.ShowNotification", data)
-    except:
-        pass
+    send_json("GUI.ShowNotification", data)
 
 def add_file(f):
 
@@ -42,28 +60,19 @@ def add_file(f):
     path = os.path.dirname(f)
     filename = os.path.basename(f)
 
-    for xbmc_api_url in xbmc_api_urls:
-        data = {"directory": path}
+    data = {"directory": path}
 
-        try:
-            send_notification(xbmc_api_url, "New Released Added", filename)
-            send_json(xbmc_api_url, "VideoLibrary.Scan", data)
-        except:
-            pass
+    send_notification("New Released Added", filename)
+    send_json("VideoLibrary.Scan", data)
 
 def get_file_playcount(f):
 
-    for xbmc_api_url in xbmc_api_urls:
-        data = {"file": f, "media": "video", "properties": ["playcount"]}
+    data = {"file": f, "media": "video", "properties": ["playcount"]}
 
-        try:
-            response = send_json(xbmc_api_url, "Files.GetFileDetails", data)
-            count = response['result']['filedetails']['playcount']
-            return count
-        except:
-            pass
-
-        return 0
-
-
+    response = send_json("Files.GetFileDetails", data)
+    try:
+        count = response['result']['filedetails']['playcount']
+        return count
+    except:
+        return -1
 

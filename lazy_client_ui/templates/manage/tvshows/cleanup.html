@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% load sitetree %}
+
+{% block title %}{{ type }}{% endblock %}
+{% block submenu %}
+    {% include "manage/tvshows/submenu.html" %}
+{% endblock %}
+
+
+{% block content %}
+{% load download_extras %}
+<div class="manage-tvshow search cleanup">
+
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="basicModal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="myModalLabel"><span class="bold tvshow_title"></span></h4>
+            </div>
+            <div class="modal-body">
+                <h4>Are you sure you would like to delete?</h4>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger tvshow_delete_all" spinner="tiny"><span class="btn-text">Delete</span></button>
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Keep</button>
+        </div>
+    </div>
+  </div>
+</div>
+
+    <div class="row">
+        <div class="col-xs-12 col-sm-10 col-md-7 col-centered">
+            {% load crispy_forms_tags %}
+            <div class="text-center">
+                {% crispy form %}
+            </div>
+        </div>
+    </div>
+    <hr/>
+
+    <div>
+        <p class="text-center"><strong>Cleanup Suggestions</strong></p>
+    </div>
+
+    <div class="col-md-8 col-md-offset-2 col-xs-12 search">
+        {% if alerts %}
+            {% for alert in alerts %}
+                <div class="alert alert-danger">{{ alert }}</div>
+            {% endfor %}
+        {% endif %}
+        {% if ignored_exist %}
+            <div class="panel panel-primary">
+                <div class="panel-heading arrow-toggle" data-toggle="collapse" data-target="#ignored_exist"><input type="checkbox" class="select_all_panel">
+                    <span><strong>{{ ignored_exist|length }} ignored shows that still exist</strong></span>
+                    <a class="arrow-toggle icon-arrow pull-right" data-toggle="collapse" data-target="#ignored_exist" href="javascript:void(0);">
+                        <span class="glyphicon glyphicon-collapse-up icon-arrow-up icon-lg"></span>
+                        <span class="glyphicon glyphicon-collapse-down icon-arrow-down icon-lg"></span>
+                    </a>
+                </div>
+                <div id="ignored_exist" class="collapse in">
+                    <table class="table">
+                        <tbody>
+                        {% for tvshow in ignored_exist %}
+                            <tr>
+                                <td><input type="checkbox"></td>
+                                <td class="result">{{ tvshow.title }}<div class="size">{{ tvshow.get_size|filesizeformat }}</div></td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {% endif %}
+
+        {% if eneded_watched %}
+            <div class="panel panel-primary">
+                <div class="panel-heading arrow-toggle" data-toggle="collapse" data-target="#eneded_watched"><input type="checkbox" class="select_all_panel">
+                    <span><strong>{{ eneded_watched|length }} shows ended and all watched</strong></span>
+                    <a class="arrow-toggle icon-arrow pull-right" data-toggle="collapse" data-target="#eneded_watched" href="javascript:void(0);">
+                        <span class="glyphicon glyphicon-collapse-up icon-arrow-up icon-lg"></span>
+                        <span class="glyphicon glyphicon-collapse-down icon-arrow-down icon-lg"></span>
+                    </a>
+                </div>
+                <div id="eneded_watched" class="collapse in">
+                    <table class="table">
+                        <tbody>
+                        {% for tvshow in eneded_watched %}
+                            <tr>
+                                <td><input type="checkbox"></td>
+                                <td class="result">{{ tvshow.title }}<div class="size">{{ tvshow.get_size|filesizeformat }}</div></td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {% endif %}
+
+        {% if none_watched %}
+            <div class="panel panel-primary">
+                <div class="panel-heading arrow-toggle" data-toggle="collapse" data-target="#none_watched"><input type="checkbox" class="select_all_panel">
+                    <span><strong>{{ none_watched|length }} shows that has never been watched</strong></span>
+                    <a class="arrow-toggle icon-arrow pull-right" data-toggle="collapse" data-target="#none_watched" href="javascript:void(0);">
+                        <span class="glyphicon glyphicon-collapse-up icon-arrow-up icon-lg"></span>
+                        <span class="glyphicon glyphicon-collapse-down icon-arrow-down icon-lg"></span>
+                    </a>
+                </div>
+                <div id="none_watched" class="collapse in">
+                    <table class="table">
+                        <tbody>
+                        {% for tvshow in none_watched %}
+                            <tr>
+                                <td><input type="checkbox"></td>
+                                <td class="result">{{ tvshow.title }}<div class="size">{{ tvshow.get_size|filesizeformat }}</div></td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

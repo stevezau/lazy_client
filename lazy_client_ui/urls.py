@@ -3,7 +3,7 @@ from django.views.generic import RedirectView
 from django.core.urlresolvers import reverse_lazy
 from django.views.generic import TemplateView
 
-from lazy_client_ui.views import queue, config, find, manage
+from lazy_client_ui.views import queue, find, manage
 from lazy_client_ui.views import home
 
 urlpatterns = patterns('',
@@ -22,11 +22,6 @@ urlpatterns = patterns('',
     url(r'^queue/manualfix/(?P<pk>\w+)/$', queue.DownloadsManuallyFixItem.as_view(), name='queue.manualfixitem'),
     url(r'^queue/(?P<type>\w+)/$', queue.QueueManage.as_view(), name='queue.index'),
 
-
-    #Config - Show Mappings
-    url(r'^config/tvmap/$', config.TVMappingsIndexView.as_view(), name='config.tvmap.index'),
-    url(r'^config/tvmap/add$', config.TVMappingsCreate.as_view(), name='config.tvmap.add'),
-    url(r'^config/tvmap/list$', config.TVMappingsListView.as_view(), name='config.tvmap.list'),
 
     #Other - Find
     url(r'^find/$', find.find, name='find'),

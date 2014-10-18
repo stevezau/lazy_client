@@ -749,6 +749,10 @@ class TVShow(models.Model):
                         pass
         return self.posterimg
 
+    def get_size(self):
+        if os.path.exists(self.get_local_path()):
+            return utils.get_size(self.get_local_path())
+
     def get_imdb(self, refresh=True):
         if refresh:
             tvdb_obj = self.get_tvdb_obj()

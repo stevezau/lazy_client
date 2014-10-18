@@ -41,7 +41,7 @@
         "description": "", 
         "insitetree": true, 
         "hint": "", 
-        "url": "manage.tvshows.index", 
+        "url": "manage.tvshows.find", 
         "inbreadcrumbs": true, 
         "title": "TVShows", 
         "tree": 1, 
@@ -89,7 +89,7 @@
         "description": "", 
         "insitetree": true, 
         "hint": "", 
-        "url": "home", 
+        "url": "manage.movies.find", 
         "inbreadcrumbs": true, 
         "title": "Movies", 
         "tree": 1, 
@@ -101,6 +101,54 @@
         "hidden": false, 
         "urlaspattern": false, 
         "access_guest": false
+    }
+},
+{
+    "pk": 41, 
+    "model": "sitetree.treeitem", 
+    "fields": {
+        "parent": null, 
+        "access_restricted": false, 
+        "access_permissions": [], 
+        "description": "", 
+        "insitetree": true, 
+        "hint": "", 
+        "url": "logout", 
+        "inbreadcrumbs": true, 
+        "title": "Logout", 
+        "tree": 1, 
+        "access_perm_type": 1, 
+        "alias": null, 
+        "sort_order": 41, 
+        "inmenu": true, 
+        "access_loggedin": true, 
+        "hidden": false, 
+        "urlaspattern": false, 
+        "access_guest": false
+    }
+},
+{
+    "pk": 42, 
+    "model": "sitetree.treeitem", 
+    "fields": {
+        "parent": null, 
+        "access_restricted": false, 
+        "access_permissions": [], 
+        "description": "", 
+        "insitetree": true, 
+        "hint": "", 
+        "url": "logout", 
+        "inbreadcrumbs": true, 
+        "title": "Logout", 
+        "tree": 1, 
+        "access_perm_type": 1, 
+        "alias": null, 
+        "sort_order": 42, 
+        "inmenu": true, 
+        "access_loggedin": false, 
+        "hidden": false, 
+        "urlaspattern": false, 
+        "access_guest": true
     }
 }
 ]

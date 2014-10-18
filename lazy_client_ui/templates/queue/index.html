@@ -7,16 +7,16 @@
     <div class="container submenu">
         <div class="btn-group btn-group-justified">
             <div class="btn-group">
-                <a href="{% url "queue.index" "downloading" %}"><button type="button" class="btn btn-default btn-responsive btn-square {% if type|lower == "downloading" %} active{% endif %}">Downloading<span class="badge">{{ downloading }}</span></button></a>
+                <a href="{% url "queue.index" "downloading" %}"><button spinner="tiny" type="button" class="btn btn-default btn-responsive btn-square {% if type|lower == "downloading" %} active{% endif %}">Downloading<span class="badge">{{ downloading }}</span></button></a>
             </div>
             <div class="btn-group">
-                <a href="{% url "queue.index" "queue" %}"><button type="button" class="btn btn-default btn-responsive btn-square {% if type|lower == "queue" %} active{% endif %}">Queue<span class="badge">{{ queue }}</span></button></a>
+                <a href="{% url "queue.index" "queue" %}"><button spinner="tiny" type="button" class="btn btn-default btn-responsive btn-square {% if type|lower == "queue" %} active{% endif %}">Queue<span class="badge">{{ queue }}</span></button></a>
             </div>
             <div class="btn-group">
-                <a href="{% url "queue.index" "pending" %}"><button type="button" class="btn btn-responsive btn-default btn-square {% if type|lower == "pending" %} active{% endif %}">Pending<span class="badge">{{ pending }}</span></button></a>
+                <a href="{% url "queue.index" "pending" %}"><button spinner="tiny" type="button" class="btn btn-responsive btn-default btn-square {% if type|lower == "pending" %} active{% endif %}">Pending<span class="badge">{{ pending }}</span></button></a>
             </div>
             <div class="btn-group">
-                <a href="{% url "queue.index" "error" %}"><button type="button" class="btn btn-default btn-responsive btn-square {% if type|lower == "errors" %} active{% endif %}">Errors<span class="badge">{{ errors }}</span></button></a>
+                <a href="{% url "queue.index" "error" %}"><button spinner="tiny" type="button" class="btn btn-default btn-responsive btn-square {% if type|lower == "errors" %} active{% endif %}">Errors<span class="badge">{{ errors }}</span></button></a>
             </div>
         </div>
     </div>

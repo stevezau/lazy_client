@@ -47,6 +47,12 @@
                     {% include "queue/downloaditem_rating.html" %}
 
                     <span class="label-bar">
+                        {% if download.get_type == 1 %}
+                            <span class="label label-success">TVShow</span>
+                        {% elif download.get_type == 2 %}
+                            <span class="label label-info">Movie</span>
+                        {% endif %}
+
                         {% for quality in download.get_quality %}
                             <span class="label label-primary">{{ quality }}</span>
                         {% endfor %}
