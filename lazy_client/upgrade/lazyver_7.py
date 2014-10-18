@@ -86,7 +86,7 @@ def upgrade():
     for line in open(settings.FLEXGET_IGNORE, "r"):
         if line.startswith("    - ^"):
             show_name = line.replace("    - ^", "").replace(".", " ").strip()
-            show_name = TVShow.clean(show_name)
+            show_name = TVShow.clean_title(show_name)
 
             try:
                 found = TVShow.find_by_title(show_name)

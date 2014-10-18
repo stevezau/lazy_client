@@ -11,7 +11,7 @@
         <div class="poster">
             {% if download.tvdbid %}
                 <a href="http://thetvdb.com/index.php?tab=series&id={{ download.tvdbid.id }}" target="_blank">
-                    <img src="{% if download.tvdbid.postimg %}{{ download.tvdbid.posterimg.url }}{% else %}{{ STATIC_URL }}images/noimg.gif{% endif %}">
+                    <img src="{% if download.tvdbid.posterimg %}{{ download.tvdbid.posterimg.url }}{% else %}{{ STATIC_URL }}images/noimg.gif{% endif %}">
                 </a>
             {% elif download.imdbid.posterimg %}
                 <a href="http://www.imdb.com/title/tt{{ download.imdbid.id }}/" target="_blank">
@@ -188,12 +188,6 @@
 
             <div class="bottom">
                 <div class="button-bar btn-group-justified">
-                        <div class="btn-group">
-                            <button type="button" class="item_ignore_m{{ download.id }} btn btn-default btn-xl btn-responsive">
-                                <span class="glyphicon glyphicon-minus"></span> Ignore
-                            </button>
-                        </div>
-
                     {% if downloadgroup.list and downloadgroup.list|length > 1 %}
                         <div class="btn-group">
                             <button type="button" class="item_approve_m{{ downloadgroup.grouper.id }} btn btn-default btn-xl btn-responsive">
@@ -250,7 +244,7 @@
 
                         {% if download.status == 6 %}
                             <div class="btn-group">
-                                <button type="button" class="item_ignore_{{ download.id }} btn btn-default btn-xl btn-responsive {% if download.get_type != 1 %}disabled{% endif %}">
+                                <button type="button" class="item_ignore_{{ download.id }} btn btn-default btn-xl btn-responsive">
                                     <span class="glyphicon glyphicon-minus"></span> Ignore
                                 </button>
                             </div>

@@ -60,12 +60,24 @@ class DownloadItem(models.Model):
         (EXTRACT, 'Extract'),
     )
 
+    TYPE_TVSHOW = 1
+    TYPE_MOVIE = 2
+    TYPE_UNKNOWN = 3
+
+    TYPES = (
+        (TYPE_TVSHOW, 'TVShow'),
+        (TYPE_MOVIE, 'Movie'),
+        (TYPE_UNKNOWN, 'Unknown')
+    )
+
+
     title = models.CharField(max_length=150, db_index=True, blank=True, null=True)
     section = models.CharField(max_length=10, db_index=True, blank=True, null=True)
     ftppath = models.CharField(max_length=255, db_index=True, unique=True)
     localpath = models.CharField(max_length=255, blank=True, null=True)
     status = models.IntegerField(choices=STATUS_CHOICES, blank=True, null=True)
     pid = models.IntegerField(default=0, null=True)
+    type = models.IntegerField(choices=TYPES, blank=True, default=TYPE_UNKNOWN)
     taskid = models.CharField(max_length=255, blank=True, null=True)
     retries = models.IntegerField(default=0)
     dateadded = models.DateTimeField(db_index=True, auto_now_add=True, blank=True)
@@ -174,24 +186,37 @@ class DownloadItem(models.Model):
     def get_type(self):
         from lazy_common import metaparser
 
+        if self.type and self.type != metaparser.TYPE_UNKNOWN:
+            return self.type
+
         if self.tvdbid_id:
-            return metaparser.TYPE_TVSHOW
+            self.type = metaparser.TYPE_TVSHOW
+            return self.type
 
         if self.section == "TVHD":
-            return metaparser.TYPE_TVSHOW
+            self.type = metaparser.TYPE_TVSHOW
+            return self.type
 
         if self.section == "HD" or self.section == "XVID":
-            return metaparser.TYPE_MOVIE
+            self.type = metaparser.TYPE_MOVIE
+            return self.type
 
         if self.video_files:
             first_file = self.video_files[0]
 
             if 'tvdbid_id' in first_file:
-                return metaparser.TYPE_TVSHOW
+                self.type = metaparser.TYPE_TVSHOW
+                return self.type
             if 'imdbid_id' in first_file:
-                return metaparser.TYPE_MOVIE
+                self.type = metaparser.TYPE_MOVIE
+                return self.type
 
-        return metaparser.TYPE_UNKNOWN
+        #Ok lets try let metaparser figure out the type
+        parser = metaparser.get_parser_cache(self.title)
+        if parser and parser.details:
+            self.type = parser.type
+
+        return self.type
 
 
     def metaparser(self):
@@ -205,21 +230,7 @@ class DownloadItem(models.Model):
             elif type == metaparser.TYPE_MOVIE:
                 self.parser = metaparser.get_parser_cache(self.title, type=metaparser.TYPE_MOVIE)
             else:
-
-                title_parser = metaparser.get_parser_cache(self.title)
-
-                is_tv_show = False
-
-                if 'series' in title_parser.details or re.search("(?i).+\.[P|H]DTV\..+", self.title):
-                    is_tv_show = True
-
-                if is_tv_show:
-                    self.parser = metaparser.get_parser_cache(self.title, type=metaparser.TYPE_TVSHOW)
-                else:
-                    self.parser = metaparser.get_parser_cache(self.title, type=metaparser.TYPE_MOVIE)
-
-                if None is self.parser:
-                    self.parser = title_parser
+                self.parser = metaparser.get_parser_cache(self.title)
 
         return self.parser
 
@@ -619,7 +630,6 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
 
                 #If its a tvshow and the tvdbid does not match then skip
                 if type == metaparser.TYPE_TVSHOW and dlitem.tvdbid_id and instance.tvdbid_id:
-                    #now compare them
                     if instance.tvdbid_id != dlitem.tvdbid_id:
                         continue
 
@@ -639,12 +649,10 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
                 if dlitem_title and dlitem_title.lower() == title.lower():
 
                     check = False
-
                     if parser.type == metaparser.TYPE_TVSHOW:
                         if 'season' in parser.details and 'episodeNumber' in parser.details and 'season' in dlitem_parser.details and 'episodeNumber' in dlitem_parser.details:
-                            if parser.details['season'] == dlitem_parser.details['season'] and parser.details['season'] == dlitem_parser.details['episodeNumber']:
+                            if parser.details['season'] == dlitem_parser.details['season'] and parser.details['episodeNumber'] == dlitem_parser.details['episodeNumber']:
                                 check = True
-
                     else:
                         check = True
 
@@ -661,14 +669,14 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
 
         #Ok now we know its a valid downloaditem lets add it to the db
         tvdbapi = Tvdb()
-        type = instance.metaparser().type
+        type = instance.get_type()
 
         from lazy_common import metaparser
 
         #must be a tvshow
         if type == metaparser.TYPE_TVSHOW:
             if instance.tvdbid_id is None:
-                logger.debug("Looks like we are working with a TVShow")
+                logger.debug("Looks like we are working with a TVShow, lets try find the tvdb object")
 
                 #We need to try find the series info
                 parser = instance.metaparser()
@@ -676,18 +684,24 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
                 if parser.details and 'series' in parser.details:
                     series_name = TVShow.clean_title(parser.details['series'])
 
-                    try:
-                        match = tvdbapi[series_name]
-                        logger.debug("Show found")
-                        instance.tvdbid_id = int(match['id'])
+                    #search via database first
+                    found = TVShow.find_by_title(series_name)
 
-                        if match['imdb_id'] is not None:
-                            logger.debug("also found imdbid %s from thetvdb" % match['imdb_id'])
-                            instance.imdbid_id = int(match['imdb_id'].lstrip("tt"))
-                    except tvdb_shownotfound:
-                        logger.exception("Error finding show on thetvdb %s" % series_name)
-                    except Exception as e:
-                        logger.exception("Error finding : %s via thetvdb.com due to  %s" % (series_name, e.message))
+                    if found:
+                        instance.tvdbid_id = found.id
+                    else:
+                        try:
+                            match = tvdbapi[series_name]
+                            logger.debug("Show found")
+                            instance.tvdbid_id = int(match['id'])
+
+                            if match['imdb_id'] is not None:
+                                logger.debug("also found imdbid %s from thetvdb" % match['imdb_id'])
+                                instance.imdbid_id = int(match['imdb_id'].lstrip("tt"))
+                        except tvdb_shownotfound:
+                            logger.exception("Error finding show on thetvdb %s" % series_name)
+                        except Exception as e:
+                            logger.exception("Error finding : %s via thetvdb.com due to  %s" % (series_name, e.message))
                 else:
                     logger.exception("Unable to parse series info")
 

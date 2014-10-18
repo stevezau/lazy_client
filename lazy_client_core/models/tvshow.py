@@ -66,6 +66,9 @@ class TVShowMappings(models.Model):
         ordering = ['-id']
         app_label = 'lazy_client_core'
 
+    def __unicode__(self):
+        return self.title
+
     title = models.CharField(max_length=150, db_index=True, unique=False)
     tvdbid = models.ForeignKey('TVShow')
 
@@ -1043,6 +1046,7 @@ class TVShowScanner(Thread):
             new_download.ftppath = ftp_path.strip()
             new_download.tvdbid_id = self.tvshow_obj.id
             new_download.requested = requested
+            new_download.type = metaparser.TYPE_TVSHOW
 
             if season:
                 if eps and len(eps) > 0:
@@ -1224,6 +1228,8 @@ class TVShowScanner(Thread):
                 found_eps = []
                 skip_eps = []
 
+                print eps
+
                 for ep_no in eps:
                     if self.aborted:
                         self.log("Aborting fix for %s" % self.tvshow_obj.title)
@@ -1257,6 +1263,8 @@ class TVShowScanner(Thread):
                                 self.set_ep_status(cur_season_no, ep_no, "Downloading")
                                 skip_eps.append(ep_no)
                                 do_continue = True
+                                break
+
                     if do_continue:
                         continue
 
@@ -1264,8 +1272,13 @@ class TVShowScanner(Thread):
                     self.log("Step 2: Looking for ep %s, via the torrents (prescan)" % ep_no)
                     site_names = ['scc', 'revtt', 'tl']
                     do_continue = False
+                    do_break = False
                     for site_name in site_names:
                         site_dict = self.get_pre_scan()[site_name]
+
+                        if do_break:
+                            break
+
                         for torrent in site_dict['results']:
                             parser = metaparser.get_parser_cache(torrent, type=metaparser.TYPE_TVSHOW)
                             found_seasons = parser.get_seasons()
@@ -1275,6 +1288,7 @@ class TVShowScanner(Thread):
                                     self.log("Found the ep %s (via prescan) in %s" % (ep_no, torrent))
                                     found_eps.append({'site': site_name, 'torrent': torrent, 'ep_no': ep_no})
                                     do_continue = True
+                                    break
                     if do_continue:
                         continue
 

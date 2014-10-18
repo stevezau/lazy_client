@@ -13,6 +13,7 @@ from lazy_client_core.exceptions import AlradyExists_Updated, AlradyExists, Igno
 from rest_framework.decorators import api_view
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import status
+from lazy_common import metaparser
 
 logger = logging.getLogger(__name__)
 
@@ -145,6 +146,13 @@ def downloads(request):
                     new_download_item.status = DownloadItem.QUEUE
                     new_download_item.ftppath = result['ftp_path']
                     new_download_item.requested = True
+
+                    if 'type' in result:
+                        if result['type'] == "tvshow":
+                            new_download_item.type = metaparser.TYPE_TVSHOW
+                        elif result['type'] == "movie":
+                            new_download_item.type = metaparser.TYPE_MOVIE
+
                     new_download_item.save()
                 except AlradyExists:
                     error = {'status': 'failed', 'detail': "Already downloaded previously"}
@@ -283,13 +291,11 @@ def download_action(request, pk):
                     series_data = dlitem.metaparser()
 
                     if series_data:
-                        #ignoretitle = series_data.details['series'].replace(" ", ".")
-                        #common.ignore_show(ignoretitle)
-                        #dlitem.delete()
-                        pass
+                        ignoretitle = series_data.details['series'].replace(" ", ".")
+                        common.ignore_show(ignoretitle)
+                        dlitem.delete()
                     else:
-                        pass
-                        #dlitem.delete()
+                        dlitem.delete()
 
                     return Response({'status': 'success', 'detail': "ignored show %s" % ignoretitle})
                 else:
