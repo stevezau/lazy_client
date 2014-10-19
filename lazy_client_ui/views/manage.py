@@ -154,7 +154,7 @@ def tvshows(request):
             shows = sorted(shows, key=methodcaller('exists'), reverse=True)
 
             if len(shows) == 1:
-                return redirect('manage.tvshow.detail', pk=shows[0].id)
+                return redirect('manage.tvshows.detail', pk=shows[0].id)
 
             context['shows'] = shows
         return render(request, 'manage/tvshows/index.html', context)

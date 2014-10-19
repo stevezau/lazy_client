@@ -16,7 +16,7 @@ NEW VERSION ACTIONS
 -remove ignore.yml
 -change to --disable-tracking
 -update XBMC_API_URL
--add SERVER_NAME = "Steve" in lazysettings.yp
+-add  = "Steve" in lazysettings.yp
 
 -Make Actions movies etc lower rating on imdb accept on lazy server
 
