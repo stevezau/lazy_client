@@ -1371,6 +1371,6 @@ def add_new_tvdbitem(sender, created, instance, **kwargs):
 
         instance.update_from_tvdb()
 
-        if instance.title:
+        if not instance.title:
             logger.error("Unable to figure out tvdb info")
             raise Exception("Unable to determine TVDB information")

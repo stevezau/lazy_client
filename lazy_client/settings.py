@@ -276,7 +276,7 @@ LOGGING = {
         },
         'tvdb_api': {
             'handlers': ['console', 'logfile', 'mail_admins'],
-            'level': 'INFO',
+            'level': 'DEBUG',
         },
         '': {
             'handlers': ['console', 'logfile', 'mail_admins'],
