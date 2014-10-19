@@ -99,7 +99,7 @@
         "inmenu": true, 
         "access_loggedin": false, 
         "hidden": false, 
-        "urlaspattern": false, 
+        "urlaspattern": true, 
         "access_guest": false
     }
 },
@@ -137,9 +137,9 @@
         "description": "", 
         "insitetree": true, 
         "hint": "", 
-        "url": "logout", 
+        "url": "login", 
         "inbreadcrumbs": true, 
-        "title": "Logout", 
+        "title": "Login", 
         "tree": 1, 
         "access_perm_type": 1, 
         "alias": null, 
