@@ -106,6 +106,8 @@ def downloads(request):
         site = request.DATA['site'].lower()
         download = request.DATA['download']
 
+        logger.error("downloading %s %s" % (site, download))
+
         if site == "ftp":
             #Lets add to the queue directly
             new_download_item = DownloadItem()

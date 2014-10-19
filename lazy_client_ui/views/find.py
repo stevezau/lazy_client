@@ -33,6 +33,8 @@ def find(request):
             ftp_results = {}
 
             try:
+                logger.error("searching %s %s" % search)
+
                 ftp_results['results'] = lazyapi.search_ftp(search)
 
                 for result in ftp_results['results']:
