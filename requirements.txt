@@ -1,4 +1,4 @@
-flexget==1.2.203
+flexget==1.2
 cherrypy
 django==1.6.7
 south==1.0
