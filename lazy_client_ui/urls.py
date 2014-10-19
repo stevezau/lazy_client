@@ -28,10 +28,11 @@ urlpatterns = patterns('',
 
     #Manage - TVShows
     url(r'^manage/tvshows/$', manage.tvshows, name='manage.tvshows.find'),
-    url(r'^manage/tvshows/(?P<pk>\w+)/$', manage.TVShowDetail.as_view(), name='manage.tvshow.detail'),
-    url(r'^manage/tvshows/(?P<pk>\w+)/missing/$', manage.TVShowMissing.as_view(), name='manage.tvshow.missing'),
-    url(r'^manage/tvshows/(?P<pk>\w+)/missing/results/$', manage.TVShowMissingResults.as_view(), name='manage.tvshow.missing.results'),
-    url(r'^manage/tvshows/(?P<pk>\w+)/missing/log/$', manage.TVShowMissingLog.as_view(), name='manage.tvshow.missing.log'),
+    url(r'^manage/tvshows/schedule/$', manage.tv_schedule, name='manage.tvshows.schedule'),
+    url(r'^manage/tvshows/(?P<pk>\w+)/$', manage.TVShowDetail.as_view(), name='manage.tvshows.detail'),
+    url(r'^manage/tvshows/(?P<pk>\w+)/missing/$', manage.TVShowMissing.as_view(), name='manage.tvshows.missing'),
+    url(r'^manage/tvshows/(?P<pk>\w+)/missing/results/$', manage.TVShowMissingResults.as_view(), name='manage.tvshows.missing.results'),
+    url(r'^manage/tvshows/(?P<pk>\w+)/missing/log/$', manage.TVShowMissingLog.as_view(), name='manage.tvshows.missing.log'),
 
 
     #Manage - Movies

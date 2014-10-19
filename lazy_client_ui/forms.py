@@ -292,3 +292,21 @@ class FindTVShow(forms.Form):
         )
 
     search = forms.CharField(max_length=200)
+
+class FindMovie(forms.Form):
+
+    def __init__(self, *args, **kwargs):
+        super(FindMovie, self).__init__(*args, **kwargs)
+        # Uni-form
+        self.helper = FormHelper()
+        self.helper.form_class = 'form-inline'
+        self.helper.field_template = 'bootstrap3/layout/inline_field.html'
+        self.helper.error_text_inline = True
+        self.helper.form_method = "GET"
+        self.helper.help_text_inline = False
+        self.helper.layout = Layout(
+            'search',
+            StrictButton('Search', type="submit", spinner="tiny", css_class='btn-primary'),
+        )
+
+    search = forms.CharField(max_length=200)

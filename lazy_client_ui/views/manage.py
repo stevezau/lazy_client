@@ -1,7 +1,7 @@
 import logging
 import os
 from django.shortcuts import render
-from lazy_client_ui.forms import FindTVShow
+from lazy_client_ui.forms import FindTVShow, FindMovie
 from django.http import HttpResponseRedirect, HttpResponse
 from lazy_client_core.models import TVShow, TVShowMappings
 from lazy_common.tvdb_api import Tvdb
@@ -176,9 +176,17 @@ class TVShowMissingLog(DetailView):
     model = TVShow
     template_name = "manage/tvshows/log.html"
 
+def tv_schedule(request):
+    return render(request, 'manage/tvshows/schedule.html', {})
+
+
 
 def movies(request):
 
-    return render(request, 'manage/movies/index.html', {})
+    form = FindMovie(request.GET or None)
+
+    context = {'form': form}
+
+    return render(request, 'manage/movies/index.html', context)
 
 

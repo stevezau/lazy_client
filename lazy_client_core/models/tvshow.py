@@ -198,6 +198,8 @@ class TVShow(models.Model):
         if self.fix_job_running():
             raise AlreadyRunningException("Fix job already running")
 
+        logger.error("Finding missing eps on %s : %s" % (self.title, fix))
+
         #Set initial status
         self.fix_report = {}
         for season, eps in fix.iteritems():
@@ -263,8 +265,9 @@ class TVShow(models.Model):
 
             #If didn't find existing find one
             if not self.localpath:
-                self.localpath = os.path.join(settings.TV_PATH, self.title)
-                self.save()
+                if self.title:
+                    self.localpath = os.path.join(settings.TV_PATH, self.title)
+                    self.save()
 
         return self.localpath
 
@@ -1367,3 +1370,7 @@ def add_new_tvdbitem(sender, created, instance, **kwargs):
             instance.id = instance.get_tvdbid()
 
         instance.update_from_tvdb()
+
+        if instance.title:
+            logger.error("Unable to figure out tvdb info")
+            raise Exception("Unable to determine TVDB information")

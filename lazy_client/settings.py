@@ -51,7 +51,6 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "static/media")
 MEDIA_URL = "/media/"
 
 FLEXGET_APPROVED = "/home/media/.flexget/approve.yml"
-FLEXGET_IGNORE = "/home/media/.flexget/ignore.yml"
 
 
 XBMC_API_URLS = 'http://localhost:8080/jsonrpc'
@@ -417,15 +416,6 @@ ftpmanager.FTP_PASS = lazysettings.FTP_PASS
 #########################
 ### CHECK LAZY PATHTS ###
 #########################
-
-if not os.path.isfile(FLEXGET_IGNORE):
-    #Lets create it
-    ignore_file = open(FLEXGET_IGNORE, 'a')
-    ignore_file.write("regexp:\n")
-    ignore_file.write("  from: title\n")
-    ignore_file.write("  reject:\n")
-    ignore_file.write("    - ^FIRST.IGNORE.DEL.ME.AFTER.YOU.ADD.MORE\n")
-    ignore_file.close()
 
 if not os.path.isfile(FLEXGET_APPROVED):
     #Lets create it

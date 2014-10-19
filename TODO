@@ -2,20 +2,21 @@
 ### NOW ###
 ###########
 cleanup suggestion
--Ignored and found epsiodes
--Ended shows all watched
--None watched
+-Seasons that are all watched
+-TVShows with 20% watched, last time it was watched over 4months ago
+
+Movies
+-search shows
+--estimated releae date of dvd/blueray (good copy)
 
 
 On queue, make sure numbers at top are updated
-IF SHOW ignored, u cant do find missing
-
 
 NEW VERSION ACTIONS
 -remove ignore.yml
 -change to --disable-tracking
 -update XBMC_API_URL
-
+-add SERVER_NAME = "Steve" in lazysettings.yp
 
 -Make Actions movies etc lower rating on imdb accept on lazy server
 

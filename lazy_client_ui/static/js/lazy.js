@@ -82,11 +82,11 @@ $( document ).ready(function() {
        $(this).hide();
     });
 
-
+    /* Cleanup */
     $(document).on('click', '.select_all_panel', function(event) {
-        checkbox = $(this)
-        checked = checkbox.prop('checked')
-        panel = checkbox.parent().parent()
+        checkbox = $(this);
+        checked = checkbox.prop('checked');
+        panel = checkbox.parent().parent();
 
         if (checked) {
             panel.find('input:checkbox').filter(':visible').prop('checked', true);
@@ -94,6 +94,44 @@ $( document ).ready(function() {
             panel.find('input:checkbox').filter(':visible').prop('checked', false);
         }
         event.stopPropagation()
+    });
+
+    $(document).on('click', '.cleanup_delete_prompt', function(event) {
+        id = $(this).attr("delete-target");
+        $("#deleteModal .clean_delete_all").attr("form", id);
+        $('#deleteModal').modal()
+    });
+
+    $(document).on('click', '.clean_delete_all', function(event) {
+        btn = $(this);
+        form = $("#" + btn.attr("form"));
+
+        $("#deleteModal .clean_delete_all").attr("form", null);
+
+        toggle_success = function (data, textStatus, jqXHR) {
+            status = data['status']
+            if (status == "success") {
+                label = $('.tvshow-' + this.custom_data.id).remove()
+            } else {
+                add_alert("Error deleting tvshow as " + data['detail'])
+            }
+        };
+
+        toggle_error = function (jqXHR, textStatus, errorThrown) {
+            add_alert("Error deleting tvshow: " + errorThrown);
+
+        };
+
+        form.find('input:checked').each(function() {
+            checkbox = $(this);
+            result_tr = checkbox.parent().parent();
+            result_td = result_tr.find(".result");
+            result_td.append('<span class="label label-danger">Deleting     <span class="spinner"></span></span>');
+            result_td.find(".spinner").spin("tiny");
+            id = $(checkbox).attr("value")
+            call_ajax("/api/tvshow/" + id + "/action/", {'action': "delete_all"}, {"id": id}, toggle_success, toggle_error, "POST", btn);
+        });
+
     });
 
     /* input spinner for a links */

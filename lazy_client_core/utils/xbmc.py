@@ -16,6 +16,8 @@ try:
 except:
     pass
 
+file_cache = {}
+
 def send_json(method, params, api_url=xbmc_api_url):
     global last_fail
 
@@ -65,13 +67,34 @@ def add_file(f):
     send_notification("New Released Added", filename)
     send_json("VideoLibrary.Scan", data)
 
-def get_file_playcount(f):
+def get_file_details(f):
+
+    if f in file_cache.keys():
+        now = datetime.now()
+        age = file_cache[f]['age']
+
+        seconds = (now-age).total_seconds()
+
+        if seconds < 900:
+            return file_cache[f]
 
     data = {"file": f, "media": "video", "properties": ["playcount"]}
 
     response = send_json("Files.GetFileDetails", data)
+
     try:
-        count = response['result']['filedetails']['playcount']
+        file_details = response['result']['filedetails']
+        file_details['age'] = datetime.now()
+        file_cache[f] = file_details
+    except:
+        pass
+
+def get_file_playcount(f):
+
+    file_details = get_file_details(f)
+
+    try:
+        count = file_details['playcount']
         return count
     except:
         return -1

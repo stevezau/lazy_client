@@ -287,19 +287,17 @@ def download_action(request, pk):
             try:
                 dlitem = DownloadItem.objects.get(id=pk)
 
-                if dlitem.get_type() == metaparser.TYPE_TVSHOW:
-                    series_data = dlitem.metaparser()
+                if dlitem.tvdbid:
+                    dlitem.tvdbid.ignored = True
+                    dlitem.tvdbid.save()
 
-                    if series_data:
-                        ignoretitle = series_data.details['series'].replace(" ", ".")
-                        common.ignore_show(ignoretitle)
-                        dlitem.delete()
-                    else:
-                        dlitem.delete()
+                if dlitem.imdbid:
+                    dlitem.imdbid.ignored = True
+                    dlitem.imdbid.save()
 
-                    return Response({'status': 'success', 'detail': "ignored show %s" % ignoretitle})
-                else:
-                    return Response({'status': 'failed', 'detail': "cannot ignore as not a TVShow"})
+                dlitem.delete()
+
+                return Response({'status': 'success', 'detail': "ignored %s" % dlitem.title})
 
             except ObjectDoesNotExist:
                 error = {'status': 'failed', 'detail': "unable to find download item"}
