@@ -89,7 +89,7 @@ class Migration(SchemaMigration):
             'alt_names': ('picklefield.fields.PickledObjectField', [], {'null': 'True', 'blank': 'True'}),
             'description': ('django.db.models.fields.TextField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'favorite': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'fix_report': ('picklefield.fields.PickledObjectField', [], {}),
+            'fix_report': ('picklefield.fields.PickledObjectField', [], {'null': 'True'}),
             'genres': ('django.db.models.fields.CharField', [], {'max_length': '200', 'null': 'True', 'blank': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'ignored': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),

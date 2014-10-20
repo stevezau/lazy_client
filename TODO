@@ -9,8 +9,10 @@ Movies
 -search shows
 --estimated releae date of dvd/blueray (good copy)
 
+-Figure out symlinks for hdd size
+-Put epsiodes into database for schedule
+-On queue, make sure numbers at top are updated
 
-On queue, make sure numbers at top are updated
 
 NEW VERSION ACTIONS
 -remove ignore.yml
@@ -18,14 +20,11 @@ NEW VERSION ACTIONS
 -update XBMC_API_URL
 -add  = "Steve" in lazysettings.yp
 
--Make Actions movies etc lower rating on imdb accept on lazy server
 
 -amazing race AU does not detect on thetvdb.com
 -convert AU to australia etc when searching tvdb
 
 -ADD SUPPORT FOR SUBS
-
 -improve QTS lazy script
-
 -manual rename for files not found
-
+-Make Actions movies etc lower rating on imdb accept on lazy server
