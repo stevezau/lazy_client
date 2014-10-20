@@ -10,7 +10,7 @@ class Migration(SchemaMigration):
     def forwards(self, orm):
         # Adding field 'TVShow.fix_report'
         db.add_column('tvdbcache', 'fix_report',
-                      self.gf('picklefield.fields.PickledObjectField')(default=None),
+                      self.gf('picklefield.fields.PickledObjectField')(default=None, null=True),
                       keep_default=False)
 
         # Adding field 'DownloadLog.tvshow_id'
@@ -89,7 +89,7 @@ class Migration(SchemaMigration):
             'alt_names': ('picklefield.fields.PickledObjectField', [], {'null': 'True', 'blank': 'True'}),
             'description': ('django.db.models.fields.TextField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
             'favorite': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'fix_report': ('picklefield.fields.PickledObjectField', [], {'null': 'True'}),
+            'fix_report': ('picklefield.fields.PickledObjectField', [], {}),
             'genres': ('django.db.models.fields.CharField', [], {'max_length': '200', 'null': 'True', 'blank': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'ignored': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
