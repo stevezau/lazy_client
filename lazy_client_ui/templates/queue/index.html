@@ -61,6 +61,33 @@
            {% endif %}
         </div>
         </form>
+        {% if downloads.has_other_pages %}
+            <div class="text-center">
+                <ul class="pagination btn-responsive">
+                    {% if downloads.has_previous %}
+                        <li><a href="?{{ downloads.previous_page_number.querystring }}">&lsaquo;&lsaquo;</a></li>
+                    {% else %}
+                        <li class="disabled"><a>&lsaquo;&lsaquo;</a></li>
+                    {% endif %}
+                    {% for page in downloads.pages %}
+                        {% if page %}
+                            {% ifequal page downloads.number %}
+                                <li class="active"><a href="?page={{ page }}">{{ page }}</a></li>
+                            {% else %}
+                                <li><a href="?{{ page.querystring }}" class="page">{{ page }}</a></li>
+                            {% endifequal %}
+                        {% else %}
+                            <li><span style="border-bottom: 0px; border-top: 0px">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+                    {% if downloads.has_next %}
+                        <li><a href="?{{ downloads.next_page_number.querystring }}">&rsaquo;&rsaquo;</a></li>
+                    {% else %}
+                        <li class="disabled"><a>&rsaquo;&rsaquo;</a></li>
+                    {% endif %}
+                </ul>
+                </div>
+        {% endif %}
     {% else %}
         <div><p class="text-center"><strong>No items found with status of {{ type }}</strong></p></div>
     {% endif %}
