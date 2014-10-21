@@ -52,7 +52,6 @@ def tvshow_next_aired(tvshow):
 
     if next_season:
         next_ep = tvshow.get_next_ep(next_season)
-
         if next_ep:
 
             ep_obj = tvshow.get_tvdb_obj()[next_season][next_ep]
