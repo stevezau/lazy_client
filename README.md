@@ -72,7 +72,7 @@ Conjob for Flexget & Auto Lazy Startup
 Add the following cron jobs
 
 	$ */15 * * * * /usr/local/bin/flexget -c /home/media/.flexget/config-xvid.yml  execute --cron
-	$ */15 * * * * /usr/local/bin/flexget execute --cron --disable-advancement
+	$ */15 * * * * /usr/local/bin/flexget execute --cron --disable-tracking
 	$ */5 * * * * /home/media/lazy/lazy.sh check
 
 

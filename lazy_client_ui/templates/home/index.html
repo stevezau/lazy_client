@@ -5,22 +5,7 @@
 
 
 {% block submenu %}
-    <div class="container submenu">
-        <div class="btn-group btn-group-justified">
-            <div class="btn-group">
-                <a href="{% url "queue.index" "downloading" %}"><button type="button" class="btn btn-default btn-responsive btn-square {% if type|lower == "downloading" %} active{% endif %}">Downloading<span class="badge">{{ downloading }}</span></button></a>
-            </div>
-            <div class="btn-group">
-                <a href="{% url "queue.index" "queue" %}"><button type="button" class="btn btn-default btn-responsive btn-square {% if type|lower == "queue" %} active{% endif %}">Queue<span class="badge">{{ queue }}</span></button></a>
-            </div>
-            <div class="btn-group">
-                <a href="{% url "queue.index" "pending" %}"><button type="button" class="btn btn-responsive btn-default btn-square {% if type|lower == "pending" %} active{% endif %}">Pending<span class="badge">{{ pending }}</span></button></a>
-            </div>
-            <div class="btn-group">
-                <a href="{% url "queue.index" "error" %}"><button type="button" class="btn btn-default btn-responsive btn-square {% if type|lower == "errors" %} active{% endif %}">Errors<span class="badge">{{ errors }}</span></button></a>
-            </div>
-        </div>
-    </div>
+    {% include "queue/submenu.html" %}
 {% endblock %}
 
 
@@ -64,9 +49,11 @@
     <div class="row">
         <div class="col-xs-12"><a href="{% url 'queue.index' 'extract' %}" class="btn-full"><span class="badge">{{ extracting }}</span><strong>Extracting</strong></a></div>
     </div>
-
     <div class="row">
         <div class="col-xs-12"><a href="{% url 'queue.index' 'error' %}" class="btn-full"><span class="badge">{{ errors }}</span><strong>Errors</strong></a></div>
+    </div>
+    <div class="row">
+        <div class="col-xs-12"><a href="{% url 'queue.index' 'complete' %}" class="btn-full"><span class="badge">{{ complete }}</span><strong>History</strong></a></div>
     </div>
 
 </div>

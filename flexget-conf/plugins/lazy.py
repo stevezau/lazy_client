@@ -105,7 +105,7 @@ class PluginLazy(object):
             if pending:
                 status = 6
 
-            f.write("\n\n adding release date: %s  path: %s tvdbid:%s imdbid: %s \n" % (str(curtime), entry['path']), tvdb_id, imdb_id)
+            f.write("\n\n adding release date: %s  path: %s tvdbid:%s imdbid: %s \n" % (str(curtime), entry['path'], tvdb_id, imdb_id))
 
             try:
                 post = {'ftppath': "%s" % entry['path'],

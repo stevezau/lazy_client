@@ -17,3 +17,4 @@ pillow
 netaddr==0.7.11
 django-crispy-forms==1.4.0
 django-htmlmin==0.7.0
+django-pure-pagination==0.2.1

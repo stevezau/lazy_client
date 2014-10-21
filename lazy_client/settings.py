@@ -150,6 +150,11 @@ ADMINS = (
     ('Steve Adams', 'support@drifthost.com'),
 )
 
+PAGINATION_SETTINGS = {
+    'PAGE_RANGE_DISPLAYED': 50,
+    'MARGIN_PAGES_DISPLAYED': 2,
+}
+
 INSTALLED_APPS = (
     'django.contrib.admin',
     'django.contrib.auth',
@@ -171,6 +176,7 @@ INSTALLED_APPS = (
     'lazy_client_api',
     'lazy_client_ui',
     'lazy_common',
+    'pure_pagination',
 )
 
 LOGGING = {

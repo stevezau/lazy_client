@@ -11,7 +11,8 @@ from django.conf import settings
 from django.db.models import Q
 from lazy_client_core.models import DownloadItem, TVShow, Movie
 from lazy_client_ui.forms import DownloadItemManualFixForm
-
+from pure_pagination import Paginator, EmptyPage, PageNotAnInteger
+from django.core.paginator import EmptyPage, PageNotAnInteger
 
 logger = logging.getLogger(__name__)
 
@@ -169,14 +170,34 @@ class QueueManage(ListView):
         context['queue'] = common.num_queue()
         context['pending'] = common.num_pending()
         context['errors'] = common.num_error()
+        context['complete'] = common.num_complete(days=7)
 
         context['type'] = self.type
 
         if self.dlget == DownloadItem.PENDING:
             context['doregroup'] = True
-            queryset = self.get_queryset()
+            context['downloads'] = sorted(self.object_list, key=self.key_function)
 
-            context['object_list_regroup'] = sorted(queryset, key=self.key_function)
+        #Pageinate results
+        paginate = Paginator(self.object_list, 50, request=self.request)
+        page = 1
+
+        if self.request.GET and 'page' in self.request.GET:
+            try:
+                page = int(self.request.GET['page'])
+            except:
+                pass
+
+        try:
+            context['downloads'] = paginate.page(page)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver first page.
+            page = 1
+            context['downloads'] = paginate.page(page)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), deliver last page of results.
+            page = paginate.num_pages
+            context['downloads'] = paginate.page(paginate.num_pages)
 
         return context
 
@@ -193,7 +214,12 @@ class QueueManage(ListView):
                     self.dlget = dlint[0]
 
         if self.dlget == DownloadItem.COMPLETE:
-           return DownloadItem.objects.all().filter(status=self.dlget).order_by('-id').filter()[0:30]
+            from datetime import timedelta
+            from django.utils import timezone
+            some_day_last_week = timezone.now().date() - timedelta(days=7)
+            monday_of_last_week = some_day_last_week - timedelta(days=(some_day_last_week.isocalendar()[2] - 1))
+            monday_of_this_week = monday_of_last_week + timedelta(days=7)
+            return DownloadItem.objects.filter(status=DownloadItem.COMPLETE, dateadded__gte=monday_of_last_week, dateadded__lt=monday_of_this_week).order_by('-dateadded')
         elif self.dlget == DownloadItem.QUEUE:
             return DownloadItem.objects.all().filter(retries__lte=settings.DOWNLOAD_RETRY_COUNT, status=self.dlget).order_by('priority','id')
         elif self.dlget == 99:

@@ -760,7 +760,11 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
 
             new_tvdb_item = TVShow()
             new_tvdb_item.id = instance.tvdbid_id
-            new_tvdb_item.save()
+            try:
+                new_tvdb_item.save()
+            except:
+                instance.tvdbid = None
+                pass
 
         if instance.tvdbid.ignored:
             logger.info("Show wont be added as it is marked as ignored")

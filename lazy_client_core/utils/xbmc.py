@@ -56,6 +56,9 @@ def send_notification(title, message):
 
     send_json("GUI.ShowNotification", data)
 
+def clean_library():
+    send_json("VideoLibrary.Clean", {})
+
 def add_file(f):
 
     #OK Lets get the path

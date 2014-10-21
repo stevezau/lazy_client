@@ -22,14 +22,15 @@ class Command(BaseCommand):
     option_list = BaseCommand.option_list
 
     def handle(self, *app_labels, **options):
-        #Task 1 - Cleanup downloaditem logs
+
+        logger.info("Task 1 - Cleanup downloaditem logs")
         time_threshold = datetime.datetime.now() - datetime.timedelta(days=60)
         dl_items = DownloadItem.objects.all().filter(dlstart__lt=time_threshold)
 
         for dlitem in dl_items:
             dlitem.clear_log()
 
-        #Task 2 - Truncate celeryd logs as it does not support log rotate
+        logger.info("Task 2 - Truncate celeryd logs as it does not support log rotate")
         max_bytes = 31457280
 
         celeryd_log = os.path.join(settings.BASE_DIR, "logs/celeryd.log")
@@ -40,10 +41,10 @@ class Command(BaseCommand):
         if os.path.getsize(celerybeat_log) > max_bytes:
             common.truncate_file(celerybeat_log, max_bytes)
 
-        #Task 3- Lets set the favs
+        logger.info("Task 3- Lets set the favs")
         TVShow.update_favs()
 
-        #Task 4 - Update tvshow objects older then 2 weeks
+        logger.info("Task 4 - Update tvshow objects older then 2 weeks")
         time_threshold = datetime.datetime.now() - datetime.timedelta(days=14)
         tvshows = TVShow.objects.all().filter(updated__lt=time_threshold)
 
@@ -74,3 +75,11 @@ class Command(BaseCommand):
             if tvshow.title is None or tvshow.title == "" or tvshow.title == " " or len(tvshow.title) == 0:
                 tvshow.delete()
                 continue
+
+        logger.info("Task 5: Clean library from xbmc")
+        if os.path.exists(settings.TV_PATH) and os.path.exists(settings.MOVIE_PATH):
+            from lazy_client_core.utils import xbmc
+            try:
+                xbmc.clean_library()
+            except Exception as e:
+                logger.exception(e)

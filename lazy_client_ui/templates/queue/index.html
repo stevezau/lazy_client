@@ -4,54 +4,65 @@
 {% block title %}{{ type }}{% endblock %}
 
 {% block submenu %}
-    <div class="container submenu">
-        <div class="btn-group btn-group-justified">
-            <div class="btn-group">
-                <a href="{% url "queue.index" "downloading" %}"><button spinner="tiny" type="button" class="btn btn-default btn-responsive btn-square {% if type|lower == "downloading" %} active{% endif %}">Downloading<span class="badge">{{ downloading }}</span></button></a>
-            </div>
-            <div class="btn-group">
-                <a href="{% url "queue.index" "queue" %}"><button spinner="tiny" type="button" class="btn btn-default btn-responsive btn-square {% if type|lower == "queue" %} active{% endif %}">Queue<span class="badge">{{ queue }}</span></button></a>
-            </div>
-            <div class="btn-group">
-                <a href="{% url "queue.index" "pending" %}"><button spinner="tiny" type="button" class="btn btn-responsive btn-default btn-square {% if type|lower == "pending" %} active{% endif %}">Pending<span class="badge">{{ pending }}</span></button></a>
-            </div>
-            <div class="btn-group">
-                <a href="{% url "queue.index" "error" %}"><button spinner="tiny" type="button" class="btn btn-default btn-responsive btn-square {% if type|lower == "errors" %} active{% endif %}">Errors<span class="badge">{{ errors }}</span></button></a>
-            </div>
-        </div>
-    </div>
+    {% include "queue/submenu.html" %}
 {% endblock %}
 
 {% block content %}
-        {% if object_list.count > 0 %}
-            <form id="formID">
-            <div class="media-list">
-                {% csrf_token %}
-                {% if doregroup %}
-                    {% regroup object_list_regroup by tvdbid as object_list_grouped %}
-                        {% for downloadgroup in object_list_grouped %}
-                            {% if downloadgroup.grouper == None or downloadgroup.list|length == 1%}
-                                {% for download in downloadgroup.list %}
-                                    {% with downloadgroup=None %}
-                                        {% include "queue/downloaditem_detail.html" %}
-                                    {% endwith %}
-                                {% endfor %}
+    {% if downloads.object_list.count > 0 %}
+        {% if downloads.has_other_pages %}
+            <div class="text-center">
+                <ul class="pagination btn-responsive">
+                    {% if downloads.has_previous %}
+                        <li><a href="?{{ downloads.previous_page_number.querystring }}">&lsaquo;&lsaquo;</a></li>
+                    {% else %}
+                        <li class="disabled"><a>&lsaquo;&lsaquo;</a></li>
+                    {% endif %}
+                    {% for page in downloads.pages %}
+                        {% if page %}
+                            {% ifequal page downloads.number %}
+                                <li class="active"><a href="?page={{ page }}">{{ page }}</a></li>
                             {% else %}
-                                {% with download=downloadgroup.list.0 %}
-                                   {% include "queue/downloaditem_detail.html" %}
-                                {% endwith %}
-                            {% endif %}
-                       {% endfor %}
-                {% else %}
-                    {% for download in object_list %}
-                        {% include "queue/downloaditem_detail.html" %}
+                                <li><a href="?{{ page.querystring }}" class="page">{{ page }}</a></li>
+                            {% endifequal %}
+                        {% else %}
+                            <li><span style="border-bottom: 0px; border-top: 0px">...</span></li>
+                        {% endif %}
                     {% endfor %}
-               {% endif %}
-            </div>
-            </form>
-
-        {% else %}
-            <div><p class="text-center"><strong>No items found with status of {{ type }}</strong></p></div>
+                    {% if downloads.has_next %}
+                        <li><a href="?{{ downloads.next_page_number.querystring }}">&rsaquo;&rsaquo;</a></li>
+                    {% else %}
+                        <li class="disabled"><a>&rsaquo;&rsaquo;</a></li>
+                    {% endif %}
+                </ul>
+                </div>
         {% endif %}
+        <form id="formID">
+        <div class="media-list">
+            {% csrf_token %}
+            {% if doregroup %}
+                {% regroup object_list by tvdbid as object_list_grouped %}
+                    {% for downloadgroup in object_list_grouped %}
+                        {% if downloadgroup.grouper == None or downloadgroup.list|length == 1%}
+                            {% for download in downloadgroup.list %}
+                                {% with downloadgroup=None %}
+                                    {% include "queue/downloaditem_detail.html" %}
+                                {% endwith %}
+                            {% endfor %}
+                        {% else %}
+                            {% with download=downloadgroup.list.0 %}
+                               {% include "queue/downloaditem_detail.html" %}
+                            {% endwith %}
+                        {% endif %}
+                   {% endfor %}
+            {% else %}
+                {% for download in object_list %}
+                    {% include "queue/downloaditem_detail.html" %}
+                {% endfor %}
+           {% endif %}
+        </div>
+        </form>
+    {% else %}
+        <div><p class="text-center"><strong>No items found with status of {{ type }}</strong></p></div>
+    {% endif %}
 
 {% endblock %}

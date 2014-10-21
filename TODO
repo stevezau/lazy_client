@@ -21,6 +21,12 @@ NEW VERSION ACTIONS
 -add  = "Steve" in lazysettings.yp
 
 
+-upgrade script, make it import git first.. create wrapper.. at same time do QTS detection
+--/share/MD0_DATA/.qpkg/Python/bin/easy_install-2.7
+--/opt/git/bin
+--/share/MD0_DATA/.qpkg/Python/bin/pip-2.7
+--/share/MD0_DATA/.qpkg/Optware/bin/ipkg
+
 -amazing race AU does not detect on thetvdb.com
 -convert AU to australia etc when searching tvdb
 

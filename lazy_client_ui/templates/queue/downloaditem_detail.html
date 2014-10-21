@@ -106,7 +106,7 @@
             </div>
 
                 {% if download.status == 4 %}
-                    <div><b>Extracted and Moved: {{ download.dlstart }}</b></div>
+                    <div class="alert alert-success"><b>Extracted and Moved: {{ download.dlstart }}</b></div>
                 {% endif %}
 
                 {% if download.onlyget %}
@@ -256,7 +256,7 @@
                             </div>
                         {% endif %}
 
-                        {% if download.status == 1 and download.retries < 3%}
+                        {% if download.status == 1 and download.retries < 3 %}
                             <div class="btn-group">
                                 <button type="button" class="btn btn-default btn-xl btn-responsive dropdown-toggle priority" data-toggle="dropdown">
                                 Priority:<span class="value">{% if download.priority >= 10 %}
@@ -275,9 +275,10 @@
                                </ul>
                             </div>
                         {% endif %}
-
+                    {% endif %}
+                    {% if download.status != 6 %}
                         <div class="btn-group hidden-xs">
-                                <a class="btn btn-default btn-xl btn-responsive" href="{% url "queue.log" download.id %}"><span class="glyphicon glyphicon-pencil"></span> Log</a>
+                            <a href="{% url "queue.log" download.id %}" class="btn btn-default btn-xl btn-responsive"><span class="glyphicon glyphicon-pencil"></span> Log</a>
                         </div>
                 {% endif %}
                 </div>

@@ -36,6 +36,7 @@ class IndexView(TemplateView):
         context['queue'] = common.num_queue()
         context['pending'] = common.num_pending()
         context['errors'] = common.num_error()
+        context['complete'] = common.num_complete(days=7)
 
         context['queue_running'] = QueueManager.queue_running()
 
