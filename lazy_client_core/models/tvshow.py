@@ -739,7 +739,7 @@ class TVShow(models.Model):
                         img_download.flush()
 
                         img_tmp = NamedTemporaryFile(delete=True)
-                        utils.resize_img(img_download.name, img_tmp.name, 180, 270, convert=settings.CONVERT_PATH)
+                        utils.resize_img(img_download.name, img_tmp.name, 180, 270, convert=settings.CONVERT_PATH, quality=60)
                         self.posterimg.save(str(self.id) + '-tvdb.jpg', File(img_tmp))
                     except Exception as e:
                         logger.exception("error saving image: %s" % e.message)
