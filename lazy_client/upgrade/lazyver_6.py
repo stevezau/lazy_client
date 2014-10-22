@@ -17,7 +17,7 @@ def upgrade():
                 img_file = str(tvdb_obj.posterimg.file)
                 img_temp = NamedTemporaryFile(delete=True)
 
-                utils.resize_img(img_file.name, img_temp.name, 180, 270, convert=settings.CONVERT_PATH, quality=60)
+                utils.resize_img(img_file, img_temp.name, 180, 270, convert=settings.CONVERT_PATH, quality=60)
                 tvdb_obj.posterimg.save(str(tvdb_obj.id) + '-tvdb.jpg', File(img_temp))
 
                 logger.info("Resized TVDB: %s" % img_file)
@@ -32,7 +32,7 @@ def upgrade():
                 img_file = str(imdb_obj.posterimg.file)
                 img_temp = NamedTemporaryFile(delete=True)
 
-                utils.resize_img(img_file.name, img_temp.name, 180, 270, convert=settings.CONVERT_PATH, quality=60)
+                utils.resize_img(img_file, img_temp.name, 180, 270, convert=settings.CONVERT_PATH, quality=60)
                 imdb_obj.posterimg.save(str(imdb_obj.id) + '-imdb.jpg', File(img_temp))
 
 
