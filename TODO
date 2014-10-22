@@ -13,6 +13,7 @@ Movies
 -Put epsiodes into database for schedule
 -On queue, make sure numbers at top are updated
 
+-make tvshow search faster using ajax fo
 
 NEW VERSION ACTIONS
 -remove ignore.yml
@@ -23,7 +24,7 @@ NEW VERSION ACTIONS
 
 -upgrade script, make it import git first.. create wrapper.. at same time do QTS detection
 --/share/MD0_DATA/.qpkg/Python/bin/easy_install-2.7
---/opt/git/bin
+--/opt/bin/git
 --/share/MD0_DATA/.qpkg/Python/bin/pip-2.7
 --/share/MD0_DATA/.qpkg/Optware/bin/ipkg
 --/mnt/ext/opt/ImageMagick/usr/local/sbin/convert

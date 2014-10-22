@@ -12,7 +12,6 @@ from django.db.models import Q
 from lazy_client_core.models import DownloadItem, TVShow, Movie
 from lazy_client_ui.forms import DownloadItemManualFixForm
 from pure_pagination import Paginator, EmptyPage, PageNotAnInteger
-from django.core.paginator import EmptyPage, PageNotAnInteger
 
 logger = logging.getLogger(__name__)
 

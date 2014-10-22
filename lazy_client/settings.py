@@ -122,6 +122,8 @@ TVSHOW_AUTOFIX_REPLACEMENTS = {
 
 ILLEGAL_CHARS_REGEX = '[:\"*?<>|]+'
 
+#Image processor
+CONVERT_PATH = None
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.6/howto/deployment/checklist/

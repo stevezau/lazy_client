@@ -745,7 +745,7 @@ class TVShow(models.Model):
                         im = im.resize(size, Image.ANTIALIAS)
                         im.save(img_tmp, "JPEG", quality=60)
 
-                        utils.resize_img(img_download.name, img_tmp.name, 180, 270, convert=settings.convert)
+                        utils.resize_img(img_download.name, img_tmp.name, 180, 270, convert=settings.CONVERT_PATH)
                     except Exception as e:
                         logger.exception("error saving image: %s" % e.message)
                         pass
