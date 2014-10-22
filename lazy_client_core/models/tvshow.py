@@ -738,13 +738,7 @@ class TVShow(models.Model):
                         img_download.write(urllib2.urlopen(str(poster_url)).read())
                         img_download.flush()
 
-                        size = (180, 270)
-
                         img_tmp = NamedTemporaryFile(delete=True)
-                        im = Image.open(img_download.name)
-                        im = im.resize(size, Image.ANTIALIAS)
-                        im.save(img_tmp, "JPEG", quality=60)
-
                         utils.resize_img(img_download.name, img_tmp.name, 180, 270, convert=settings.CONVERT_PATH)
                     except Exception as e:
                         logger.exception("error saving image: %s" % e.message)
