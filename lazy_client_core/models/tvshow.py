@@ -738,18 +738,18 @@ class TVShow(models.Model):
                         img_download.write(urllib2.urlopen(str(poster_url)).read())
                         img_download.flush()
 
-                        size = (214, 317)
+                        size = (180, 270)
 
-                        if os.path.getsize(img_download.name) > 0:
-                            img_tmp = NamedTemporaryFile(delete=True)
-                            im = Image.open(img_download.name)
-                            im = im.resize(size, Image.ANTIALIAS)
-                            im.save(img_tmp, "JPEG", quality=70)
+                        img_tmp = NamedTemporaryFile(delete=True)
+                        im = Image.open(img_download.name)
+                        im = im.resize(size, Image.ANTIALIAS)
+                        im.save(img_tmp, "JPEG", quality=60)
 
-                            self.posterimg.save(str(self.id) + '-tvdb.jpg', File(img_tmp))
+                        utils.resize_img(img_download.name, img_tmp.name, 180, 270, convert=settings.convert)
                     except Exception as e:
                         logger.exception("error saving image: %s" % e.message)
                         pass
+
         return self.posterimg
 
     def get_size(self):

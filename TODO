@@ -26,6 +26,7 @@ NEW VERSION ACTIONS
 --/opt/git/bin
 --/share/MD0_DATA/.qpkg/Python/bin/pip-2.7
 --/share/MD0_DATA/.qpkg/Optware/bin/ipkg
+--/mnt/ext/opt/ImageMagick/usr/local/sbin/convert
 
 -amazing race AU does not detect on thetvdb.com
 -convert AU to australia etc when searching tvdb
