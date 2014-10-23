@@ -77,6 +77,54 @@ class TVShowExcpetion():
     """
     """
 
+def get_by_path(tvshow_path):
+    tvshow_path = os.path.normpath(tvshow_path)
+
+    #First lets search by path
+    try:
+        tvshow_obj = TVShow.objects.get(tvshow_path)
+        logger.debug("Found matching tvshow item %s" % tvshow_obj.title)
+        return tvshow_obj
+    except ObjectDoesNotExist:
+        pass
+
+    #Lets try find it by ID on TheTVDB.com
+    try:
+        tvdbapi = Tvdb(convert_xem=True)
+        tvdb_obj = tvdbapi[os.path.basename(tvshow_path)]
+        tvdbcache_obj = TVShow.objects.get(id=tvdb_obj)
+        logger.debug("Found matching tvdbcache item %s" % tvdbcache_obj.id)
+        return tvdbcache_obj
+    except:
+        pass
+
+    raise Exception("Didn't find matchin tvshow object")
+
+
+def update_show_favs():
+    tvdbapi = Tvdb()
+    tvdbfavs = tvdbapi.get_favs()
+
+    if tvdbfavs and len(tvdbfavs) > 0:
+        #now lets sort them all out
+        for tvdbfav in tvdbfavs:
+            try:
+                tvshow = TVShow.objects.get(id=tvdbfav)
+                tvshow.favorite = True
+                tvshow.save()
+            except ObjectDoesNotExist:
+                #not found, lets add it
+                tvshow = TVShow()
+                tvshow.id = tvdbfav
+                tvshow.favorite = True
+                tvshow.save()
+
+        #now remove favs that should not be there
+        for tvshow in TVShow.objects.filter(favorite=True):
+            if tvshow.id not in tvdbfavs:
+                logger.info("Removing show as fav as it was not marked as fav in thetvdb.com")
+                tvshow.favorite = False
+                tvshow.save()
 
 
 class TVShow(models.Model):
@@ -112,57 +160,6 @@ class TVShow(models.Model):
 
     tvdbapi = Tvdb(convert_xem=True)
     tvdb_obj = None
-
-    @staticmethod
-    def get_by_path(tvshow_path):
-        tvshow_path = os.path.normpath(tvshow_path)
-
-        #First lets search by path
-        try:
-            tvshow_obj = TVShow.objects.get(tvshow_path)
-            logger.debug("Found matching tvshow item %s" % tvshow_obj.title)
-            return tvshow_obj
-        except ObjectDoesNotExist:
-            pass
-
-        #Lets try find it by ID on TheTVDB.com
-        try:
-            tvdbapi = Tvdb(convert_xem=True)
-            tvdb_obj = tvdbapi[os.path.basename(tvshow_path)]
-            tvdbcache_obj = TVShow.objects.get(id=tvdb_obj)
-            logger.debug("Found matching tvdbcache item %s" % tvdbcache_obj.id)
-            return tvdbcache_obj
-        except:
-            pass
-
-        raise Exception("Didn't find matchin tvshow object")
-
-    @staticmethod
-    def update_favs():
-        tvdbapi = Tvdb()
-        tvdbfavs = tvdbapi.get_favs()
-
-        if tvdbfavs and len(tvdbfavs) > 0:
-            #now lets sort them all out
-            for tvdbfav in tvdbfavs:
-                try:
-                    tvshow = TVShow.objects.get(id=tvdbfav)
-                    tvshow.favorite = True
-                    tvshow.save()
-                except ObjectDoesNotExist:
-                    #not found, lets add it
-                    tvshow = TVShow()
-                    tvshow.id = tvdbfav
-                    tvshow.favorite = True
-                    tvshow.save()
-                    tvshow.update_from_tvdb()
-
-            #now remove favs that should not be there
-            for tvshow in TVShow.objects.filter(favorite=True):
-                if tvshow.id not in tvdbfavs:
-                    logger.info("Removing show as fav as it was not marked as fav in thetvdb.com")
-                    tvshow.favorite = False
-                    tvshow.save()
 
     def set_ignored(self, ignored):
         if ignored and self.is_favorite():
@@ -741,6 +738,9 @@ class TVShow(models.Model):
                         img_tmp = NamedTemporaryFile(delete=True)
                         utils.resize_img(img_download.name, img_tmp.name, 180, 270, convert=settings.CONVERT_PATH, quality=60)
                         self.posterimg.save(str(self.id) + '-tvdb.jpg', File(img_tmp))
+                        img_download.close()
+                        img_tmp.close()
+
                     except Exception as e:
                         logger.exception("error saving image: %s" % e.message)
                         pass
@@ -1364,7 +1364,8 @@ def add_new_tvdbitem(sender, created, instance, **kwargs):
         if not instance.id:
             instance.id = instance.get_tvdbid()
 
-        instance.update_from_tvdb()
+        if not instance.title:
+            instance.update_from_tvdb()
 
         if not instance.title:
             logger.error("Unable to figure out tvdb info")

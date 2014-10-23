@@ -145,10 +145,8 @@ def tvshows(request):
             #Remove local shows found in tvdb
             for show in tvdb.search(search):
                 if show['id'] not in local_ids:
-                    tvshow = TVShow(show['id'])
-                    tvshow.save()
-                    tvshow.update_from_tvdb(update_imdb=False)
-                    shows.append(tvshow)
+                    tvshow = TVShow()
+                    tvdb_shows.append(show)
 
             from operator import itemgetter, attrgetter, methodcaller
             shows = sorted(shows, key=methodcaller('exists'), reverse=True)
@@ -157,6 +155,7 @@ def tvshows(request):
                 return redirect('manage.tvshows.detail', pk=shows[0].id)
 
             context['shows'] = shows
+
         return render(request, 'manage/tvshows/index.html', context)
     else:
 

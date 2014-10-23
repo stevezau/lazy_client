@@ -6,6 +6,7 @@ from django.db.models import Q
 from lazy_common.tvdb_api import Tvdb
 from lazy_common.tvdb_api.tvdb_exceptions import tvdb_error
 from django.conf import settings
+from lazy_client_core.models.tvshow import update_show_favs
 import shutil
 import datetime
 
@@ -64,7 +65,7 @@ def upgrade():
 
 
     #Lets set the favs
-    TVShow.update_favs()
+    update_show_favs()
 
     #Now lets remove duplicates in Ignore.yml
     lines_seen = set()

@@ -43,23 +43,21 @@ REQUESTS_PATH_TEMP = os.path.join(INCOMING_PATH, "Requests")
 TV_PATH = os.path.join(DATA_PATH, "TVShows")
 MOVIE_PATH = os.path.join(DATA_PATH, "Movies")
 
-
 # FTP Details
 FTP_IP = "66.90.73.180"
 FTP_PORT = 32245
 FTP_USER = "XXXX"
 FTP_PASS = "XXXX"
 
-
 # Flexget get files
 FLEXGET_APPROVED = "/home/media/.flexget/approve.yml"
 FLEXGET_IGNORE = "/home/media/.flexget/ignore.yml"
 
 # XBMC API (Auto library updates)
+XBMC_API_URL = 'http://192.168.0.190:8080/jsonrpc'
 
-XBMC_API_URLS = [
-    'http://192.168.0.190:8080/jsonrpc'
-]
+#Imagemagick Convert
+#CONVERT_PATH = /usr/local/bin/convert
 
 # Default Queue
 QUEUE = "db"

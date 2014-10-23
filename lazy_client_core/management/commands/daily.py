@@ -10,6 +10,7 @@ import os
 logger = logging.getLogger(__name__)
 from lazy_client_core.utils import common
 from lazy_client_core.models import TVShow
+from lazy_client_core.models.tvshow import update_show_favs
 from lazy_common.tvdb_api import Tvdb
 from lazy_common.tvdb_api.tvdb_exceptions import tvdb_error
 
@@ -42,7 +43,7 @@ class Command(BaseCommand):
             common.truncate_file(celerybeat_log, max_bytes)
 
         logger.info("Task 3- Lets set the favs")
-        TVShow.update_favs()
+        update_show_favs()
 
         logger.info("Task 4 - Update tvshow objects older then 2 weeks")
         time_threshold = datetime.datetime.now() - datetime.timedelta(days=14)

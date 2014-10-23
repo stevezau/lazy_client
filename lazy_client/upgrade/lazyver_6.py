@@ -20,6 +20,9 @@ def upgrade():
                 utils.resize_img(img_file, img_temp.name, 180, 270, convert=settings.CONVERT_PATH, quality=60)
                 tvdb_obj.posterimg.save(str(tvdb_obj.id) + '-tvdb.jpg', File(img_temp))
 
+                img_file.close()
+                img_temp.close()
+
                 logger.info("Resized TVDB: %s" % img_file)
             except IOError as e:
                 logger.info(e)
@@ -35,6 +38,8 @@ def upgrade():
                 utils.resize_img(img_file, img_temp.name, 180, 270, convert=settings.CONVERT_PATH, quality=60)
                 imdb_obj.posterimg.save(str(imdb_obj.id) + '-imdb.jpg', File(img_temp))
 
+                img_file.close()
+                img_temp.close()
 
                 logger.info("Resized IMDB: %s" % img_file)
             except IOError as e:

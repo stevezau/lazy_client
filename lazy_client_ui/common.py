@@ -40,8 +40,6 @@ def num_error():
 def num_complete(days=7):
     from datetime import timedelta
     from django.utils import timezone
-    some_day_last_week = timezone.now().date() - timedelta(days=7)
-    monday_of_last_week = some_day_last_week - timedelta(days=(some_day_last_week.isocalendar()[2] - 1))
-    monday_of_this_week = monday_of_last_week + timedelta(days=7)
-    return DownloadItem.objects.filter(status=DownloadItem.COMPLETE, dateadded__gte=monday_of_last_week, dateadded__lt=monday_of_this_week).count()
+    some_day_last_week = timezone.now().date() - timedelta(days=14)
+    return DownloadItem.objects.filter(status=DownloadItem.COMPLETE, dateadded__gt=some_day_last_week).order_by('-dateadded').count()
 

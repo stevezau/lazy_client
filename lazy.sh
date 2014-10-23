@@ -5,6 +5,8 @@ BASE_PATH=`dirname $SCRIPT`
 RED='\e[0;31m'
 NC='\e[0m' # No Color
 
+PATH="$PATH:/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
+
 cd $BASE_PATH
 
 MANAGE_SCRIPT="$BASE_PATH/manage.py"
@@ -12,9 +14,45 @@ WEBUI_PID_FILE="lazy_web_server.pid"
 CELERYD_PID_FILE="celeryd.pid"
 CELERYBEAT_PID_FILE="celeryd_beat.pid"
 
-export C_FORCE_ROOT="true"
+FLEXGET_BIN="env flexget"
+GIT_BIN="env git"
+EASY_INSTALL_BIN="env easy_install"
+
+FLEXGET_HOME="$HOME/.flexget/"
+
 
 chmod +x $MANAGE_SCRIPT
+
+if grep -q "QNAP" /proc/sysinfo; then
+    export C_FORCE_ROOT="true"
+    EASY_INSTALL_BIN="/share/MD0_DATA/.qpkg/Python/bin/easy_install-2.7"
+    GIT_BIN="/opt/bin/git"
+    FLEXGET_BIN="/opt/../Python/bin/flexget"
+
+    FLEXGET_HOME="$BASE_PATH/.flexget"
+    FLEXGET_HOME_ADMIN="/root/.flexget"
+    FLEXGET_ROOT_FOLDER="/share/homes/admin/.flexget"
+    TVDB_TMP_FOLDER="$BASE_PATH/tvdb_api-u0"
+
+    #First setup symlinks and create folders
+    if [ ! -e "$FLEXGET_HOME_ADMIN" ]; then
+        ln -s $FLEXGET_HOME $FLEXGET_HOME_ADMIN
+    fi
+
+    if [ ! -e "$FLEXGET_ROOT_FOLDER" ]; then
+        ln -s $FLEXGET_HOME $FLEXGET_ROOT_FOLDER
+    fi
+
+    if [ ! -e "$TVDB_TMP_FOLDER" ]; then
+        mkdir $TVDB_TMP_FOLDER
+    fi
+
+    if [ ! -h "/tmp/tvdb_api-u0" ]; then
+        rm -rf /tmp/tvdb_api-u0
+        ln -s $TVDB_TMP_FOLDER /tmp/tvdb_api-u0
+    fi
+fi
+
 
 function upgrade {
     if [ "$2" != "-l" ]; then
@@ -25,8 +63,13 @@ function upgrade {
     $MANAGE_SCRIPT $ARGS
 }
 
+function flexget() {
+	$FLEXGET_BIN -c $FLEXGET_HOME/config-xvid.yml execute
+	$FLEXGET_BIN execute --disable-tracking 
+}
+
 function pull_git() {
-    /usr/bin/env git pull
+    $GIT_BIN pull
 
     if [ "$?" == "0" ]; then
         echo "Pulled latest from git"
@@ -40,11 +83,11 @@ function pull_git() {
 function upgrade_reqs() {
     #First we need to install all the requirements
     if [ "$UID" == "0" ]; then
-        /usr/bin/env pip install -r "requirements.txt"
-        /usr/bin/env easy_install --upgrade http://drifthost.com/lazy_common-0.1-py2.7.egg
+        $GIT_BIN pip install -r "requirements.txt"
+        $GIT_BIN easy_install --upgrade http://drifthost.com/lazy_common-0.1-py2.7.egg
     else
-        /usr/bin/env sudo /usr/bin/env pip install -r "requirements.txt"
-        /usr/bin/env sudo /usr/bin/env easy_install --upgrade http://drifthost.com/lazy_common-0.1-py2.7.egg
+        /usr/bin/env sudo $GIT_BIN install -r "requirements.txt"
+        /usr/bin/env sudo $EASY_INSTALL_BIN --upgrade http://drifthost.com/lazy_common-0.1-py2.7.egg
     fi
 
     if [ "$?" == "0" ]; then
@@ -153,6 +196,9 @@ case $1 in
     setup)
         setup
         ;;
+    flexget)
+        flexget
+        ;;
     restart)
         stop_all
         start_all
@@ -193,7 +239,7 @@ case $1 in
 		esac
 	;;
     *)
-      echo "usage: start|stop|check|upgrade [celeryd|celerybeat|webui]"
+      echo "usage: start|stop|check|flexget|upgrade [celeryd|celerybeat|webui]"
 	;;
 esac
 
