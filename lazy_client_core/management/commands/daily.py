@@ -60,10 +60,8 @@ class Command(BaseCommand):
                     if "HTTP Error 404" in str(e):
                         continue
                 except KeyError:
-                    tvshow.delete()
                     continue
                 except IndexError:
-                    tvshow.delete()
                     continue
             else:
                 tvshow.update_from_tvdb()
