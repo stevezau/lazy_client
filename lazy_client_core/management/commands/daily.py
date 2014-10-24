@@ -58,7 +58,6 @@ class Command(BaseCommand):
                     tvdb[int(tvshow.id)]
                 except tvdb_error as e:
                     if "HTTP Error 404" in str(e):
-                        tvshow.delete()
                         continue
                 except KeyError:
                     tvshow.delete()

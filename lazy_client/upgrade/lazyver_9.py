@@ -19,6 +19,11 @@ def upgrade():
     for p in MetaParserCache.objects.all():
         p.delete()
 
+    #Delete all genres and networs
+    from lazy_client_core.models import GenreNames, TVShowNetworks
+    TVShowNetworks.objects.all().delete()
+    GenreNames.objects.all().delete()
+
     #Update tvshow objects
     count = TVShow.objects.all().count()
     up_to = 0

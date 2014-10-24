@@ -2,6 +2,7 @@ from south.modelsinspector import add_introspection_rules
 from django.db import models
 
 add_introspection_rules([], ["^lazy_client_core\.utils\.jsonfield\.fields\.JSONField"])
+add_introspection_rules([], ["^lazy_client_core\.utils\.common\.LowerCaseCharField"])
 
 class Version(models.Model):
     class Meta:

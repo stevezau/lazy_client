@@ -11,10 +11,10 @@ from django.dispatch import receiver
 from django.db.models.signals import pre_save, post_save
 from django.core.exceptions import ObjectDoesNotExist
 from flexget.utils.imdb import ImdbSearch, ImdbParser
-from PIL import Image
-
 from lazy_client_core.utils.common import OverwriteStorage
 from lazy_client_core.utils.jsonfield.fields import JSONField
+from lazy_common import utils
+from django.conf import settings
 
 from django.db import models
 
@@ -80,15 +80,9 @@ class Movie(models.Model):
                     img_download.write(urllib2.urlopen(imdbobj.photo).read())
                     img_download.flush()
 
-                    size = 214, 317
-
-                    if os.path.getsize(img_download.name) > 0:
-                        img_tmp = NamedTemporaryFile(delete=True)
-                        im = Image.open(img_download.name)
-                        im = im.resize(size, Image.ANTIALIAS)
-                        im.save(img_tmp, "JPEG", quality=70)
-
-                        self.posterimg.save(str(self.id) + '-imdb.jpg', File(img_tmp))
+                    img_tmp = NamedTemporaryFile(delete=True)
+                    utils.resize_img(img_download.name, img_tmp.name, 180, 270, convert=settings.CONVERT_PATH, quality=60)
+                    self.posterimg.save(str(self.id) + '-imdb.jpg', File(img_tmp))
                 except Exception as e:
                     logger.error("error saving image: %s" % e.message)
 

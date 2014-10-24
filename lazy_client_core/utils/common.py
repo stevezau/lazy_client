@@ -10,10 +10,29 @@ from django.conf import settings
 from easy_extract.archive_finder import ArchiveFinder
 from lazy_client_core.utils.rar import RarArchive
 from lazy_common import utils
+from django.core.files.storage import FileSystemStorage
+
+from django.db.models.fields import CharField
 
 logger = logging.getLogger(__name__)
 
-from django.core.files.storage import FileSystemStorage
+
+class LowerCaseCharField(CharField):
+    """
+    Defines a charfield which automatically converts all inputs to
+    lowercase and saves.
+    """
+
+    def pre_save(self, model_instance, add):
+        """
+        Converts the string to lowercase before saving.
+        """
+        current_value = getattr(model_instance, self.attname)
+        setattr(model_instance, self.attname, current_value.lower())
+        return getattr(model_instance, self.attname)
+
+
+
 class OverwriteStorage(FileSystemStorage):
 
     def get_available_name(self, name):

@@ -27,6 +27,7 @@ from celery.contrib.abortable import AbortableAsyncResult
 from celery.contrib.abortable import AbortableTask
 from djcelery_transactions import task
 import time
+from lazy_client_core.utils.common import LowerCaseCharField
 
 logger = logging.getLogger(__name__)
 
@@ -158,10 +159,8 @@ class GenreNames(models.Model):
     def __unicode__(self):
         return self.genre
 
-    def clean(self):
-        self.genre = self.name.capitalize()
-
-    genre = models.CharField(max_length=150, db_index=True, unique=True)
+    genre = LowerCaseCharField(max_length=150, db_index=True, unique=True)
+    genre_orig = models.CharField(max_length=150, db_index=True)
 
 
 ########################################
@@ -178,10 +177,9 @@ class TVShowNetworks(models.Model):
     def __unicode__(self):
         return self.network
 
-    network = models.CharField(max_length=150, db_index=True, unique=True)
+    network = LowerCaseCharField(max_length=150, db_index=True, unique=True)
+    network_orig = models.CharField(max_length=150, db_index=True)
 
-    def clean(self):
-        self.network = self.name.capitalize()
 
 ##################################
 ########### TV SHOWS ##############
@@ -702,13 +700,13 @@ class TVShow(models.Model):
 
     def get_network(self):
         if self.network:
-            return self.network.network
+            return self.network.network_orig
 
     def set_network(self, network):
         try:
             network = TVShowNetworks.objects.get(network=network)
         except:
-            network = TVShowNetworks(network=network)
+            network = TVShowNetworks(network=network, network_orig=network)
             network.save()
 
         self.network = network
@@ -727,13 +725,13 @@ class TVShow(models.Model):
             try:
                 genre_obj = GenreNames.objects.get(genre=genre)
             except:
-                genre_obj = GenreNames(genre=genre)
+                genre_obj = GenreNames(genre=genre, genre_orig=genre)
                 genre_obj.save()
 
             self.tvshowgenres_set.create(tvdbid=self.id, genre=genre_obj)
 
     def get_genres(self):
-        return [genre.genre for genre in self.tvshowgenres_set.all()]
+        return [genre.genre_orig for genre in self.tvshowgenres_set.all()]
 
     def set_poster(self, poster_url):
         try:
@@ -744,7 +742,6 @@ class TVShow(models.Model):
             img_tmp = NamedTemporaryFile(delete=True)
             utils.resize_img(img_download.name, img_tmp.name, 180, 270, convert=settings.CONVERT_PATH, quality=60)
             self.posterimg.save(str(self.id) + '-tvdb.jpg', File(img_tmp))
-            img_download.close()
             img_tmp.close()
 
         except Exception as e:

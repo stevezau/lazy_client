@@ -35,7 +35,7 @@ class Migration(SchemaMigration):
 
         # Adding field 'TVShow.network'
         db.add_column('tvdbcache', 'network',
-                      self.gf('django.db.models.fields.related.OneToOneField')(to=orm['lazy_client_core.TVShowNetworks'], unique=True, null=True, blank=True),
+                      self.gf('django.db.models.fields.related.ForeignKey')(to=orm['lazy_client_core.TVShowNetworks'], null=True, blank=True),
                       keep_default=False)
 
 
@@ -132,7 +132,7 @@ class Migration(SchemaMigration):
             'ignored': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'imdbid': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['lazy_client_core.Movie']", 'null': 'True', 'on_delete': 'models.DO_NOTHING', 'blank': 'True'}),
             'localpath': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'blank': 'True'}),
-            'network': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['lazy_client_core.TVShowNetworks']", 'unique': 'True', 'null': 'True', 'blank': 'True'}),
+            'network': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['lazy_client_core.TVShowNetworks']", 'null': 'True', 'blank': 'True'}),
             'posterimg': ('django.db.models.fields.files.ImageField', [], {'max_length': '100', 'null': 'True', 'blank': 'True'}),
             'status': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
             'title': ('django.db.models.fields.CharField', [], {'max_length': '200', 'db_index': 'True'}),
