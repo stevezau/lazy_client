@@ -702,14 +702,15 @@ class TVShow(models.Model):
         if self.network:
             return self.network.network_orig
 
-    def set_network(self, network):
+    def set_network(self, network_name):
         try:
-            network = TVShowNetworks.objects.get(network=network.lower())
+            network = TVShowNetworks.objects.get(network=network_name.lower())
         except:
-            network = TVShowNetworks(network=network.lower(), network_orig=network)
-            network.save()
+            logger.debug("Creating a new network %s" % network_name)
+            network_obj = TVShowNetworks(network=network_name.lower(), network_orig=network_name)
+            network_obj.save()
 
-        self.network = network
+        self.network = network_obj
 
     def set_description(self, description):
         self.description = description
