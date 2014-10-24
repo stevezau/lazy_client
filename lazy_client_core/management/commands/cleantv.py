@@ -107,6 +107,7 @@ class Command(BaseCommand):
         if options['updateimgs']:
             for tvdb_obj in TVShow.objects.all():
                 tvdb_obj.update_from_tvdb()
+                tvdb_obj.save()
 
         if options['all'] or options['updatecache']:
             logger.info('Performing tvdb update')
@@ -132,8 +133,10 @@ class Command(BaseCommand):
                             hours = diff.seconds / 60 / 60
                             if hours > 168:
                                 tvdb_obj.update_from_tvdb()
+                                tvdb_obj.save()
                     else:
                         tvdb_obj.update_from_tvdb()
+                        tvdb_obj.save()
                 except Exception as e:
                     logger.info("%s: failed getting latest data from tvdb.com %s" % (tvdb_obj.title, e.message))
                     pass

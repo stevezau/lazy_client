@@ -24,7 +24,7 @@
 
         <div class="detail">
             <div class="top">
-                <h4><span class="title">{{ download.title|format_torrent_title }}</span>
+                <h4><span class="title" title="{{ download.title }}">{{ download.title|format_torrent_title }}</span>
                     {% if download.get_year %}<small><i>({{ download.get_year }})</i></small>{% endif %}
 
                     {% if downloadgroup.list|length == 1 or  downloadgroup.list|length == 0 or not downloadgroup %}
@@ -65,14 +65,14 @@
 
                         {% if download.tvdbid %}
                             {% if not download.imdbid %}
-                                {% for genre in download.tvdbid.get_genres_list %}
+                                {% for genre in download.tvdbid.get_genres %}
                                     <span class="label label-warning">{{ genre|title }}</span>
                                 {% endfor %}
                             {% endif %}
 
-                            {% for network in download.tvdbid.get_networks %}
-                                 <span class="label label-default">{{ network|title }}</span>
-                            {% endfor %}
+                            {% if download.tvdbid.get_network %}
+                                 <span class="label label-default">{{ download.tvdbid.get_network|title }}</span>
+                            {% endif %}
                         {% endif %}
                     </span>
                 </h4>

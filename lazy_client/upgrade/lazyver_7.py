@@ -53,6 +53,7 @@ def upgrade():
                 continue
         else:
             tvshow.update_from_tvdb()
+            tvshow.save()
 
         if "Duplicate of" in tvshow.title:
             tvshow.delete()

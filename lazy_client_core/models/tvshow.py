@@ -16,7 +16,6 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 
 from lazy_client_core.utils import common
-from PIL import Image
 from lazy_common import utils
 
 from lazy_client_core.utils.common import OverwriteStorage
@@ -32,46 +31,6 @@ import time
 logger = logging.getLogger(__name__)
 
 from threading import Thread
-
-@task(bind=True, base=AbortableTask)
-def fix_missing_job(self, tvshow_id, fix):
-
-    tvshow_obj = TVShow.objects.get(id=tvshow_id)
-
-    scanner_thread = TVShowScanner(tvshow_obj, fix=fix)
-    scanner_thread.start()
-
-    try:
-        while True:
-            time.sleep(1)
-
-            try:
-                if self.is_aborted():
-                    scanner_thread.abort()
-                    scanner_thread.join()
-                    break
-            except:
-                pass
-
-            if not scanner_thread.isAlive():
-                break
-    finally:
-        tvshow_obj.fix_jobid = None
-        tvshow_obj.save()
-
-class TVShowMappings(models.Model):
-    class Meta:
-        """ Meta """
-        db_table = 'tvshowmappings'
-        ordering = ['-id']
-        app_label = 'lazy_client_core'
-
-    def __unicode__(self):
-        return self.title
-
-    title = models.CharField(max_length=150, db_index=True, unique=False)
-    tvdbid = models.ForeignKey('TVShow')
-
 
 class TVShowExcpetion():
     """
@@ -100,6 +59,31 @@ def get_by_path(tvshow_path):
 
     raise Exception("Didn't find matchin tvshow object")
 
+@task(bind=True, base=AbortableTask)
+def fix_missing_job(self, tvshow_id, fix):
+
+    tvshow_obj = TVShow.objects.get(id=tvshow_id)
+
+    scanner_thread = TVShowScanner(tvshow_obj, fix=fix)
+    scanner_thread.start()
+
+    try:
+        while True:
+            time.sleep(1)
+
+            try:
+                if self.is_aborted():
+                    scanner_thread.abort()
+                    scanner_thread.join()
+                    break
+            except:
+                pass
+
+            if not scanner_thread.isAlive():
+                break
+    finally:
+        tvshow_obj.fix_jobid = None
+        tvshow_obj.save()
 
 def update_show_favs():
     tvdbapi = Tvdb()
@@ -117,7 +101,11 @@ def update_show_favs():
                 tvshow = TVShow()
                 tvshow.id = tvdbfav
                 tvshow.favorite = True
-                tvshow.save()
+                try:
+                    tvshow.save()
+                except:
+                    pass
+
 
         #now remove favs that should not be there
         for tvshow in TVShow.objects.filter(favorite=True):
@@ -126,6 +114,75 @@ def update_show_favs():
                 tvshow.favorite = False
                 tvshow.save()
 
+
+###########################################
+########### TV SHOW MAPPING ###############
+###########################################
+
+class TVShowMappings(models.Model):
+    class Meta:
+        """ Meta """
+        db_table = 'tvshowmappings'
+        ordering = ['-id']
+        app_label = 'lazy_client_core'
+
+    def __unicode__(self):
+        return self.title
+
+    title = models.CharField(max_length=150, db_index=True, unique=False)
+    tvdbid = models.ForeignKey('TVShow')
+
+
+#########################################
+########### TV SHOW GENRES ##############
+#########################################
+
+class TVShowGenres(models.Model):
+    class Meta:
+        """ Meta """
+        db_table = 'tvshow_genres'
+        ordering = ['-id']
+        app_label = 'lazy_client_core'
+
+    genre = models.ForeignKey('GenreNames')
+    tvdbid = models.ForeignKey('TVShow')
+
+
+class GenreNames(models.Model):
+    class Meta:
+        """ Meta """
+        db_table = 'genre_names'
+        ordering = ['-id']
+        app_label = 'lazy_client_core'
+
+    def __unicode__(self):
+        return self.genre
+
+    def clean(self):
+        self.genre = self.name.capitalize()
+
+    genre = models.CharField(max_length=150, db_index=True, unique=True)
+
+
+########################################
+########### TV SHOW NETWORKS ###########
+########################################
+
+class TVShowNetworks(models.Model):
+    class Meta:
+        """ Meta """
+        db_table = 'tvshow_networks'
+        ordering = ['-id']
+        app_label = 'lazy_client_core'
+
+    network = models.CharField(max_length=150, db_index=True, unique=True)
+
+    def clean(self):
+        self.genre = self.name.capitalize()
+
+##################################
+########### TV SHOWS ##############
+###################################
 
 class TVShow(models.Model):
 
@@ -146,7 +203,6 @@ class TVShow(models.Model):
 
     title = models.CharField(max_length=200, db_index=True)
     posterimg = models.ImageField(upload_to=".", storage=OverwriteStorage(), blank=True, null=True)
-    networks = models.CharField(max_length=50, blank=True, null=True)
     genres = models.CharField(max_length=200, blank=True, null=True)
     description = models.TextField(max_length=255, blank=True, null=True)
     updated = models.DateTimeField(blank=True, null=True)
@@ -157,6 +213,7 @@ class TVShow(models.Model):
     status = models.IntegerField(choices=STATUS_CHOICES, blank=True, null=True)
     fix_report = PickledObjectField()
     fix_jobid = models.CharField(max_length=255, blank=True, null=True)
+    network = models.ForeignKey(TVShowNetworks, blank=True, null=True)
 
     tvdbapi = Tvdb(convert_xem=True)
     tvdb_obj = None
@@ -293,24 +350,6 @@ class TVShow(models.Model):
             return True
 
         return False
-
-    def get_genres_list(self):
-        genres = []
-
-        if self.genres:
-            for genre in self.genres.split("|"):
-                if len(genre) > 1:
-                    genres.append(genre)
-        return genres
-
-    def get_networks(self):
-        networks = []
-
-        if self.networks:
-            for network in self.networks.split("|"):
-                networks.append(network)
-
-        return networks
 
     def get_latest_ep(self, season):
         tvdb_obj = self.get_tvdb_obj()
@@ -576,48 +615,16 @@ class TVShow(models.Model):
         else:
             return tvdb_obj[season].keys()
 
+    def set_titles(self, titles):
+        #delete existing shows
+        for obj in self.tvshowmappings_set.all():
+            obj.delete()
+
+        for title in titles:
+            self.tvshowmappings_set.create(tvdbid=self.id, title=title)
 
     def get_titles(self, refresh=False):
-
-        if refresh:
-            tvdb_obj = self.get_tvdb_obj()
-
-            titles = []
-
-            if tvdb_obj is not None and 'seriesname' in tvdb_obj.data and tvdb_obj['seriesname'] is not None:
-                    title = self.clean_title(tvdb_obj['seriesname'], lower=False)
-                    title_lower = title.lower()
-                    if title is not None:
-                        titles.append(title_lower)
-                        self.title = title
-
-            #Find alt names
-            try:
-                tvdbapi = Tvdb()
-                search_results = tvdbapi.search(self.title)
-
-                for result in search_results:
-                    if result['seriesid'] == str(self.id):
-                        if 'aliasnames' in result:
-                            for alias in result['aliasnames']:
-                                alias = self.clean_title(alias)
-                                if alias not in titles:
-                                    titles.append(alias)
-                        break
-            except:
-                pass
-
-            #delete existing shows
-            for obj in self.tvshowmappings_set.all():
-                obj.delete()
-
-            for title in titles:
-                self.tvshowmappings_set.create(tvdbid=self.id, title=title)
-
-            self.save()
-
         titles = [mapping.title for mapping in self.tvshowmappings_set.all()]
-
         return titles
 
     def get_tvdbid(self):
@@ -690,102 +697,111 @@ class TVShow(models.Model):
 
         return title.strip()
 
-    def get_network(self, refresh=False):
-        if refresh:
-            tvdb_obj = self.get_tvdb_obj()
+    def get_network(self):
+        if self.network:
+            return self.network.network
 
-            if tvdb_obj is not None and 'network' in tvdb_obj.data and tvdb_obj['network']:
-                networks = tvdb_obj['network'].encode('ascii', 'ignore')
-                if networks and len(networks) > 0:
-                    self.networks = networks
+    def set_network(self, network):
+        try:
+            network = TVShowNetworks.objects.get(network=network)
+        except:
+            network = TVShowNetworks(network=network)
+            network.save()
 
-        return self.networks
+        self.network = network
 
-    def get_description(self, refresh=False):
-        if refresh:
-            tvdb_obj = self.get_tvdb_obj()
+    def set_description(self, description):
+        self.description = description
 
-            if 'overview' in tvdb_obj.data and tvdb_obj['overview']:
-                overview = tvdb_obj['overview'].encode('ascii', 'ignore')
-                if overview and len(overview) > 0:
-                    self.description = tvdb_obj['overview'].encode('ascii', 'ignore')
-
+    def get_description(self):
         return self.description
 
-    def get_genres(self, refresh=False):
-        if refresh:
-            tvdb_obj = self.get_tvdb_obj()
+    def set_genres(self, genres):
+        for obj in self.tvshowgenres_set.all():
+            obj.delete()
 
-            if tvdb_obj is not None and 'genre' in tvdb_obj.data and tvdb_obj['genre']:
-                genre = tvdb_obj['genre'].encode('ascii', 'ignore')
-                if genre and len(genre) > 0:
-                    self.genres = tvdb_obj['genre']
+        for genre in genres:
+            try:
+                genre_obj = GenreNames.objects.get(genre=genre)
+            except:
+                genre_obj = GenreNames(genre=genre)
+                genre_obj.save()
 
-        return self.genres
+            self.tvshowgenres_set.create(tvdbid=self.id, genre=genre_obj)
 
-    def get_posterimg(self, refresh=False):
-        if refresh:
-            tvdb_obj = self.get_tvdb_obj()
+    def get_genres(self):
+        return self.tvshowgenres_set.all()
 
-            if tvdb_obj is not None and 'poster' in tvdb_obj.data:
-                poster_url = tvdb_obj['poster']
-                if poster_url:
-                    try:
-                        img_download = NamedTemporaryFile(delete=True)
-                        img_download.write(urllib2.urlopen(str(poster_url)).read())
-                        img_download.flush()
+    def set_poster(self, poster_url):
+        try:
+            img_download = NamedTemporaryFile(delete=True)
+            img_download.write(urllib2.urlopen(str(poster_url)).read())
+            img_download.flush()
 
-                        img_tmp = NamedTemporaryFile(delete=True)
-                        utils.resize_img(img_download.name, img_tmp.name, 180, 270, convert=settings.CONVERT_PATH, quality=60)
-                        self.posterimg.save(str(self.id) + '-tvdb.jpg', File(img_tmp))
-                        img_download.close()
-                        img_tmp.close()
+            img_tmp = NamedTemporaryFile(delete=True)
+            utils.resize_img(img_download.name, img_tmp.name, 180, 270, convert=settings.CONVERT_PATH, quality=60)
+            self.posterimg.save(str(self.id) + '-tvdb.jpg', File(img_tmp))
+            img_download.close()
+            img_tmp.close()
 
-                    except Exception as e:
-                        logger.exception("error saving image: %s" % e.message)
-                        pass
+        except Exception as e:
+            logger.exception("error saving image: %s" % e.message)
+            pass
 
+    def get_posterimg(self):
         return self.posterimg
 
     def get_size(self):
         if os.path.exists(self.get_local_path()):
             return utils.get_size(self.get_local_path())
 
-    def get_imdb(self, refresh=True):
-        if refresh:
-            tvdb_obj = self.get_tvdb_obj()
+    def set_imdb(self, imdbid_id):
+        self.imdbid_id = int(imdbid_id)
 
-            if tvdb_obj is not None and 'imdb_id' in tvdb_obj.data:
-                if tvdb_obj['imdb_id'] is not None:
-                    try:
-                        imdbid_id = tvdb_obj['imdb_id'].lstrip("tt")
-                        self.imdbid_id = int(imdbid_id)
+        from lazy_client_core.models.movie import Movie
 
-                        from lazy_client_core.models.movie import Movie
+        try:
+            imdbobj = Movie.objects.get(id=int(imdbid_id))
+        except ObjectDoesNotExist:
+            imdbobj = Movie()
+            imdbobj.id = int(imdbid_id)
+            imdbobj.save()
 
-                        try:
-                            imdbobj = Movie.objects.get(id=int(imdbid_id))
-                        except ObjectDoesNotExist:
-                            imdbobj = Movie()
-                            imdbobj.id = int(imdbid_id)
-                            imdbobj.save()
-
-                    except:
-                        pass
-
+    def get_imdb(self):
         return self.imdbid
 
     def get_status(self, refresh=False):
-        if refresh:
-            tvdb_obj = self.get_tvdb_obj()
-            status = tvdb_obj['status']
-
-            if status == "Continuing":
-                self.status = self.RUNNING
-            elif status == "Ended":
-                self.status = self.ENDED
-
         return self.status
+
+    def set_status(self, status):
+        if status == "Continuing":
+            self.status = self.RUNNING
+        elif status == "Ended":
+            self.status = self.ENDED
+
+    def update_from_dict(self, details):
+
+        ### DESC ###
+        if 'overview' in details:
+            overview = details['overview'].encode('ascii', 'ignore')
+            if overview and len(overview) > 0:
+                self.set_description(overview)
+
+        ### NETWORK ###
+        if 'network' in details:
+            self.set_network(details['network'].encode('ascii', 'ignore'))
+
+        ### TITLES ###
+        titles = []
+        if 'seriesname' in details:
+            self.title = self.clean_title(details['seriesname'])
+            titles.append(self.title)
+
+        if 'aliasnames' in details:
+            for alias in details['aliasnames']:
+                clean_alias = self.clean_title(alias)
+                if clean_alias not in titles:
+                    titles.append(clean_alias)
 
     def update_from_tvdb(self, update_imdb=True):
 
@@ -793,17 +809,71 @@ class TVShow(models.Model):
         tvdb_obj = self.get_tvdb_obj()
 
         if tvdb_obj is not None:
-            #Lets update everything..
-            self.get_titles(refresh=True)
-            self.get_network(refresh=True)
-            self.get_genres(refresh=True)
-            self.get_description(refresh=True)
-            self.get_posterimg(refresh=True)
-            self.get_status(refresh=True)
-            if update_imdb:
-                self.get_imdb(refresh=True)
+            #### Titles ####
+            titles = []
+            if 'seriesname' in tvdb_obj.data and tvdb_obj['seriesname'] is not None:
+                title = self.clean_title(tvdb_obj['seriesname'], lower=False)
+                title_lower = title.lower()
+                if title is not None:
+                    titles.append(title_lower)
+                    self.title = title
+
+            #Alt names
+            try:
+                tvdbapi = Tvdb()
+                search_results = tvdbapi.search(self.title)
+
+                for result in search_results:
+                    if result['seriesid'] == str(self.id):
+                        if 'aliasnames' in result:
+                            for alias in result['aliasnames']:
+                                alias = self.clean_title(alias)
+                                if alias not in titles:
+                                    titles.append(alias)
+                        break
+            except:
+                pass
+
+            self.set_titles(titles)
+
+            ### Network ###
+            if 'network' in tvdb_obj.data and tvdb_obj['network']:
+                network = tvdb_obj['network'].encode('ascii', 'ignore')
+                if network:
+                    self.set_network(network)
+
+            ### Genres ###
+            if 'genre' in tvdb_obj.data and tvdb_obj['genre']:
+                genres = []
+                genres_str = tvdb_obj['genre'].encode('ascii', 'ignore')
+                for genre in genres_str.split("|"):
+                    if len(genre) > 0:
+                        genres.append(genre)
+
+                self.set_genres(genres)
+
+            ### DESC ###
+            if 'overview' in tvdb_obj.data and tvdb_obj['overview']:
+                overview = tvdb_obj['overview'].encode('ascii', 'ignore')
+                if overview and len(overview) > 0:
+                    self.set_description(overview)
+
+            ### POSTER ###
+            if 'poster' in tvdb_obj.data and tvdb_obj['poster']:
+                self.set_poster(tvdb_obj['poster'])
+
+            ### STATUS ###
+            self.set_status(tvdb_obj['status'])
+
+            ### IMDB ###
+            if update_imdb and 'imdb_id' in tvdb_obj.data and tvdb_obj['imdb_id']:
+                try:
+                    imdbid_id = int(tvdb_obj['imdb_id'].lstrip("tt"))
+                    self.set_imdb(imdbid_id)
+                except:
+                    pass
+
             self.updated = datetime.now()
-            self.save()
         else:
             logger.info("Unable to get tvdbobject for %s" % self.title)
 
@@ -1179,7 +1249,7 @@ class TVShowScanner(Thread):
         self.tvshow_obj.save()
 
     def run(self):
-        self.tvshow_obj.get_titles(refresh=True)
+        self.tvshow_obj.update_from_tvdb()
         self.tvshow_obj.save()
         self.log("Attempting to fix %s" % self.tvshow_obj.title)
         logger.error("Attempting to fix %s" % self.tvshow_obj.title)

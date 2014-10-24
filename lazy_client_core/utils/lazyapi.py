@@ -1,11 +1,9 @@
 __author__ = 'steve'
 from lazy_common import requests
 import urlparse
-import os
 import json
 import logging
-from requests.exceptions import ConnectionError
-from requests.exceptions import HTTPError
+from requests.exceptions import *
 
 class LazyServerExcpetion(Exception):
     """ Error in search """
@@ -25,7 +23,6 @@ default_sites = [
     'TL_PACKS',
     ]
 
-
 def seconds_left(dlitem):
     try:
         headers = {'Content-type': 'application/json', "Accept": "application/json"}
@@ -38,12 +35,8 @@ def seconds_left(dlitem):
             return json_response['data']
         except:
             return -1
-
-    except ConnectionError as e:
+    except:
         return -1
-    except HTTPError as e:
-        return -1
-
 
 def download_torrents(torrents):
     old_timeout = requests.session.timeout
@@ -63,6 +56,12 @@ def download_torrents(torrents):
         else:
             raise LazyServerExcpetion("Invalid response from server")
     except ConnectionError as e:
+        raise LazyServerExcpetion(str(e))
+    except ConnectTimeout as e:
+        raise LazyServerExcpetion(str(e))
+    except ReadTimeout as e:
+        raise LazyServerExcpetion(str(e))
+    except Timeout as e:
         raise LazyServerExcpetion(str(e))
     except HTTPError as e:
         raise LazyServerExcpetion(str(e))
@@ -85,9 +84,14 @@ def search_ftp(search):
             raise LazyServerExcpetion("Invalid status from server")
     except ConnectionError as e:
         raise LazyServerExcpetion(str(e))
+    except ConnectTimeout as e:
+        raise LazyServerExcpetion(str(e))
+    except ReadTimeout as e:
+        raise LazyServerExcpetion(str(e))
+    except Timeout as e:
+        raise LazyServerExcpetion(str(e))
     except HTTPError as e:
         raise LazyServerExcpetion(str(e))
-
 
 def search_torrents(search, sites=default_sites, max_results=100):
     payload = {
@@ -106,6 +110,12 @@ def search_torrents(search, sites=default_sites, max_results=100):
         else:
             raise LazyServerExcpetion("Invalid status from server")
     except ConnectionError as e:
+        raise LazyServerExcpetion(str(e))
+    except ConnectTimeout as e:
+        raise LazyServerExcpetion(str(e))
+    except ReadTimeout as e:
+        raise LazyServerExcpetion(str(e))
+    except Timeout as e:
         raise LazyServerExcpetion(str(e))
     except HTTPError as e:
         raise LazyServerExcpetion(str(e))

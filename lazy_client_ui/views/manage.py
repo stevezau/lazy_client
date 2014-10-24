@@ -146,7 +146,8 @@ def tvshows(request):
             for show in tvdb.search(search):
                 if show['id'] not in local_ids:
                     tvshow = TVShow()
-                    tvdb_shows.append(show)
+                    tvshow.update_from_dict(show)
+                    shows.append(show)
 
             from operator import itemgetter, attrgetter, methodcaller
             shows = sorted(shows, key=methodcaller('exists'), reverse=True)

@@ -26,7 +26,7 @@
 
     <hr/>
 
-    {% if shows_count > 0 %}
+    {% if shows|length > 0 %}
         {% if shows|length == 0 and tvdb_shows == 0 %}
             <p class="text-center"><strong>No shows found</strong></p>
         {% else %}

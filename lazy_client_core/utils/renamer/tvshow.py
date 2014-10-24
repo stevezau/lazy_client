@@ -102,6 +102,7 @@ class TVRenamer:
                                     tvdbcache_obj_override = TVShow()
                                     tvdbcache_obj_override.id = int(video_file['tvdbid_id'])
                                     tvdbcache_obj_override.update_from_tvdb()
+                                    tvdbcache_obj_override.save()
 
                             if 'ep_override' in video_file:
                                 ep_override = video_file['ep_override']
@@ -398,6 +399,7 @@ class TVRenamer:
                     tvdbcache_obj = TVShow()
                     tvdbcache_obj.id = found_id
                     tvdbcache_obj.update_from_tvdb()
+                    tvdbcache_obj.save()
         except:
             pass
 

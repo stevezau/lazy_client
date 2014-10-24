@@ -102,6 +102,7 @@ class DownloadsManuallyFixItem(UpdateView):
                     tvdbobj = TVShow()
                     tvdbobj.id = tvdb_id
                     tvdbobj.update_from_tvdb()
+                    tvdbobj.save()
 
                 if None is tvdbobj:
                     raise ValidationError(

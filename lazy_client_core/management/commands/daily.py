@@ -46,7 +46,7 @@ class Command(BaseCommand):
         update_show_favs()
 
         logger.info("Task 4 - Update tvshow objects older then 2 weeks")
-        time_threshold = datetime.datetime.now() - datetime.timedelta(days=14)
+        time_threshold = datetime.datetime.now() - datetime.timedelta(days=0)
         tvshows = TVShow.objects.all().filter(updated__lt=time_threshold)
 
         tvdb = Tvdb()
@@ -68,6 +68,7 @@ class Command(BaseCommand):
                     continue
             else:
                 tvshow.update_from_tvdb()
+                tvshow.save()
 
             if "Duplicate of" in tvshow.title:
                 tvshow.delete()

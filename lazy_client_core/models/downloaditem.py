@@ -753,6 +753,7 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
                 if hours > 24:
                     try:
                         instance.tvdbid.update_from_tvdb()
+                        instance.tvdbid.save()
                     except Exception as e:
                         logger.exception("Error updating TVDB info %s" % e.message)
         except ObjectDoesNotExist as e:

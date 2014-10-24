@@ -137,7 +137,10 @@ class QueueManager():
                     result = dlItem.task_result()
                     dlItem.log("Strange the job is set to pending.. will reset  result %s" % result)
                     logger.error("Strange the job is set to pending.. will reset")
-                    dlItem.reset()
+                    try:
+                        dlItem.reset()
+                    except:
+                        pass
                     dlItem.retries += 1
                     dlItem.save()
 
