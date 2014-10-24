@@ -704,7 +704,7 @@ class TVShow(models.Model):
 
     def set_network(self, network_name):
         try:
-            network = TVShowNetworks.objects.get(network=network_name.lower())
+            network_obj = TVShowNetworks.objects.get(network=network_name.lower())
         except:
             logger.debug("Creating a new network %s" % network_name)
             network_obj = TVShowNetworks(network=network_name.lower(), network_orig=network_name)
