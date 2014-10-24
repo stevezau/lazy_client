@@ -706,7 +706,7 @@ class TVShow(models.Model):
         try:
             network = TVShowNetworks.objects.get(network=network.lower())
         except:
-            network = TVShowNetworks(network=network, network_orig=network)
+            network = TVShowNetworks(network=network.lower(), network_orig=network)
             network.save()
 
         self.network = network
@@ -725,7 +725,7 @@ class TVShow(models.Model):
             try:
                 genre_obj = GenreNames.objects.get(genre=genre.lower())
             except:
-                genre_obj = GenreNames(genre=genre, genre_orig=genre)
+                genre_obj = GenreNames(genre=genre.lower(), genre_orig=genre)
                 genre_obj.save()
 
             self.tvshowgenres_set.create(tvdbid=self.id, genre=genre_obj)
