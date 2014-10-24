@@ -15,7 +15,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 ###Lazy settings###
 ###################
 
-__VERSION__ = 8
+__VERSION__ = 9
 
 QUEUE = "rabbitmq"
 DB_TYPE = "mysql"
