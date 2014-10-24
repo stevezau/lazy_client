@@ -1,16 +1,7 @@
-###########
-### NOW ###
-###########
+
 cleanup suggestion
 -Seasons that are all watched
 -TVShows with 20% watched, last time it was watched over 4months ago
-
--the flash 2014, didnt find
--the Germanic Tribes, didnt find
-
--ignore
-Four Weddings
-
 
 Movies
 -search shows
@@ -19,9 +10,6 @@ Movies
 -Figure out symlinks for hdd size
 -Put epsiodes into database for schedule
 -On queue, make sure numbers at top are updated
-
--make tvshow search faster using ajax fo
--add ignore table for none tvdbid and imdbid
 
 NEW VERSION ACTIONS
 -remove ignore.yml

@@ -11,6 +11,7 @@ from lazy_client_core.utils import xbmc
 from lazy_client_core.exceptions import XBMCConnectionError, InvalidXBMCURL
 from lazy_common import metaparser
 from lazy_client_core.utils import common
+import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,19 @@ class TVShowDetail(UpdateView):
     model = TVShow
     template_name = "manage/tvshows/detail.html"
 
+    def get_object(self, queryset=None):
+        object = super(TVShowDetail, self).get_object(queryset=queryset)
+        if not object.updated:
+            object.update_from_tvdb()
+            object.save()
+        else:
+            print type(datetime.datetime.now())
+            delta = datetime.datetime.now() - object.updated.replace(tzinfo=None)
+            if delta.days > 7:
+                object.update_from_tvdb()
+                object.save()
+
+        return object
 
 def tvshows(request):
 
@@ -147,7 +161,7 @@ def tvshows(request):
                 if show['id'] not in local_ids:
                     tvshow = TVShow()
                     tvshow.update_from_dict(show)
-                    shows.append(show)
+                    shows.append(tvshow)
 
             from operator import itemgetter, attrgetter, methodcaller
             shows = sorted(shows, key=methodcaller('exists'), reverse=True)

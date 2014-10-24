@@ -175,6 +175,9 @@ class TVShowNetworks(models.Model):
         ordering = ['-id']
         app_label = 'lazy_client_core'
 
+    def __unicode__(self):
+        return self.network
+
     network = models.CharField(max_length=150, db_index=True, unique=True)
 
     def clean(self):
@@ -730,7 +733,7 @@ class TVShow(models.Model):
             self.tvshowgenres_set.create(tvdbid=self.id, genre=genre_obj)
 
     def get_genres(self):
-        return self.tvshowgenres_set.all()
+        return [genre.genre for genre in self.tvshowgenres_set.all()]
 
     def set_poster(self, poster_url):
         try:
@@ -780,6 +783,8 @@ class TVShow(models.Model):
             self.status = self.ENDED
 
     def update_from_dict(self, details):
+        if 'seriesid' in details:
+            self.id = int(details['seriesid'])
 
         ### DESC ###
         if 'overview' in details:
@@ -795,13 +800,16 @@ class TVShow(models.Model):
         titles = []
         if 'seriesname' in details:
             self.title = self.clean_title(details['seriesname'])
-            titles.append(self.title)
 
         if 'aliasnames' in details:
             for alias in details['aliasnames']:
                 clean_alias = self.clean_title(alias)
                 if clean_alias not in titles:
                     titles.append(clean_alias)
+
+        self.save()
+        self.set_titles(titles)
+
 
     def update_from_tvdb(self, update_imdb=True):
 
@@ -883,7 +891,6 @@ class TVShow(models.Model):
             #Sometimes people forgot to add s, sometimes they add s
             if name.endswith("s") and name.rstrip("s") == title:
                 return True
-
             if name == title:
                 return True
         return False
@@ -953,7 +960,11 @@ class TVShowScanner(Thread):
     def valid_torrent_title(self, torrent):
         parser = metaparser.get_parser_cache(torrent, type=metaparser.TYPE_TVSHOW)
         if 'series' in parser.details:
-            series = TVShow.clean_title(parser.details['series'])
+            if 'year' in parser.details:
+                series = TVShow.clean_title("%s %s" % (parser.details['series'], parser.details['year']))
+            else:
+                series = TVShow.clean_title(parser.details['series'])
+
             if self.valid_series_title(series):
                 return True
         return False
@@ -1299,8 +1310,6 @@ class TVShowScanner(Thread):
 
                 found_eps = []
                 skip_eps = []
-
-                print eps
 
                 for ep_no in eps:
                     if self.aborted:

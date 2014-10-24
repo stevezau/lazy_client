@@ -21,4 +21,4 @@ from .log import DownloadLog
 from .log import Job
 
 
-__all__ = ["DownloadItem", "TVShow", "TVShowMappings", "Log", "Movie", "DownloadLog", "Job", "TVShowNetworks", "TVShowGenres", "GenreNames"]
+__all__ = ["DownloadItem", "TVShow", "TVShowMappings", "Log", "Movie", "DownloadLog", "Job", "TVShowNetworks", "TVShowGenres", "GenreNames", "Version"]

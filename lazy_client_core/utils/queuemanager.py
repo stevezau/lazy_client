@@ -136,7 +136,7 @@ class QueueManager():
                 if status == DownloadItem.JOB_PENDING:
                     result = dlItem.task_result()
                     dlItem.log("Strange the job is set to pending.. will reset  result %s" % result)
-                    logger.error("Strange the job is set to pending.. will reset")
+                    logger.info("Strange the job is set to pending.. will reset")
                     try:
                         dlItem.reset()
                     except:
