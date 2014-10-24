@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 ARGS="$@"
 SCRIPT=$0
-BASE_PATH=`dirname $SCRIPT`
+pushd `dirname $0` > /dev/null
+BASE_PATH=`pwd -P`
+popd > /dev/null
+
 RED='\e[0;31m'
 NC='\e[0m' # No Color
 
@@ -17,13 +20,13 @@ CELERYBEAT_PID_FILE="celeryd_beat.pid"
 FLEXGET_BIN="env flexget"
 GIT_BIN="env git"
 EASY_INSTALL_BIN="env easy_install"
-
+PIP_BIN="env pip"
 FLEXGET_HOME="$HOME/.flexget/"
 
 
 chmod +x $MANAGE_SCRIPT
 
-if grep -q "QNAP" /proc/sysinfo; then
+if [ -f "/proc/sysinfo" ] && grep -q "QNAP" /proc/sysinfo; then
     export C_FORCE_ROOT="true"
     EASY_INSTALL_BIN="/share/MD0_DATA/.qpkg/Python/bin/easy_install-2.7"
     GIT_BIN="/opt/bin/git"
@@ -31,16 +34,13 @@ if grep -q "QNAP" /proc/sysinfo; then
 
     FLEXGET_HOME="$BASE_PATH/.flexget"
     FLEXGET_HOME_ADMIN="/root/.flexget"
-    FLEXGET_ROOT_FOLDER="/share/homes/admin/.flexget"
     TVDB_TMP_FOLDER="$BASE_PATH/tvdb_api-u0"
+    PIP_BIN="/share/MD0_DATA/.qpkg/Python/bin/pip-2.7"
 
     #First setup symlinks and create folders
     if [ ! -e "$FLEXGET_HOME_ADMIN" ]; then
+        echo -e "ln -s $FLEXGET_HOME $FLEXGET_HOME_ADMIN"
         ln -s $FLEXGET_HOME $FLEXGET_HOME_ADMIN
-    fi
-
-    if [ ! -e "$FLEXGET_ROOT_FOLDER" ]; then
-        ln -s $FLEXGET_HOME $FLEXGET_ROOT_FOLDER
     fi
 
     if [ ! -e "$TVDB_TMP_FOLDER" ]; then
@@ -64,8 +64,8 @@ function upgrade {
 }
 
 function flexget() {
-	$FLEXGET_BIN -c $FLEXGET_HOME/config-xvid.yml execute
-	$FLEXGET_BIN execute --disable-tracking 
+        $FLEXGET_BIN -c $FLEXGET_HOME/config-xvid.yml execute
+        $FLEXGET_BIN execute --disable-tracking 
 }
 
 function pull_git() {
@@ -83,10 +83,10 @@ function pull_git() {
 function upgrade_reqs() {
     #First we need to install all the requirements
     if [ "$UID" == "0" ]; then
-        $GIT_BIN pip install -r "requirements.txt"
-        $GIT_BIN easy_install --upgrade http://drifthost.com/lazy_common-0.1-py2.7.egg
+        $PIP_BIN install -r "requirements.txt"
+        $EASY_INSTALL_BIN --upgrade http://drifthost.com/lazy_common-0.1-py2.7.egg
     else
-        /usr/bin/env sudo $GIT_BIN install -r "requirements.txt"
+        /usr/bin/env sudo $PIP_BIN install -r "requirements.txt"
         /usr/bin/env sudo $EASY_INSTALL_BIN --upgrade http://drifthost.com/lazy_common-0.1-py2.7.egg
     fi
 
@@ -105,47 +105,47 @@ function setup {
 }
 
 function start_all {
-	start_lazy_webui
-	start_celeryd
-	start_celerybeat
+        start_lazy_webui
+        start_celeryd
+        start_celerybeat
 }
 
 function stop_all {
-	stop_lazy_webui
-	stop_celeryd
-	stop_celerybeat
+        stop_lazy_webui
+        stop_celeryd
+        stop_celerybeat
 }
 
 function start_lazy_webui {
-	echo "Starting Lazy WebUI"
-	$MANAGE_SCRIPT webui start > /dev/null 2>&1 &
+        echo "Starting Lazy WebUI"
+        $MANAGE_SCRIPT webui start > /dev/null 2>&1 &
 }
 
 function stop_lazy_webui {
-	$MANAGE_SCRIPT webui stop
+        $MANAGE_SCRIPT webui stop
 }
 
 function start_celeryd {
-	echo "Starting Celeryd"
-	PID_FILE="celeryd.pid"
-	LOG_FILE="logs/celeryd.log"
-	$MANAGE_SCRIPT celeryd --loglevel=DEBUG --concurrency=4 -Ofair --pidfile=$PID_FILE  -f $LOG_FILE > /dev/null 2> logs/err_celeryd.log &
+        echo "Starting Celeryd"
+        PID_FILE="celeryd.pid"
+        LOG_FILE="logs/celeryd.log"
+        $MANAGE_SCRIPT celeryd --loglevel=DEBUG --concurrency=4 -Ofair --pidfile=$PID_FILE  -f $LOG_FILE > /dev/null 2> logs/err_celeryd.log &
 }
 
 function stop_celeryd {
-	$MANAGE_SCRIPT jobserver stop
+        $MANAGE_SCRIPT jobserver stop
 }
 
 function start_celerybeat {
-	echo "Starting Celery Beat"
-	PID_FILE="celeryd_beat.pid"
-	LOG_FILE="logs/celery_beat.log"
-	SCHEDULE_FILE="celerybeat-schedule"
-	$MANAGE_SCRIPT celerybeat --pidfile=$PID_FILE  -f $LOG_FILE --schedule=$SCHEDULE_FILE > /dev/null 2>&1 &
+        echo "Starting Celery Beat"
+        PID_FILE="celeryd_beat.pid"
+        LOG_FILE="logs/celery_beat.log"
+        SCHEDULE_FILE="celerybeat-schedule"
+        $MANAGE_SCRIPT celerybeat --pidfile=$PID_FILE  -f $LOG_FILE --schedule=$SCHEDULE_FILE > /dev/null 2>&1 &
 }
 
 function stop_celerybeat {
-	$MANAGE_SCRIPT jobserver stop_beat
+        $MANAGE_SCRIPT jobserver stop_beat
 }
 
 function check_pid() {
@@ -206,43 +206,40 @@ case $1 in
     check)
         check_running
         ;;
-	start)
-		case $2 in
-			celeryd)
-				start_celeryd
-				;;
-			celerybeat)
-				start_celerybeat
-				;;
-			webui)
-				start_lazy_webui
-				;;
-			*)
-				start_all
- 				;;
-        	esac
-      	;;
-	stop)
-		case $2 in
-			celeryd)
-				stop_celeryd
-				;;
-			celerybeat)
-				stop_celerybeat
-				;;
-			webui)
-				stop_lazy_webui
-				;;
-			*)
-				stop_all
-   				;;
-		esac
-	;;
+        start)
+                case $2 in
+                        celeryd)
+                                start_celeryd
+                                ;;
+                        celerybeat)
+                                start_celerybeat
+                                ;;
+                        webui)
+                                start_lazy_webui
+                                ;;
+                        *)
+                                start_all
+                                ;;
+                esac
+        ;;
+        stop)
+                case $2 in
+                        celeryd)
+                                stop_celeryd
+                                ;;
+                        celerybeat)
+                                stop_celerybeat
+                                ;;
+                        webui)
+                                stop_lazy_webui
+                                ;;
+                        *)
+                                stop_all
+                                ;;
+                esac
+        ;;
     *)
       echo "usage: start|stop|check|flexget|upgrade [celeryd|celerybeat|webui]"
-	;;
+        ;;
 esac
-
-
-
 

@@ -181,7 +181,7 @@ class TVShowNetworks(models.Model):
     network = models.CharField(max_length=150, db_index=True, unique=True)
 
     def clean(self):
-        self.genre = self.name.capitalize()
+        self.network = self.name.capitalize()
 
 ##################################
 ########### TV SHOWS ##############
