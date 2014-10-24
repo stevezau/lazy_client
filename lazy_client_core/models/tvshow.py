@@ -705,9 +705,7 @@ class TVShow(models.Model):
     def set_network(self, network_name):
         try:
             network_obj = TVShowNetworks.objects.get(network=network_name.lower())
-            logger.debug("found existing network %s " % network_name)
         except:
-            logger.debug("Creating a new network %s" % network_name)
             network_obj = TVShowNetworks(network=network_name.lower(), network_orig=network_name)
             network_obj.save()
 
@@ -733,7 +731,7 @@ class TVShow(models.Model):
             self.tvshowgenres_set.create(tvdbid=self.id, genre=genre_obj)
 
     def get_genres(self):
-        return [genre.genre_orig for genre in self.tvshowgenres_set.all()]
+        return [genre.genre.genre_orig for genre in self.tvshowgenres_set.all()]
 
     def set_poster(self, poster_url):
         try:
