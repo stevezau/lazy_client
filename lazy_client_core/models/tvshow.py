@@ -704,7 +704,7 @@ class TVShow(models.Model):
 
     def set_network(self, network):
         try:
-            network = TVShowNetworks.objects.get(network=network)
+            network = TVShowNetworks.objects.get(network=network.lower())
         except:
             network = TVShowNetworks(network=network, network_orig=network)
             network.save()
@@ -723,7 +723,7 @@ class TVShow(models.Model):
 
         for genre in genres:
             try:
-                genre_obj = GenreNames.objects.get(genre=genre)
+                genre_obj = GenreNames.objects.get(genre=genre.lower())
             except:
                 genre_obj = GenreNames(genre=genre, genre_orig=genre)
                 genre_obj.save()
