@@ -113,7 +113,7 @@ class DownloadItem(models.Model):
             if self.is_season_pack():
                 if self.onlyget:
                     #check for this ep
-                    if season in self.onlyget and ep in self.onlyget[season]:
+                    if str(season) in self.onlyget and ep in self.onlyget[str(season)]:
                         return True
                 else:
                     #downloading all eps
@@ -379,6 +379,9 @@ class DownloadItem(models.Model):
 
 
     def add_download(self, add_season, add_ep):
+
+        add_season = str(add_season)
+
         if not self.onlyget:
             self.onlyget = {}
 
