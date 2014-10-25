@@ -60,7 +60,6 @@ def get_by_path(tvshow_path):
 
     raise Exception("Didn't find matchin tvshow object")
 
-@task(bind=True, base=AbortableTask)
 def fix_missing_job(self, tvshow_id, fix):
 
     tvshow_obj = TVShow.objects.get(id=tvshow_id)

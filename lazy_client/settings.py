@@ -171,6 +171,7 @@ INSTALLED_APPS = (
     'south',
     'jquery',
     'djcelery',
+    'djcelery.transport',
     'jquery_ui',
     'django_mobile',
     'crispy_forms',
