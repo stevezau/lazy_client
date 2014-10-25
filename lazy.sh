@@ -13,9 +13,9 @@ PATH="$PATH:/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
 cd $BASE_PATH
 
 MANAGE_SCRIPT="$BASE_PATH/manage.py"
-WEBUI_PID_FILE="lazy_web_server.pid"
-CELERYD_PID_FILE="celeryd.pid"
-CELERYBEAT_PID_FILE="celeryd_beat.pid"
+WEBUI_PID_FILE="$BASE_PATH/lazy_web_server.pid"
+CELERYD_PID_FILE="$BASE_PATH/celeryd.pid"
+CELERYBEAT_PID_FILE="$BASE_PATH/celeryd_beat.pid"
 
 FLEXGET_BIN="env flexget"
 GIT_BIN="env git"
@@ -127,9 +127,8 @@ function stop_lazy_webui {
 
 function start_celeryd {
         echo "Starting Celeryd"
-        PID_FILE="celeryd.pid"
-        LOG_FILE="logs/celeryd.log"
-        $MANAGE_SCRIPT celeryd --loglevel=DEBUG --concurrency=4 -Ofair --pidfile=$PID_FILE  -f $LOG_FILE > /dev/null 2> logs/err_celeryd.log &
+        LOG_FILE="$BASE_PATH/logs/celeryd.log"
+        $MANAGE_SCRIPT celeryd --loglevel=DEBUG --concurrency=4 -Ofair --pidfile=$CELERYD_PID_FILE  -f $LOG_FILE > /dev/null 2> logs/err_celeryd.log &
 }
 
 function stop_celeryd {
@@ -138,10 +137,9 @@ function stop_celeryd {
 
 function start_celerybeat {
         echo "Starting Celery Beat"
-        PID_FILE="celeryd_beat.pid"
-        LOG_FILE="logs/celery_beat.log"
-        SCHEDULE_FILE="celerybeat-schedule"
-        $MANAGE_SCRIPT celerybeat --pidfile=$PID_FILE  -f $LOG_FILE --schedule=$SCHEDULE_FILE > /dev/null 2>&1 &
+        LOG_FILE="$BASE_PATH/logs/celery_beat.log"
+        SCHEDULE_FILE="$BASE_PATH/celerybeat-schedule"
+        $MANAGE_SCRIPT celerybeat --pidfile=$CELERYBEAT_PID_FILE  -f $LOG_FILE --schedule=$SCHEDULE_FILE > /dev/null 2>&1 &
 }
 
 function stop_celerybeat {
