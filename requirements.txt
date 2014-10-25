@@ -1,7 +1,7 @@
 requests==2.4.3
 flexget==1.2.209
 cherrypy
-django==1.6.7
+django==1.7
 south==1.0
 pycurl
 djangorestframework==2.3.10

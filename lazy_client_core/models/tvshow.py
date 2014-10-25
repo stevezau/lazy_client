@@ -947,7 +947,10 @@ class TVShowScanner(Thread):
         parser = metaparser.get_parser_cache(title, metaparser.TYPE_TVSHOW)
 
         #We don't want Disk or Part seasons
-        if re.search('(?i)D[0-9]+|DVD[0-9]+', title):
+        if re.search('(?i)D[0-9]+|DVD[0-9]+|Disc [0-9]+', title):
+            return False
+
+        if 'format' in parser.details and parser['format'] == "DVD":
             return False
 
         if parser.details['type'] == "season_pack" or parser.details['type'] == "season_pack_multi" and 'series' in parser.details:
