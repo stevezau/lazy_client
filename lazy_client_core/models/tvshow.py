@@ -1294,6 +1294,7 @@ class TVShowScanner(Thread):
                                     self.log("Found the ep %s (via prescan) in %s" % (ep_no, torrent))
                                     found_eps.append({'site': site_name, 'torrent': torrent, 'ep_no': ep_no})
                                     do_continue = True
+                                    do_break = True
                                     break
                     if do_continue:
                         continue
