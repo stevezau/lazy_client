@@ -2,11 +2,7 @@ from django.views.generic import TemplateView
 from django.conf import settings
 import os
 import logging
-
-
 from lazy_client_core.models import DownloadItem
-from lazy_client_core.utils.queuemanager import QueueManager
-
 
 logger = logging.getLogger(__name__)
 
