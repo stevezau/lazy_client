@@ -891,7 +891,7 @@ function millisecondsToStr(ms) {
     }
 
     if (day > 0) {
-       t = day + " days" + t
+       t = day + " days " + t
     }
 
     return t

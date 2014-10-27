@@ -13,16 +13,13 @@ PATH="$PATH:/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
 cd $BASE_PATH
 
 MANAGE_SCRIPT="$BASE_PATH/manage.py"
-WEBUI_PID_FILE="$BASE_PATH/lazy_web_server.pid"
-CELERYD_PID_FILE="$BASE_PATH/celeryd.pid"
-CELERYBEAT_PID_FILE="$BASE_PATH/celeryd_beat.pid"
+LAZY_PID="$BASE_PATH/lazy.pid"
 
 FLEXGET_BIN="env flexget"
 GIT_BIN="env git"
 EASY_INSTALL_BIN="env easy_install"
 PIP_BIN="env pip"
 FLEXGET_HOME="$HOME/.flexget/"
-
 
 chmod +x $MANAGE_SCRIPT
 
@@ -64,8 +61,8 @@ function upgrade {
 }
 
 function flexget() {
-        $FLEXGET_BIN -c $FLEXGET_HOME/config-xvid.yml execute
-        $FLEXGET_BIN execute --disable-tracking 
+    $FLEXGET_BIN -c $FLEXGET_HOME/config-xvid.yml execute
+    $FLEXGET_BIN execute --disable-tracking
 }
 
 function pull_git() {
@@ -104,46 +101,14 @@ function setup {
     $MANAGE_SCRIPT setup
 }
 
-function start_all {
-        start_lazy_webui
-        start_celeryd
-        start_celerybeat
+
+function start {
+        echo "Starting Lazy"
+        $MANAGE_SCRIPT lazy start > /dev/null 2>&1 &
 }
 
-function stop_all {
-        stop_lazy_webui
-        stop_celeryd
-        stop_celerybeat
-}
-
-function start_lazy_webui {
-        echo "Starting Lazy WebUI"
-        $MANAGE_SCRIPT webui start > /dev/null 2>&1 &
-}
-
-function stop_lazy_webui {
-        $MANAGE_SCRIPT webui stop
-}
-
-function start_celeryd {
-        echo "Starting Celeryd"
-        LOG_FILE="$BASE_PATH/logs/celeryd.log"
-        $MANAGE_SCRIPT celeryd --loglevel=DEBUG --concurrency=4 -Ofair --pidfile=$CELERYD_PID_FILE  -f $LOG_FILE > /dev/null 2> logs/err_celeryd.log &
-}
-
-function stop_celeryd {
-        $MANAGE_SCRIPT jobserver stop
-}
-
-function start_celerybeat {
-        echo "Starting Celery Beat"
-        LOG_FILE="$BASE_PATH/logs/celery_beat.log"
-        SCHEDULE_FILE="$BASE_PATH/celerybeat-schedule"
-        $MANAGE_SCRIPT celerybeat --pidfile=$CELERYBEAT_PID_FILE  -f $LOG_FILE --schedule=$SCHEDULE_FILE > /dev/null 2>&1 &
-}
-
-function stop_celerybeat {
-        $MANAGE_SCRIPT jobserver stop_beat
+function stop {
+        $MANAGE_SCRIPT lazy stop
 }
 
 function check_pid() {
@@ -163,26 +128,10 @@ function check_pid() {
 
 
 function check_running {
-    #First lets check if WebUI is running
-    check_pid $WEBUI_PID_FILE
+    check_pid $LAZY_PID
     if [ "$PID_RUNNING" == "false" ]; then
-        echo "WebUI was not running"
-        start_lazy_webui
-    fi
-
-    #second lets check if celerybeat is running
-    check_pid $CELERYBEAT_PID_FILE
-    if [ "$PID_RUNNING" == "false" ]; then
-        echo "Celery Beat was not running"
-        start_celerybeat
-    fi
-
-
-    #third lets check if celeryd is running
-    check_pid $CELERYD_PID_FILE
-    if [ "$PID_RUNNING" == "false" ]; then
-        echo "CeleryD was not running"
-        start_celeryd
+        echo "Lazy was not running"
+        start
     fi
 
 }
@@ -205,39 +154,13 @@ case $1 in
         check_running
         ;;
         start)
-                case $2 in
-                        celeryd)
-                                start_celeryd
-                                ;;
-                        celerybeat)
-                                start_celerybeat
-                                ;;
-                        webui)
-                                start_lazy_webui
-                                ;;
-                        *)
-                                start_all
-                                ;;
-                esac
+            start
         ;;
         stop)
-                case $2 in
-                        celeryd)
-                                stop_celeryd
-                                ;;
-                        celerybeat)
-                                stop_celerybeat
-                                ;;
-                        webui)
-                                stop_lazy_webui
-                                ;;
-                        *)
-                                stop_all
-                                ;;
-                esac
+            stop
         ;;
     *)
-      echo "usage: start|stop|check|flexget|upgrade [celeryd|celerybeat|webui]"
+      echo "usage: start|stop|check|flexget|upgrade"
         ;;
 esac
 

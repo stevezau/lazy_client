@@ -127,16 +127,8 @@ class Command(BaseCommand):
     def stop_all(self):
         print(green_color("Stopping services..."))
 
-        #Stop the queue
-        if self.queue_running:
-            QueueManager.stop_queue()
-
         #Stop web_Server
         management.call_command('webui', 'stop', interactive=False)
-
-        #Stop celery
-        management.call_command('jobserver', 'stop', interactive=False)
-        management.call_command('jobserver', 'stop_beat', interactive=False)
 
     def run_command(self, cmd, check=False):
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -201,8 +193,5 @@ class Command(BaseCommand):
     def start_all(self):
         print(green_color("Starting services"))
         self.run_command([self.lazysh_file, 'restart'], check=True)
-
-        if self.queue_running:
-            QueueManager.start_queue()
 
 

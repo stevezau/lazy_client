@@ -14,7 +14,7 @@ CPSERVER_HELP = r"""
 """
 
 class Command(BaseCommand):
-    help = "Start/Stop web server"
+    help = "Start/Stop lazy server"
 
     def handle(self, *args, **options):
 

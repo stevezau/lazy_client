@@ -69,7 +69,7 @@ WEBSERVER_IP = "0.0.0.0"
 WEBSERVER_PORT = 8000
 WEBSERVER_ERROR_LOG = os.path.join(BASE_DIR, "logs/web_access.log")
 WEBSERVER_ACCESS_LOG = os.path.join(BASE_DIR, "logs/web_error.log")
-WEBSERVER_PIDFILE = os.path.join(BASE_DIR, "lazy_web_server.pid")
+WEBSERVER_PIDFILE = os.path.join(BASE_DIR, "lazy.pid")
 
 
 DOWNLOAD_RETRY_COUNT = 3
@@ -170,8 +170,6 @@ INSTALLED_APPS = (
     'sitetree',
     'south',
     'jquery',
-    'djcelery',
-    'djcelery.transport',
     'jquery_ui',
     'django_mobile',
     'crispy_forms',
@@ -343,10 +341,10 @@ CRISPY_TEMPLATE_PACK = 'bootstrap3'
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = "Australia/Sydney"
+#TIME_ZONE = "Australia/Sydney"
 USE_I18N = True
 USE_L10N = True
-USE_TZ = True
+#USE_TZ = True
 
 INTERNAL_IPS = (
     '192.168.0.200'
@@ -444,24 +442,3 @@ if not os.path.exists(MEDIA_ROOT):
 
 if not os.path.exists(os.path.join(BASE_DIR, "logs")):
     utils.mkdir(os.path.join(BASE_DIR, "logs"))
-
-
-##############
-### CELERY ###
-##############
-if QUEUE == "db":
-    CELERY_RESULT_BACKEND='djcelery.backends.database:DatabaseBackend'
-    BROKER_URL = 'django://'
-    CELERY_ACKS_LATE = False
-    CELERY_TRACK_STARTED = True
-    CELERYD_PREFETCH_MULTIPLIER = 1
-    INSTALLED_APPS += ('kombu.transport.django', )
-else:
-    BROKER_URL = "amqp://"
-    CELERY_RESULT_BACKEND = "amqp://"
-    CELERY_ACKS_LATE = False
-    CELERY_TRACK_STARTED = True
-    CELERYD_PREFETCH_MULTIPLIER = 1
-
-CELERYD_PID_FILE = os.path.join(BASE_DIR, "celeryd.pid")
-CELERY_BEAT_PID_FILE = os.path.join(BASE_DIR, "celeryd_beat.pid")

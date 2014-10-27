@@ -27,8 +27,8 @@
                 <h4><span class="title" title="{{ download.title }}">{{ download.title|format_torrent_title }}</span>
                     {% if download.get_year %}<small><i>({{ download.get_year }})</i></small>{% endif %}
 
-                    {% if downloadgroup.list|length == 1 or  downloadgroup.list|length == 0 or not downloadgroup %}
-                        {% if download.get_type == 1 and download.get_season %}
+                    {% if downloadgroup.list|length == 1 or downloadgroup.list|length == 0 or not downloadgroup %}
+                        {% if download.get_type == 1 %}
                             <b>
                                 {% if download.get_seasons|length > 1 %}
                                     {% for season in download.get_seasons %}

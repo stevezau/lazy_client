@@ -180,7 +180,7 @@ class Command(BaseCommand):
             extract_path = None
 
         if not QueueManager.queue_running():
-            logger.info("Queue is stopped, exiting")
+            logger.info("Queue is paused, exiting")
             return
 
         lock_id = "extract_command-lock"

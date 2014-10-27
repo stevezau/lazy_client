@@ -12,12 +12,9 @@ from django.db.models.signals import pre_save, post_save
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from flexget.utils.imdb import ImdbSearch, ImdbParser
-from celery.contrib.abortable import AbortableAsyncResult
 from django.db.models import Q
-from lazy_common import ftpmanager
 from lazy_common.tvdb_api import Tvdb
 from lazy_client_core.exceptions import AlradyExists_Updated, AlradyExists, Ignored
-from lazy_client_core.exceptions import DownloadException
 from lazy_client_core.utils.jsonfield.fields import JSONField
 
 from lazy_common.tvdb_api.tvdb_exceptions import tvdb_shownotfound
@@ -26,6 +23,7 @@ from lazy_client_core.models.tvshow import TVShow
 from lazy_client_core.models.movie import Movie
 
 logger = logging.getLogger(__name__)
+
 
 class DownloadItem(models.Model):
     class Meta:
@@ -218,7 +216,6 @@ class DownloadItem(models.Model):
 
         return self.type
 
-
     def metaparser(self):
         from lazy_common import metaparser
 
@@ -233,84 +230,6 @@ class DownloadItem(models.Model):
                 self.parser = metaparser.get_parser_cache(self.title)
 
         return self.parser
-
-    def download(self):
-
-        self.dlstart = datetime.now()
-
-        #Find jobs running and if they are finished or not
-        task = self.get_task()
-
-        logger.debug("Job task state: %s" % task)
-
-        if None is task:
-            pass
-        elif task.state == "SUCCESS" or task.state == "FAILURE" or task.state == "ABORTED":
-            pass
-        elif task.state == "PENDING":
-            raise DownloadException("%s might of been started already status: %s" % (self.ftppath, task.state))
-        else:
-            raise DownloadException("%s already being downloaded, task status %s" % (self.ftppath, task.state))
-
-        if self.onlyget:
-            #we dont want to get everything.. lets figure this out
-            files, remotesize = ftpmanager.get_required_folders_for_multi(self.ftppath, self.onlyget)
-        else:
-            files, remotesize = ftpmanager.get_files_for_download(self.ftppath)
-
-        if remotesize > 0 and len(files) > 0:
-            self.remotesize = remotesize
-        else:
-            raise DownloadException("Unable to get size and files on the FTP")
-
-        #Time to start.
-        from lazy_client_core.utils.mirror import FTPMirror
-        mirror = FTPMirror()
-        task = mirror.mirror_ftp_folder.delay(files, self)
-        self.taskid = task.task_id
-        self.message = None
-        self.status = DownloadItem.DOWNLOADING
-        self.save()
-
-    def task_result(self):
-        try:
-            task = self.get_task()
-            return task.result
-        except:
-            pass
-
-    def download_status(self):
-        logger.debug("%s Getting status of download: " % self.title)
-        logger.debug("task id is %s" % self.taskid)
-
-        from celery.backends.amqp import BacklogLimitExceeded
-        task = self.get_task()
-
-        if None is task:
-            logger.debug("No job associated with this downloaditem")
-            return self.JOB_NOT_FOUND
-
-        try:
-            state = task.state
-        except BacklogLimitExceeded:
-            return self.JOB_FAILED
-
-        logger.debug("Task state :%s" % state)
-
-        status = self.JOB_PENDING
-
-        if state == "SUCCESS":
-            status = self.JOB_FINISHED
-
-        if state == "FAILURE":
-            status = self.JOB_FAILED
-
-        if state == "RUNNING":
-            status = self.JOB_RUNNING
-
-
-        return status
-
 
     def log(self, msg):
         line = None
@@ -336,47 +255,8 @@ class DownloadItem(models.Model):
         self.downloadlog_set.create(download_id=self.id, message=logmsg)
 
     def get_speed(self):
-
-        speed = 0
-
-        if self.still_alive():
-            task = self.get_task()
-
-            if task:
-                result = task.result
-                if 'speed' in result:
-                    speed = result['speed']
-
-        return speed
-
-    def still_alive(self):
-        task = self.get_task()
-
-        try:
-            if task:
-                result = task.result
-
-                seconds_now = time.mktime(datetime.now().timetuple())
-
-                if result and 'updated' in result:
-                    seconds_updated = result['updated']
-
-                    seconds = seconds_now - seconds_updated
-
-                    if seconds < 240:
-                        #we have received an update in the last 240 seconds, its still running
-                        return True
-        except:
-            pass
-
-        return False
-
-    def get_task(self):
-        if self.taskid == None or self.taskid == "":
-            return None
-
-        return AbortableAsyncResult(self.taskid)
-
+        from lazy_client_core.utils import threadmanager
+        return threadmanager.queue_manager.get_speed(self)
 
     def add_download(self, add_season, add_ep):
 
@@ -409,10 +289,7 @@ class DownloadItem(models.Model):
 
     def delete(self):
 
-        try:
-            self.killtask()
-        except:
-            pass
+        self.killjob()
 
         if self.localpath and os.path.exists(self.localpath):
             try:
@@ -424,58 +301,16 @@ class DownloadItem(models.Model):
 
     def download_retry(self):
         #First lets try kill the task
-        try:
-            self.killtask()
-        except:
-            pass
-
-        self.taskid = None
+        self.killjob(self)
         self.download()
 
-    def last_error(self):
-        task = self.get_task()
-        last_error = ""
-
-        task = self.get_task()
-
-        if task:
-            result = task.result
-            if 'last_error' in result:
-                last_error = result['last_error']
-
-        return last_error
-
-    def killtask(self):
-        task = self.get_task()
-
-        if None is task:
-            return
-
-        if task.ready():
-            return
-
-        #lets try kill it
-        task.abort()
-
-        for i in range(0, 20):
-            if task.ready():
-                return
-
-            time.sleep(1)
-
-        raise Exception("Unable to kill download task/job")
+    def killjob(self):
+        from lazy_client_core.utils.threadmanager import queue_manager
+        queue_manager.abort_dlitem(self)
 
     def reset(self, force=False):
-        if force:
-            try:
-                self.killtask()
-            except:
-                pass
-        else:
-            self.killtask()
-
+        self.killjob()
         self.status = self.QUEUE
-        self.taskid = None
         self.save()
 
     def get_local_size(self):

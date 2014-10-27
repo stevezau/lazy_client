@@ -23,9 +23,6 @@ from lazy_common.tvdb_api import Tvdb
 from django.db import models
 from lazy_common import metaparser
 
-from celery.contrib.abortable import AbortableAsyncResult
-from celery.contrib.abortable import AbortableTask
-from djcelery_transactions import task
 import time
 from lazy_client_core.utils.common import LowerCaseCharField
 
@@ -228,26 +225,6 @@ class TVShow(models.Model):
     def is_ignored(self):
         return self.ignored
 
-    def killtask(self):
-        task = self.get_task()
-
-        if None is task:
-            return True
-
-        if task.ready():
-            return True
-
-        #lets try kill it
-        task.abort()
-
-        for i in range(0, 25):
-            if task.ready():
-                return True
-            time.sleep(1)
-
-    def cancel_fix_missing(self):
-        self.killtask()
-
     def fix_missing(self, fix):
         if self.fix_job_running():
             raise AlreadyRunningException("Fix job already running")
@@ -265,47 +242,6 @@ class TVShow(models.Model):
         task = fix_missing_job.delay(self.id, fix)
         self.fix_jobid = task.task_id
         self.save()
-
-    def get_task(self):
-        if self.fix_jobid == None or self.fix_jobid == "":
-            return None
-
-        return AbortableAsyncResult(self.fix_jobid)
-
-    def fix_job_running(self):
-        #Find jobs running and if they are finished or not
-        task = self.get_task()
-
-        logger.debug("Job task state: %s" % task)
-
-        if None is task:
-            return False
-        elif task.state == "SUCCESS" or task.state == "FAILURE" or task.state == "ABORTED":
-            return False
-        elif task.state == "PENDING":
-            return True
-        return True
-
-    def stop_fix_job(self):
-        task = self.get_task()
-
-        if None is task:
-            return
-
-        if task.ready():
-            return
-
-        #lets try kill it
-        task.abort()
-
-        import time
-        for i in range(0, 20):
-            if task.ready():
-                return
-
-            time.sleep(1)
-
-        raise Exception("Unable to kill download task/job")
 
     def get_local_path(self):
         if not self.localpath:

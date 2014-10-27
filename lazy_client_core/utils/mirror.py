@@ -6,9 +6,7 @@ import pycurl
 import time
 from threading import Timer
 from datetime import datetime
-from celery import current_task
-from celery.contrib.abortable import AbortableTask
-from djcelery_transactions import task
+from threading import Thread
 from lazy_client_core.utils import common
 from django.conf import settings
 from lazy_common import ftpmanager
@@ -30,16 +28,7 @@ retry_on_errors = [
 def dummy_timer_fn():
     return
 
-def cleanup(m):
-    # Cleanup
-    logger.debug("Cleaning up curl threads")
 
-    for c in m.handles:
-        if c.fp is not None:
-            common.close_file(c.fp)
-            c.fp = None
-        c.close()
-    m.close()
 
 class FTPChecker:
 
@@ -105,32 +94,33 @@ class FTPChecker:
                 return 2
 
 
-class FTPMirror:
+class FTPMirror(Thread):
 
-    @task(bind=True, base=AbortableTask)
-    def mirror_ftp_folder(self, urls, dlitem):
+    def __init__(self, urls, dlitem):
+        Thread.__init__(self)
+        self.abort = False
+        self.urls = urls
+        self.dlitem = dlitem
+        self.speed = 0
 
-        from lazy_client_core.utils.queuemanager import QueueManager
+        self.start()
 
+    def cleanup(self):
+        # Cleanup
+        for c in self.m.handles:
+            if c.fp is not None:
+                common.close_file(c.fp)
+                c.fp = None
+            c.close()
+        self.m.close()
+
+    def run(self):
         max_speed_kb = settings.MAX_SPEED_PER_DOWNLOAD
         speed_delay = 0
 
-        if not QueueManager.queue_running():
-            logger.debug("Queue is stopped, exiting")
-            return
+        savepath = self.dlitem.localpath
 
-        if self.is_aborted():
-            dlitem.taskid = None
-            dlitem.save()
-            dlitem.log("Aborting")
-            return
-
-
-        savepath = dlitem.localpath
-
-        current_task.update_state(state='RUNNING', meta={'updated': time.mktime(datetime.now().timetuple()), 'speed': 0, 'last_error': ""})
-
-        dlitem.log("Starting Download")
+        self.dlitem.log("Starting Download")
 
         update_interval = 1
 
@@ -143,7 +133,11 @@ class FTPMirror:
         queue = []
         priority = []
 
-        for url in urls:
+        if self.abort:
+            self.cleanup()
+            return
+
+        for url in self.urls:
             size = url[1]
             urlpath = url[0].strip()
 
@@ -226,13 +220,11 @@ class FTPMirror:
         freelist = self.m.handles[:]
         num_processed = 0
 
-        last_err = ""
-
-        if self.is_aborted():
-            dlitem.taskid = None
-            dlitem.save()
-            dlitem.log("Aborting")
+        if self.abort:
+            self.cleanup()
             return
+
+        last_err = ""
 
         while num_processed < num_urls:
             # If there is an url to process and a free curl object, add to multi stack
@@ -267,7 +259,7 @@ class FTPMirror:
                 c.checker.reset()
                 logger.debug("CREATE NEW Thread %s  sec: %s      OTHER: %s" % (c.checker.thread_num, c.checker.last_check, c.checker))
 
-                dlitem.log("Remote file %s size: %s" % (filename, remote_size))
+                self.dlitem.log("Remote file %s size: %s" % (filename, remote_size))
 
                 short_filename = os.path.basename(filename)
 
@@ -280,7 +272,7 @@ class FTPMirror:
 
                     if local_size == 0:
                         #try again
-                        dlitem.log("Will download %s (%s bytes)" % (short_filename, remote_size))
+                        self.dlitem.log("Will download %s (%s bytes)" % (short_filename, remote_size))
                         f = common.open_file(filename, "wb")
 
                     if local_size > remote_size:
@@ -293,22 +285,22 @@ class FTPMirror:
                             count = failed_list.get(c.filename)
 
                             if count >= 2:
-                                dlitem.log("Local size was bigger then remote, max reties reached, setting to failed" % short_filename)
+                                self.dlitem.log("Local size was bigger then remote, max reties reached, setting to failed" % short_filename)
                                 continue
                             else:
                                 failed_list[filename] += 1
                         else:
                             failed_list[filename] = 1
 
-                        dlitem.log("Strange, local size was bigger then remote, re-downloading %s" % short_filename)
+                        self.dlitem.log("Strange, local size was bigger then remote, re-downloading %s" % short_filename)
                         f = common.open_file(filename, "wb")
                     else:
                         #lets resume
-                        dlitem.log("Partial download %s (%s bytes), lets resume from %s bytes" % (short_filename, local_size, local_size))
+                        self.dlitem.log("Partial download %s (%s bytes), lets resume from %s bytes" % (short_filename, local_size, local_size))
                         f = common.open_file(filename, "ab")
 
                 else:
-                    dlitem.log("Will download %s (%s bytes)" % (short_filename, remote_size))
+                    self.dlitem.log("Will download %s (%s bytes)" % (short_filename, remote_size))
                     f = common.open_file(filename, "wb")
 
                 c.setopt(pycurl.RESUME_FROM, local_size)
@@ -349,12 +341,12 @@ class FTPMirror:
                         time.sleep(3)
 
                     if success:
-                        dlitem.log("CURL Thread: %s Success:%s" % (c.thread_num, os.path.basename(c.filename)))
+                        self.dlitem.log("CURL Thread: %s Success:%s" % (c.thread_num, os.path.basename(c.filename)))
                     else:
                         failed_list[c.filename] = 1
                         queue.append((c.url, c.filename, c.remote_size, datetime.now()))
                         num_processed -= 1
-                        dlitem.log("CURL Thread: %s  Failure: %s as it Didnt download properly, the local (%s) size does not match the remote size (%s), lets retry" % (c.thread_num, os.path.basename(c.filename), local_size, c.remote_size))
+                        self.dlitem.log("CURL Thread: %s  Failure: %s as it Didnt download properly, the local (%s) size does not match the remote size (%s), lets retry" % (c.thread_num, os.path.basename(c.filename), local_size, c.remote_size))
 
                     c.fp = None
                     freelist.append(c)
@@ -399,7 +391,7 @@ class FTPMirror:
                             msg = "CURL Thread %s: Retrying: %s %s %s" % (c.thread_num, os.path.basename(c.filename), errno, errmsg)
                             num_processed -= 1
 
-                    dlitem.log(msg)
+                    self.dlitem.log(msg)
                     freelist.append(c)
 
                 num_processed = num_processed + len(ok_list) + len(err_list)
@@ -410,23 +402,20 @@ class FTPMirror:
             #lets do checks
             if not self.timer.isAlive():
 
-                if self.is_aborted():
-                    dlitem.log("Aborting task!")
-                    cleanup(self.m)
+                if self.abort:
+                    self.cleanup()
                     return
 
                 #Lets get speed
-                speed = 0
+                self.speed = 0
 
                 for handle in self.m.handles:
                     try:
-                        speed = speed + handle.getinfo(pycurl.SPEED_DOWNLOAD)
+                        self.speed = self.speed + handle.getinfo(pycurl.SPEED_DOWNLOAD)
                     except Exception as e:
-                        dlitem.log("error getting speed %s" % e.message)
+                        self.dlitem.log("error getting speed %s" % e.message)
 
-                current_task.update_state(state='RUNNING', meta={'updated': time.mktime(datetime.now().timetuple()), 'speed': speed, 'last_error': last_err, 'speed_delay': str(speed_delay)})
-
-                current_speed_kb = speed / 1024
+                current_speed_kb = self.speed / 1024
 
                 #Do we need to throttle the speed?
                 if max_speed_kb > 0:
@@ -465,7 +454,4 @@ class FTPMirror:
             self.m.select(1.0)
 
         # Cleanup
-        cleanup(self.m)
-
-        from lazy_client_core.tasks import queue
-        queue.delay()
+        self.cleanup()

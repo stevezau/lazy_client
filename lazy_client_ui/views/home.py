@@ -17,11 +17,12 @@ class IndexView(TemplateView):
     def post(self, request, *args, **kwargs):
         action = request.POST.get('action')
 
+        from lazy_client_core.utils.threadmanager import queue_manager
         if action == "stop":
-            QueueManager.stop_queue()
+            queue_manager.pause()
 
         if action == "start":
-            QueueManager.start_queue()
+            queue_manager.resume()
 
         return super(IndexView, self).get(request, *args, **kwargs)
 
@@ -38,7 +39,8 @@ class IndexView(TemplateView):
         context['errors'] = common.num_error()
         context['complete'] = common.num_complete(days=14)
 
-        context['queue_running'] = QueueManager.queue_running()
+        from lazy_client_core.utils.threadmanager import queue_manager
+        context['queue_running'] = queue_manager.paused
 
         if os.path.exists(settings.DATA_PATH):
             statvfs = os.statvfs(settings.DATA_PATH)

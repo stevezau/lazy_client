@@ -80,13 +80,13 @@ def server_api(request):
         action = request.DATA['action']
 
         if action == "stop_queue":
-            from lazy_client_core.utils.queuemanager import QueueManager
-            QueueManager.stop_queue()
+            from lazy_client_core.utils.threadmanager import queue_manager
+            queue_manager.pause()
             return Response({'status': 'success', 'detail': "Queue Stopped"})
 
         if action == "start_queue":
-            from lazy_client_core.utils.queuemanager import QueueManager
-            QueueManager.start_queue()
+            from lazy_client_core.utils.threadmanager import queue_manager
+            queue_manager.resume()
             return Response({'status': 'success', 'detail': "Queue started"})
 
 
@@ -194,14 +194,6 @@ def tvshow_action(request, pk):
             tvshow.fix_report = ""
             tvshow.save()
             return Response({'status': 'success', 'detail': ""})
-
-        if action == "cancel_missing":
-            try:
-                tvshow.cancel_fix_missing()
-            except Exception as e:
-                return Response({'status': 'failed', 'detail': str(e)})
-
-            return Response({'status': 'success', 'detail': "killed job"})
 
         if action == "fix_missing":
             #Check for existing running job
