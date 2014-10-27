@@ -590,7 +590,7 @@ class Maintenance(Thread):
             try:
                 xbmc.clean_library()
             except Exception as e:
-                logger.exception(e)
+                pass
 
         logger.info("Task 5: clean fix threads")
         from lazy_client_core.models import tvshow
