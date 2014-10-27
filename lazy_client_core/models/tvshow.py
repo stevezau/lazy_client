@@ -30,6 +30,8 @@ logger = logging.getLogger(__name__)
 
 from threading import Thread
 
+fix_threads = []
+
 class TVShowExcpetion():
     """
     """
@@ -57,30 +59,6 @@ def get_by_path(tvshow_path):
 
     raise Exception("Didn't find matchin tvshow object")
 
-def fix_missing_job(self, tvshow_id, fix):
-
-    tvshow_obj = TVShow.objects.get(id=tvshow_id)
-
-    scanner_thread = TVShowScanner(tvshow_obj, fix=fix)
-    scanner_thread.start()
-
-    try:
-        while True:
-            time.sleep(1)
-
-            try:
-                if self.is_aborted():
-                    scanner_thread.abort()
-                    scanner_thread.join()
-                    break
-            except:
-                pass
-
-            if not scanner_thread.isAlive():
-                break
-    finally:
-        tvshow_obj.fix_jobid = None
-        tvshow_obj.save()
 
 def update_show_favs():
     tvdbapi = Tvdb()
@@ -225,6 +203,18 @@ class TVShow(models.Model):
     def is_ignored(self):
         return self.ignored
 
+    def fix_job_running(self):
+        for t in fix_threads[:]:
+            #Lets check if its still running
+            if t.isAlive():
+                if t.tvshow_obj.id == self.id:
+                    return True
+            else:
+                #remove the job
+                fix_threads.remove(t)
+
+        return False
+
     def fix_missing(self, fix):
         if self.fix_job_running():
             raise AlreadyRunningException("Fix job already running")
@@ -239,9 +229,9 @@ class TVShow(models.Model):
                     self.fix_report[season] = {}
                 self.fix_report[season][ep] = "Searching"
 
-        task = fix_missing_job.delay(self.id, fix)
-        self.fix_jobid = task.task_id
-        self.save()
+        scanner_thread = TVShowScanner(self, fix=fix)
+        scanner_thread.start()
+        fix_threads.append(scanner_thread)
 
     def get_local_path(self):
         if not self.localpath:

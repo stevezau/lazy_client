@@ -13,6 +13,7 @@ import os
 from traceback import print_exc
 from random import choice
 from datetime import datetime
+from datetime import timedelta
 from threading import Thread
 from Queue import Queue
 from django.conf import settings
@@ -26,7 +27,8 @@ from lazy_client_core.utils import renamer
 from lazy_client_core.exceptions import *
 from lazy_client_core.utils import extractor
 from lazy_client_core.utils.mirror import FTPMirror
-
+from django.core.cache import cache
+from lazy_client_core.utils import common
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +47,45 @@ class QueueManager(Thread):
         self.createThreads()
         self.exit = False
         self.paused = False
+        self.last_check = None
+
+        #create a extractor thread
+        thread = Extractor()
+        self.extractor_thread = thread
+
+        #maintenance
+        self.maintenance_thread = Maintenance()
+
         self.start()
+
+    def queue_running(self):
+        errors = common.get_lazy_errors()
+
+        if len(errors) > 0:
+            #lets stop the queue due to errors
+            self.pause(errors=True)
+            return False
+        else:
+            #No errors, lets check if stop_queue_errors was set which means the errors was fixed
+            queue_stopped_errors = cache.get('stop_queue_errors')
+
+            if queue_stopped_errors == 'true':
+                #lets delete it
+                cache.delete("stop_queue_errors")
+
+                if None is cache.get('stop_queue'):
+                    #Lets start the queue
+                    self.resume()
+
+        queue_stopped = cache.get('stop_queue')
+
+        if None is queue_stopped:
+            return True
+
+        if queue_stopped == 'true':
+            return False
+
+        return False
 
     def abort_dlitem(self, dlitem):
         thread = self.get_dlitem_thread(dlitem)
@@ -59,10 +99,6 @@ class QueueManager(Thread):
         for i in range(settings.MAX_SIM_DOWNLOAD_JOBS):
             thread = Downloader()
             self.download_threads.append(thread)
-
-        #create a extractor thread
-        thread = Extractor()
-        self.extractor_thread = thread
 
     def dlitem_running(self, dlitem):
         for t in self.download_threads:
@@ -117,9 +153,7 @@ class QueueManager(Thread):
                 free[0].put(dlitem)
                 return
 
-
     def extract(self):
-
         if self.extractor_thread and not self.extractor_thread.active:
             for dlitem in DownloadItem.objects.all().filter(Q(status=DownloadItem.EXTRACT) | Q(status=DownloadItem.RENAME),  retries__lte=settings.DOWNLOAD_RETRY_COUNT):
                 if dlitem.dlstart:
@@ -139,7 +173,11 @@ class QueueManager(Thread):
                 continue
 
             logger.info('Checking download finished properly %s' % dlitem.title)
-            localsize = utils.get_size(dlitem.localpath)
+            try:
+                localsize = utils.get_size(dlitem.localpath)
+            except:
+                localsize = 0
+
             dlitem.log('Local size of folder is: %s' % localsize)
 
             localsize = localsize / 1024 / 1024
@@ -177,7 +215,13 @@ class QueueManager(Thread):
                     dlitem.save()
             dlitem.save()
 
-    def pause(self):
+    def pause(self, errors=False):
+        #Stop the queue
+        if errors:
+            cache.set("stop_queue_errors", "true", None)
+        else:
+            cache.set("stop_queue", "true", None)
+
         self.paused = True
 
         #Abort download
@@ -192,6 +236,8 @@ class QueueManager(Thread):
         self.download_threads = []
 
     def resume(self):
+        cache.delete("stop_queue")
+        cache.delete("stop_queue_errors")
         self.paused = False
         self.createThreads()
 
@@ -209,6 +255,16 @@ class QueueManager(Thread):
             if self.paused:
                 self.sleep()
                 continue
+
+            if not self.last_check:
+                if not self.queue_running():
+                    continue
+            else:
+                now = datetime.now()
+                diff = now - self.last_check
+                if diff.seconds > 30:
+                    if not self.queue_running():
+                        continue
 
             self.assign_download()
             self.check_finished()
@@ -472,3 +528,95 @@ class Extractor(Thread):
     def stop(self):
         """stops the thread"""
         self.put("abort_download")
+
+
+#####################
+#### Maintenance ####
+#####################
+
+class Maintenance(Thread):
+    def __init__(self):
+        Thread.__init__(self)
+        self.start()
+
+    def sleep(self):
+        sleep(60)
+
+    def do_maintenance(self):
+        logger.info("Task 1 - Cleanup downloaditem logs")
+        time_threshold = datetime.now() - timedelta(days=60)
+        dl_items = DownloadItem.objects.all().filter(dlstart__lt=time_threshold)
+
+        for dlitem in dl_items:
+            dlitem.clear_log()
+
+        logger.info("Task 2 - Lets set the favs")
+        try:
+            from lazy_client_core.models.tvshow import update_show_favs
+            update_show_favs()
+        except:
+            pass
+
+        logger.info("Task 3 - Update tvshow objects older then 2 weeks")
+        time_threshold = datetime.now() - timedelta(days=14)
+        from lazy_client_core.models import TVShow
+        from lazy_common.tvdb_api import Tvdb
+
+        tvshows = TVShow.objects.all().filter(updated__lt=time_threshold)
+        tvdb = Tvdb()
+
+        for tvshow in tvshows:
+            #First lets make sure we can get the object on thetvdb, it could of been deleted
+            try:
+                if tvshow.get_tvdb_obj() is None:
+                    tvdb[int(tvshow.id)]
+                else:
+                    tvshow.update_from_tvdb()
+                    tvshow.save()
+
+                if "Duplicate of" in tvshow.title:
+                    tvshow.delete()
+                    continue
+
+                if tvshow.title is None or tvshow.title == "" or tvshow.title == " " or len(tvshow.title) == 0:
+                    tvshow.delete()
+                    continue
+            except:
+                pass
+
+        logger.info("Task 4: Clean library from xbmc")
+        if os.path.exists(settings.TV_PATH) and os.path.exists(settings.MOVIE_PATH):
+            from lazy_client_core.utils import xbmc
+            try:
+                xbmc.clean_library()
+            except Exception as e:
+                logger.exception(e)
+
+        logger.info("Task 5: clean fix threads")
+        from lazy_client_core.models import tvshow
+        for t in tvshow.fix_threads[:]:
+            #Lets check if its still running
+            if not t.isAlive():
+                #remove the job
+                tvshow.fix_threads.remove(t)
+
+        cache.set("maintenance_run", datetime.now(), None)
+
+    def run(self):
+
+        while True:
+            last_run = cache.get("maintenance_run")
+
+            if None is last_run:
+                self.do_maintenance()
+                continue
+
+            now = datetime.now()
+            diff = now - last_run
+            hours = diff.seconds / 60 / 60
+
+            if hours >= 24:
+                self.do_maintenance()
+
+            self.sleep()
+

@@ -276,7 +276,6 @@ def download_action(request, pk):
 
         if action == "ignore":
             from lazy_common import metaparser
-            from lazy_client_core.utils import common
 
             try:
                 dlitem = DownloadItem.objects.get(id=pk)

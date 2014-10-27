@@ -10,7 +10,9 @@
 
 {% block content %}
 
-    <div>Queue: {{ queue }}</div>
+    <pre>Queue: {{ queue }}
+        Running: {{ queue.queue_running }}
+    </pre>
 
     <pre>DL Threads
     {% for t in queue.download_threads %}

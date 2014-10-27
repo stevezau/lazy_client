@@ -41,7 +41,7 @@
 
             {% csrf_token %}
             {% if doregroup %}
-                {% regroup downloads.object_list by tvdbid as object_list_grouped %}
+                {% regroup downloads.object_list by tvdbid_id as object_list_grouped %}
                     {% for downloadgroup in object_list_grouped %}
                         {% if downloadgroup.grouper == None or downloadgroup.list|length == 1%}
                             {% for download in downloadgroup.list %}

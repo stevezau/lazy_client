@@ -23,19 +23,6 @@ class IndexView(TemplateView):
     template_name = 'home/index.html'
     model = DownloadItem
 
-    def post(self, request, *args, **kwargs):
-        action = request.POST.get('action')
-
-        from lazy_client_core.utils.threadmanager import queue_manager
-        if action == "stop":
-            queue_manager.pause()
-
-        if action == "start":
-            queue_manager.resume()
-
-        return super(IndexView, self).get(request, *args, **kwargs)
-
-
     def get_context_data(self, **kwargs):
         context = super(IndexView, self).get_context_data(**kwargs)
 
@@ -49,7 +36,7 @@ class IndexView(TemplateView):
         context['complete'] = common.num_complete(days=14)
 
         from lazy_client_core.utils.threadmanager import queue_manager
-        context['queue_running'] = queue_manager.paused
+        context['queue_running'] = queue_manager.queue_running()
 
         if os.path.exists(settings.DATA_PATH):
             statvfs = os.statvfs(settings.DATA_PATH)

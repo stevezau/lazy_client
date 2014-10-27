@@ -2,7 +2,7 @@
 
 <div pri="{{ download.priority }}" class="row row-item download-item"
         {% if downloadgroup.list and downloadgroup.list|length > 1 %}
-            id="item_m{{ downloadgroup.grouper.id }}" multi="yes"
+            id="item_m{{ downloadgroup.grouper }}" multi="yes"
         {% else %}
             id="item_{{ download.id }}"
         {% endif %}
@@ -196,17 +196,17 @@
                 <div class="button-bar btn-group-justified">
                     {% if downloadgroup.list and downloadgroup.list|length > 1 %}
                         <div class="btn-group">
-                            <button type="button" class="item_approve_m{{ downloadgroup.grouper.id }} btn btn-default btn-xl btn-responsive">
+                            <button type="button" class="item_approve_m{{ downloadgroup.grouper }} btn btn-default btn-xl btn-responsive">
                                 <span class="glyphicon glyphicon-ok"></span> Approve All
                             </button>
                         </div>
                         <div class="btn-group">
-                            <button type="button" class="item_delete_m{{ downloadgroup.grouper.id }} btn btn-default btn-xl btn-responsive">
+                            <button type="button" class="item_delete_m{{ downloadgroup.grouper }} btn btn-default btn-xl btn-responsive">
                                 <span class="glyphicon glyphicon-remove-circle"></span> Delete All
                             </button>
                         </div>
                         <div class="btn-group">
-                            <button type="button" class="item_ignore_m{{ downloadgroup.grouper.id }} btn btn-default btn-xl btn-responsive">
+                            <button type="button" class="item_ignore_m{{ downloadgroup.grouper }} btn btn-default btn-xl btn-responsive">
                                 <span class="glyphicon glyphicon-minus"></span> Ignore
                             </button>
                         </div>

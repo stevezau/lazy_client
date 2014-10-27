@@ -227,11 +227,12 @@ $( document ).ready(function() {
     });
 
     $(document).on('click', '[class^="item_pri_low_"]', function(event) {
-        id = $(this).prop("class").match(/item_pri_medium_.+[0-9]/).toString().replace("item_pri_medium_", "");
+        id = $(this).prop("class").match(/item_pri_low_.+[0-9]/).toString().replace("item_pri_low_", "");
         sort_download(id, 10);
     });
 
     $(document).on('click', '[class^="item_pri_medium_"]', function(event) {
+
         id = $(this).prop("class").match(/item_pri_medium_.+[0-9]/).toString().replace("item_pri_medium_", "");
         sort_download(id, 5);
     });

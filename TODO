@@ -26,6 +26,5 @@ NEW VERSION ACTIONS
 --/mnt/ext/opt/ImageMagick/usr/local/sbin/convert
 
 -ADD SUPPORT FOR SUBS
--improve QTS lazy script
 -manual rename for files not found
 -Make Actions movies etc lower rating on imdb accept on lazy server

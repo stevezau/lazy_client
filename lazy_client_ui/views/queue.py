@@ -175,8 +175,9 @@ class QueueManage(ListView):
         context['type'] = self.type
 
         if self.dlget == DownloadItem.PENDING:
+            #Lets group tvshows
             context['doregroup'] = True
-            context['downloads'] = sorted(self.object_list, key=self.key_function)
+            self.object_list = sorted(self.object_list, key=self.key_function)
 
         #Pageinate results
         paginate = Paginator(self.object_list, 50, request=self.request)
