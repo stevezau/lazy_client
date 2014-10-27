@@ -460,7 +460,7 @@ class Extractor(Thread):
 
                     self._fail_dlitem(dlitem, error=msg)
                     dlitem.save()
-                except Extractor as e:
+                except Exception as e:
                     self._fail_dlitem(dlitem, error=str(e))
                     continue
 
