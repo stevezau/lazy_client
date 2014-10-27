@@ -158,8 +158,8 @@ case $1 in
         flexget
         ;;
     restart)
-        stop_all
-        start_all
+        stop
+        start
         ;;
     check)
         check_running

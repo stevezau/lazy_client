@@ -67,8 +67,8 @@ ALLOWED_IPS = [
 
 WEBSERVER_IP = "0.0.0.0"
 WEBSERVER_PORT = 8000
-WEBSERVER_ERROR_LOG = os.path.join(BASE_DIR, "logs/web_access.log")
-WEBSERVER_ACCESS_LOG = os.path.join(BASE_DIR, "logs/web_error.log")
+WEBSERVER_ERROR_LOG = os.path.join(BASE_DIR, "logs/lazy_access.log")
+WEBSERVER_ACCESS_LOG = os.path.join(BASE_DIR, "logs/lazy_error.log")
 WEBSERVER_PIDFILE = os.path.join(BASE_DIR, "lazy.pid")
 
 
@@ -201,7 +201,7 @@ LOGGING = {
         'logfile': {
             'level':'DEBUG',
             'class':'logging.handlers.RotatingFileHandler',
-            'filename': BASE_DIR + "/logs/web_server.log",
+            'filename': BASE_DIR + "/logs/lazy.log",
             'maxBytes': 50000,
             'backupCount': 4,
             'formatter': 'standard',
