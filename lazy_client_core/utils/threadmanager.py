@@ -142,7 +142,6 @@ class QueueManager(Thread):
                     minutes = diff.seconds / 60
 
                     if minutes < settings.DOWNLOAD_RETRY_DELAY:
-                        logger.debug("Skipping job as it was just retied %s" % minutes)
                         continue
 
                 #Check if we should mark it as failed
