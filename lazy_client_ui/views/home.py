@@ -6,6 +6,19 @@ from lazy_client_core.models import DownloadItem
 
 logger = logging.getLogger(__name__)
 
+class DebugView(TemplateView):
+    template_name = 'home/debug.html'
+
+
+    def get_context_data(self, **kwargs):
+        context = super(DebugView, self).get_context_data(**kwargs)
+
+        from lazy_client_core.utils import threadmanager
+
+        context['queue'] = threadmanager.queue_manager
+
+        return context
+
 class IndexView(TemplateView):
     template_name = 'home/index.html'
     model = DownloadItem

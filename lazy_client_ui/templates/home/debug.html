@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load sitetree %}
+
+{% block title %}{{ type }}{% endblock %}
+
+
+{% block submenu %}
+    {% include "queue/submenu.html" %}
+{% endblock %}
+
+
+{% block content %}
+
+    <div>Queue: {{ queue }}</div>
+
+    <pre>DL Threads
+    {% for t in queue.download_threads %}
+
+        Active: {{ t.active }}
+        Mirror: {{ t.mirror_thread }}
+        Mirror_Runnning: {{ t.mirror_thread.isAlive }}
+        Curl: {{ t.mirror_thread.m }}
+
+        {% for c in t.mirror_thread.m.handles %}
+            c_thread: {{ c.url }}
+        {% endfor %}
+
+    {% endfor %}
+    </pre>
+
+{% endblock %}

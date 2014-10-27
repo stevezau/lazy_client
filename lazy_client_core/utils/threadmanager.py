@@ -196,7 +196,7 @@ class QueueManager(Thread):
         self.createThreads()
 
     def sleep(self):
-        sleep(0.5)
+        sleep(1)
 
     def quit(self):
         self.pause()
@@ -231,7 +231,7 @@ class Downloader(Thread):
         self.start()
 
     def sleep(self):
-        sleep(0.5)
+        sleep(1)
 
     def run(self):
 
@@ -275,7 +275,7 @@ class Downloader(Thread):
                 dlitem.save()
                 try:
                     while True:
-                        sleep(0.5)
+                        sleep(1)
 
                         try:
                             if self.abort_download:
@@ -364,7 +364,7 @@ class Extractor(Thread):
         dlitem.save()
 
     def sleep(self):
-        sleep(0.5)
+        sleep(1)
 
     def run(self):
 
