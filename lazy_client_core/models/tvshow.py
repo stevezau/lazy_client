@@ -1305,10 +1305,14 @@ class TVShowScanner(Thread):
                 for ep_no in eps:
                     if ep_no in skip_eps:
                         continue
+
+                    found = False
                     for found_ep in found_eps:
                         if found_ep['ep_no'] == ep_no:
-                            continue
-                    didnt_find_eps.append(ep_no)
+                            found = True
+                            break
+                    if not found:
+                        didnt_find_eps.append(ep_no)
 
                 if len(didnt_find_eps) > 0 and self.tvshow_obj.season_finished(cur_season_no):
                     self.log("Didn't find eps %s.. lets try get season pack instead.." % didnt_find_eps)
