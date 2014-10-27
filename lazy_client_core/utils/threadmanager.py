@@ -260,12 +260,14 @@ class QueueManager(Thread):
 
             if not self.last_check:
                 if not self.queue_running():
+                    self.sleep()
                     continue
             else:
                 now = datetime.now()
                 diff = now - self.last_check
                 if diff.seconds > 30:
                     if not self.queue_running():
+                        self.sleep()
                         continue
 
             self.assign_download()
@@ -289,7 +291,7 @@ class Downloader(Thread):
         self.start()
 
     def sleep(self):
-        sleep(1)
+        sleep(2)
 
     def run(self):
 
@@ -388,6 +390,7 @@ class Downloader(Thread):
                 dlitem.log(str(e))
                 logger.exception(e)
 
+            self.sleep()
 
     def put(self, job):
         """passing job to thread"""
@@ -422,7 +425,7 @@ class Extractor(Thread):
         dlitem.save()
 
     def sleep(self):
-        sleep(1)
+        sleep(2)
 
     def run(self):
 
