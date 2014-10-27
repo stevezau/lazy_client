@@ -6,10 +6,10 @@ from lazy_client_core.utils.webserver import start_server, stop_server
 import atexit
 
 CPSERVER_HELP = r"""
-  Run webui
+  Run lazy
 
-   webui start
-   webui stop
+   lazy start
+   lazy stop
 
 """
 

@@ -128,7 +128,7 @@ class Command(BaseCommand):
         print(green_color("Stopping services..."))
 
         #Stop web_Server
-        management.call_command('webui', 'stop', interactive=False)
+        management.call_command('lazy', 'stop', interactive=False)
 
     def run_command(self, cmd, check=False):
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
