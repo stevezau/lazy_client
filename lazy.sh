@@ -33,6 +33,8 @@ if [ -f "/proc/sysinfo" ] && grep -q "QNAP" /proc/sysinfo; then
     FLEXGET_HOME_ADMIN="/root/.flexget"
     TVDB_TMP_FOLDER="$BASE_PATH/tvdb_api-u0"
     PIP_BIN="/share/MD0_DATA/.qpkg/Python/bin/pip-2.7"
+    PIP_BUILD="/tmp/pip-build"
+    PIP_BUILD_TEMP="$BASE_PATH/pip-build"
 
     #First setup symlinks and create folders
     if [ ! -e "$FLEXGET_HOME_ADMIN" ]; then
@@ -47,6 +49,15 @@ if [ -f "/proc/sysinfo" ] && grep -q "QNAP" /proc/sysinfo; then
     if [ ! -h "/tmp/tvdb_api-u0" ]; then
         rm -rf /tmp/tvdb_api-u0
         ln -s $TVDB_TMP_FOLDER /tmp/tvdb_api-u0
+    fi
+
+    if [ ! -e "$PIP_BUILD_TEMP" ]; then
+        mkdir $PIP_BUILD_TEMP
+    fi
+
+    if [ ! -h $PIP_BUILD ]; then
+        rm -rf $PIP_BUILD
+        ln -s $PIP_BUILD_TEMP $PIP_BUILD
     fi
 fi
 
