@@ -460,7 +460,9 @@ class Extractor(Thread):
 
                     self._fail_dlitem(dlitem, error=msg)
                     dlitem.save()
-
+                except Extractor as e:
+                    self._fail_dlitem(dlitem, error=str(e))
+                    continue
 
     def put(self, job):
         """passing job to thread"""
