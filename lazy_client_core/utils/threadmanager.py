@@ -59,6 +59,8 @@ class QueueManager(Thread):
         self.start()
 
     def queue_running(self):
+        self.last_check = datetime.now()
+
         errors = common.get_lazy_errors()
 
         if len(errors) > 0:
@@ -136,10 +138,11 @@ class QueueManager(Thread):
                 #Check if this was just tried..
                 if dlitem.dlstart:
                     cur_time = datetime.now()
-                    diff = cur_time - dlitem.dlstart.replace(tzinfo=None)
+                    diff = cur_time - dlitem.dlstart
                     minutes = diff.seconds / 60
 
                     if minutes < settings.DOWNLOAD_RETRY_DELAY:
+                        logger.debug("Skipping job as it was just retied %s" % minutes)
                         continue
 
                 #Check if we should mark it as failed
@@ -242,7 +245,7 @@ class QueueManager(Thread):
         self.createThreads()
 
     def sleep(self):
-        sleep(1)
+        sleep(2)
 
     def quit(self):
         self.pause()
