@@ -1,7 +1,6 @@
 from __future__ import division
 from django.core.management.base import BaseCommand
 import logging
-from lazy_client_core.utils.queuemanager import QueueManager
 from optparse import make_option
 import subprocess
 import os
@@ -24,8 +23,6 @@ LOCK_EXPIRE = 60 * 5 # Lock expires in 5 minutes
 class Command(BaseCommand):
 
     base_dir = djangosettings.BASE_DIR
-
-    queue_running = QueueManager.queue_running()
 
     manage_file = os.path.join(base_dir, "manage.py")
     lazysh_file = os.path.join(base_dir, "lazy.sh")
