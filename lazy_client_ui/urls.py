@@ -14,7 +14,7 @@ urlpatterns = patterns('',
 
     #Home - Default Index
     url(r'^$', home.IndexView.as_view(), name='home'),
-    url(r'^debug/$', home.DebugView.as_view(), name='debug'),
+    url(r'^debug_threads/$', home.DebugView.as_view(), name='debug'),
 
     #Downloads
     url(r'^queue/log/(?P<pk>\w+)/$', queue.DownloadLog.as_view(), name='queue.log'),

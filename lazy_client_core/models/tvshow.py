@@ -1314,7 +1314,7 @@ class TVShowScanner(Thread):
                     if not found:
                         didnt_find_eps.append(ep_no)
 
-                if len(didnt_find_eps) > 0 and self.tvshow_obj.season_finished(cur_season_no):
+                if len(didnt_find_eps) > 0 and self.tvshow_obj.season_finished(cur_season_no) and self.tvshow_obj.season_finished(cur_season_no):
                     self.log("Didn't find eps %s.. lets try get season pack instead.." % didnt_find_eps)
                     #remove the skip eps from the eps to download as they were added via the ftp
                     for ep in skip_eps:

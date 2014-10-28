@@ -387,8 +387,11 @@ class Downloader(Thread):
                     dlitem.save()
 
             except Exception as e:
-                dlitem.log(str(e))
                 logger.exception(e)
+                try:
+                    dlitem.log(str(e))
+                except:
+                    pass
 
             self.sleep()
 
