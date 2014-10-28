@@ -160,13 +160,13 @@ class QueueManager(Thread):
             for dlitem in DownloadItem.objects.all().filter(Q(status=DownloadItem.EXTRACT) | Q(status=DownloadItem.RENAME),  retries__lte=settings.DOWNLOAD_RETRY_COUNT):
                 if dlitem.dlstart:
                     cur_time = datetime.now()
-                    diff = cur_time - dlitem.dlstart.replace(tzinfo=None)
+                    diff = cur_time - dlitem.dlstart
                     minutes = diff.seconds / 60
 
                     if minutes < settings.DOWNLOAD_RETRY_DELAY:
                         continue
 
-                    self.extractor_thread.put(dlitem)
+                self.extractor_thread.put(dlitem)
 
     def check_finished(self):
         for dlitem in DownloadItem.objects.all().filter(status=DownloadItem.DOWNLOADING, retries__lte=settings.DOWNLOAD_RETRY_COUNT):
@@ -425,7 +425,10 @@ class Extractor(Thread):
             dlitem.message = error
 
         dlitem.retries += 1
-        dlitem.save()
+        try:
+            dlitem.save()
+        except:
+            pass
 
     def sleep(self):
         sleep(2)
