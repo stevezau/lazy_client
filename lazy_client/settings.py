@@ -157,7 +157,7 @@ PAGINATION_SETTINGS = {
     'MARGIN_PAGES_DISPLAYED': 1,
 }
 
-INSTALLED_APPS = [
+INSTALLED_APPS = (
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -178,7 +178,7 @@ INSTALLED_APPS = [
     'lazy_client_ui',
     'lazy_common',
     'pure_pagination',
-]
+)
 
 LOGGING = {
     'version': 1,
@@ -388,7 +388,7 @@ import lazysettings
 from lazysettings import *
 
 if DEBUG:
-    INSTALLED_APPS.append("debug_toolbar")
+    INSTALLED_APPS = INSTALLED_APPS + ("debug_toolbar",)
 
 if hasattr(lazysettings, "SERVER_NAME"):
     EMAIL_SUBJECT_PREFIX = "[LAZY_CLIENT] [%s]" % lazysettings.SERVER_NAME
