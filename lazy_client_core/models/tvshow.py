@@ -871,6 +871,9 @@ class TVShowScanner(Thread):
     def is_season_pack(self, title):
         parser = metaparser.get_parser_cache(title, metaparser.TYPE_TVSHOW)
 
+        if 'screenSize' not in parser.details:
+            return False
+
         #We don't want Disk or Part seasons
         if re.search('(?i)D[0-9]+|DVD[0-9]+|Disc [0-9]+', title):
             return False
