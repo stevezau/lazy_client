@@ -306,7 +306,6 @@ CACHES = {
 }
 
 MIDDLEWARE_CLASSES = (
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.gzip.GZipMiddleware',
     'htmlmin.middleware.HtmlMinifyMiddleware',
     'django.middleware.common.CommonMiddleware',
