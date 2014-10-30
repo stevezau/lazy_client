@@ -202,8 +202,8 @@ LOGGING = {
             'level':'DEBUG',
             'class':'logging.handlers.RotatingFileHandler',
             'filename': BASE_DIR + "/logs/lazy.log",
-            'maxBytes': 50000,
-            'backupCount': 4,
+            'maxBytes': 100000,
+            'backupCount': 8,
             'formatter': 'standard',
         },
         'console':{
