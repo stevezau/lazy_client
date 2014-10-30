@@ -281,7 +281,7 @@ def download_action(request, pk):
                 dlitem = DownloadItem.objects.get(id=pk)
 
                 if dlitem.tvdbid:
-                    dlitem.tvdbid.ignored = True
+                    dlitem.tvdbid.set_ignored(True)
                     dlitem.tvdbid.save()
 
                 if dlitem.imdbid:

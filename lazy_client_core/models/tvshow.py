@@ -535,6 +535,8 @@ class TVShow(models.Model):
 
             eps = []
             for ep in tvdb_obj[season].keys():
+                if ep == 0:
+                    continue
                 if ep <= latest_ep:
                     eps.append(ep)
             return eps
@@ -871,18 +873,17 @@ class TVShowScanner(Thread):
     def is_season_pack(self, title):
         parser = metaparser.get_parser_cache(title, metaparser.TYPE_TVSHOW)
 
-        if 'screenSize' not in parser.details:
-            return False
+        if 'videoCodec' not in parser.details:
+            if 'format' in parser.details or 'releaseGroup' in parser.details:
+                return False
 
         #We don't want Disk or Part seasons
         if re.search('(?i)D[0-9]+|DVD[0-9]+|Disc [0-9]+', title):
             return False
 
-        if 'format' in parser.details and parser.details['format'] == "DVD":
-            return False
-
         if parser.details['type'] == "season_pack" or parser.details['type'] == "season_pack_multi" and 'series' in parser.details:
             return True
+
         return False
 
     def valid_torrent_title(self, torrent):
@@ -1018,13 +1019,13 @@ class TVShowScanner(Thread):
                                     else:
                                         site_dict['count'] = len(site['results'])
 
-                                    self.log("Found %s entries from %s" % (site_dict['count'], site_name))
-
                                     for result in site['results']:
                                         if result['title'] not in site_dict:
                                             if self.is_season_pack(result['title']):
                                                 if self.valid_torrent_title(result['title']):
                                                     site_dict['results'].append(result['title'])
+
+                                    self.log("%s results from from %s (%s were related to this tvshow)" % (site_dict['count'], site_name, len(site_dict['results'])))
                         break
                     except LazyServerExcpetion as e:
                         self.log("Error searching torrents for %s as %s" % (name, str(e)))
@@ -1044,10 +1045,11 @@ class TVShowScanner(Thread):
                             for f in found:
                                 if self.valid_torrent_title(os.path.basename(f['path'])):
                                     self.ftp_entries.append(f['path'])
+                        self.log("Found %s matching ftp entries " % len(self.ftp_entries))
+                        print self.ftp_entries
                         break
                     except LazyServerExcpetion as e:
                         self.log("Error searching ftp for %s as %s" % (name, str(e)))
-
         return self.ftp_entries
 
     def add_new_download(self, ftp_path, season=None, eps=None, requested=False):
@@ -1141,6 +1143,7 @@ class TVShowScanner(Thread):
         self.log("Step 2: Looking for season %s, via the ftp" % season)
         for ftp_path in self.get_ftp_entries():
             found_seasons = self.get_pack_seasons(os.path.basename(ftp_path))
+
             if found_seasons and season in found_seasons:
                 self.log("We found season %s on ftp in %s" % (season, ftp_path))
                 self.add_new_download(ftp_path, season=season, eps=eps, requested=True)
