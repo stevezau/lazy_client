@@ -130,7 +130,7 @@ class Command(BaseCommand):
 
                     if tvdb_date:
                             diff = curTime - tvdb_obj.updated.replace(tzinfo=None)
-                            hours = diff.seconds / 60 / 60
+                            hours = diff.total_seconds() / 60 / 60
                             if hours > 168:
                                 tvdb_obj.update_from_tvdb()
                                 tvdb_obj.save()

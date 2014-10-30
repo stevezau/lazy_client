@@ -391,7 +391,7 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
                     hours = 300
                 else:
                     diff = curTime - existing_obj.dateadded.replace(tzinfo=None)
-                    hours = diff.seconds / 60 / 60
+                    hours = diff.total_seconds() / 60 / 60
 
                 if hours > 288:
                     existing_obj.delete()
@@ -586,7 +586,7 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
                     hours = 50
                 else:
                     diff = curTime - instance.tvdbid.updated.replace(tzinfo=None)
-                    hours = diff.seconds / 60 / 60
+                    hours = diff.total_seconds() / 60 / 60
 
                 if hours > 24:
                     try:
@@ -620,7 +620,7 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
                 try:
                     if imdb_date:
                         diff = curTime - instance.imdbid.updated.replace(tzinfo=None)
-                        hours = diff.seconds / 60 / 60
+                        hours = diff.total_seconds() / 60 / 60
                         if hours > 24:
                             instance.imdbid.update_from_imdb()
                     else:

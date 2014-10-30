@@ -139,7 +139,7 @@ class QueueManager(Thread):
                 if dlitem.dlstart:
                     cur_time = datetime.now()
                     diff = cur_time - dlitem.dlstart
-                    minutes = diff.seconds / 60
+                    minutes = diff.total_seconds() / 60
 
                     if minutes < settings.DOWNLOAD_RETRY_DELAY:
                         continue
@@ -161,7 +161,7 @@ class QueueManager(Thread):
                 if dlitem.dlstart:
                     cur_time = datetime.now()
                     diff = cur_time - dlitem.dlstart
-                    minutes = diff.seconds / 60
+                    minutes = diff.total_seconds() / 60
 
                     if minutes < settings.DOWNLOAD_RETRY_DELAY:
                         continue
@@ -265,7 +265,7 @@ class QueueManager(Thread):
             else:
                 now = datetime.now()
                 diff = now - self.last_check
-                if diff.seconds > 30:
+                if diff.total_seconds() > 30:
                     if not self.queue_running():
                         self.sleep()
                         continue
@@ -624,7 +624,7 @@ class Maintenance(Thread):
 
             now = datetime.now()
             diff = now - last_run
-            hours = diff.seconds / 60 / 60
+            hours = diff.total_seconds() / 60 / 60
 
             if hours >= 24:
                 self.do_maintenance()
