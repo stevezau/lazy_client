@@ -73,9 +73,6 @@ class FTPChecker:
         seconds_last_check = now - self.last_check
 
         if seconds_last_check > ftpmanager.FTP_TIMEOUT_TRANSFER:
-            self.debug("Running check on data rate to make sure it has not died! seconds %s" % (seconds_last_check))
-            self.debug("DLTotal: %s  dlnow: %s    downloaded: %s  " % (dltotal, dlnow, self.downloaded))
-
             self.last_check = time.time()
 
             if None is self.downloaded:
@@ -88,6 +85,9 @@ class FTPChecker:
             self.downloaded = dlnow
 
             if xfer_rate < ftpmanager.FTP_TIMEOUT_MIN_SPEED:
+                print xfer_rate
+                print dlnow
+                print seconds_last_check
                 self.debug("NO DATA RECEIVED LETS KILL IT")
                 #hmm, lets kill it!
                 self.killed = True
