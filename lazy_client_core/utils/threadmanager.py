@@ -8,6 +8,7 @@ from subprocess import Popen
 from threading import Event, Lock
 from time import sleep, time
 from lazy_common.utils import delete, get_size
+from django.db.models import Q
 
 import os
 from traceback import print_exc
@@ -293,6 +294,15 @@ class Downloader(Thread):
     def sleep(self):
         sleep(2)
 
+    def abort_mirror(self):
+        try:
+            if self.mirror_thread:
+                self.mirror_thread.abort = True
+                self.mirror_thread.join()
+        except:
+            pass
+
+
     def run(self):
 
         while True:
@@ -329,18 +339,18 @@ class Downloader(Thread):
                 else:
                     raise DownloadException("Unable to get size and files on the FTP")
 
-                #Time to start the downloading
-                self.mirror_thread = FTPMirror(files, dlitem)
-                dlitem.status = DownloadItem.DOWNLOADING
-                dlitem.save()
                 try:
+                    #Time to start the downloading
+                    self.mirror_thread = FTPMirror(files, dlitem)
+                    dlitem.status = DownloadItem.DOWNLOADING
+                    dlitem.save()
+
                     while True:
                         sleep(1)
 
                         try:
                             if self.abort_download:
-                                self.mirror_thread.abort = True
-                                self.mirror_thread.join()
+                                self.abort_mirror()
                                 dlitem.status = DownloadItem.QUEUE
                                 dlitem.save()
                                 break
@@ -350,6 +360,7 @@ class Downloader(Thread):
                         if not self.mirror_thread.isAlive():
                             break
                 except Exception as e:
+                    self.abort_mirror()
                     dlitem.status = DownloadItem.QUEUE
                     dlitem.save()
                     logger.exception(e)
@@ -544,14 +555,34 @@ class Extractor(Thread):
 #####################
 #### Maintenance ####
 #####################
+from lazy_common.tvdb_api import Tvdb
 
 class Maintenance(Thread):
     def __init__(self):
         Thread.__init__(self)
         self.start()
+        self.tvdb = Tvdb()
 
     def sleep(self):
         sleep(60)
+
+    def update_tvshow(self, tvshow):
+        try:
+            if tvshow.get_tvdb_obj() is None:
+                self.tvdb[int(tvshow.id)]
+            else:
+                tvshow.update_from_tvdb()
+                tvshow.save()
+
+            if "Duplicate of" in tvshow.title:
+                tvshow.delete()
+                return
+
+            if tvshow.title is None or tvshow.title == "" or tvshow.title == " " or len(tvshow.title) == 0:
+                tvshow.delete()
+                return
+        except:
+            pass
 
     def do_maintenance(self):
         logger.info("Task 1 - Cleanup downloaditem logs")
@@ -571,29 +602,16 @@ class Maintenance(Thread):
         logger.info("Task 3 - Update tvshow objects older then 2 weeks")
         time_threshold = datetime.now() - timedelta(days=14)
         from lazy_client_core.models import TVShow
-        from lazy_common.tvdb_api import Tvdb
 
         tvshows = TVShow.objects.all().filter(updated__lt=time_threshold)
-        tvdb = Tvdb()
 
         for tvshow in tvshows:
-            #First lets make sure we can get the object on thetvdb, it could of been deleted
-            try:
-                if tvshow.get_tvdb_obj() is None:
-                    tvdb[int(tvshow.id)]
-                else:
-                    tvshow.update_from_tvdb()
-                    tvshow.save()
+            self.update_tvshow(tvshow)
 
-                if "Duplicate of" in tvshow.title:
-                    tvshow.delete()
-                    continue
-
-                if tvshow.title is None or tvshow.title == "" or tvshow.title == " " or len(tvshow.title) == 0:
-                    tvshow.delete()
-                    continue
-            except:
-                pass
+        logger.info("Task 3.1 - Update tvshow objects with no title")
+        tvshows = TVShow.objects.filter(Q(title__isnull=True) | Q(title__exact=''))
+        for tvshow in tvshows:
+            self.update_tvshow(tvshow)
 
         logger.info("Task 4: Clean library from xbmc")
         if os.path.exists(settings.TV_PATH) and os.path.exists(settings.MOVIE_PATH):

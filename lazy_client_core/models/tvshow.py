@@ -272,7 +272,8 @@ class TVShow(models.Model):
             utils.delete(self.get_local_path())
 
     def exists(self):
-        if os.path.exists(self.get_local_path()):
+        local_path = self.get_local_path()
+        if local_path and os.path.exists(local_path):
             return True
 
         return False
@@ -1382,6 +1383,6 @@ def add_new_tvdbitem(sender, created, instance, **kwargs):
         if not instance.title:
             instance.update_from_tvdb()
 
-        if not instance.title:
+        if not instance.title or len(instance.title) == 0:
             logger.error("Unable to figure out tvdb info")
             raise Exception("Unable to determine TVDB information")

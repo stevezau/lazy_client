@@ -17,14 +17,6 @@ NEW VERSION ACTIONS
 -update XBMC_API_URL
 -add  = "Steve" in lazysettings.yp
 
-
--upgrade script, make it import git first.. create wrapper.. at same time do QTS detection
---/share/MD0_DATA/.qpkg/Python/bin/easy_install-2.7
---/opt/bin/git
---/share/MD0_DATA/.qpkg/Python/bin/pip-2.7
---/share/MD0_DATA/.qpkg/Optware/bin/ipkg
---/mnt/ext/opt/ImageMagick/usr/local/sbin/convert
-
 -ADD SUPPORT FOR SUBS
 -manual rename for files not found
 -Make Actions movies etc lower rating on imdb accept on lazy server
