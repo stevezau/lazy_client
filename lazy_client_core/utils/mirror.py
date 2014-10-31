@@ -241,6 +241,7 @@ class FTPMirror(Thread):
                     else:
                         seconds = (now-queue_item[3]).total_seconds()
 
+                        print "now %s seconds %s" % (queue_item[3], seconds)
                         if seconds > 30:
                             #lets use this one
                             pop_key = idx
