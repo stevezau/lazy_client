@@ -106,8 +106,11 @@ class QueueManager(Thread):
             self.download_threads.append(thread)
 
     def dlitem_running(self, dlitem):
+        print "check %s " % dlitem.title
         for t in self.download_threads:
+            print t.active
             if type(t.active) is DownloadItem:
+                print t.active.title
                 if t.active.title == dlitem.title:
                     #Already running
                     return True
