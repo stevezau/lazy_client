@@ -156,6 +156,9 @@ class QueueManager(Thread):
 
                 logger.info('Starting download %s' % dlitem.title)
                 free[0].put(dlitem)
+
+                #sleep to allow the thread to run
+                sleep(2)
                 return
 
     def extract(self):
@@ -172,7 +175,7 @@ class QueueManager(Thread):
                 self.extractor_thread.put(dlitem)
 
     def check_finished(self):
-        for dlitem in DownloadItem.objects.filter(status=DownloadItem.DOWNLOADING, retries__lt=settings.DOWNLOAD_RETRY_COUNT):
+        for dlitem in DownloadItem.objects.filter(status=DownloadItem.DOWNLOADING, retries__lte=settings.DOWNLOAD_RETRY_COUNT):
 
             if self.dlitem_running(dlitem):
                 continue
@@ -297,7 +300,7 @@ class Downloader(Thread):
         self.start()
 
     def sleep(self):
-        sleep(2)
+        sleep(0.5)
 
     def abort_mirror(self):
         try:
@@ -403,7 +406,6 @@ class Downloader(Thread):
                 continue
 
             if type(self.active) is not DownloadItem:
-                self.sleep()
                 continue
 
             try:
