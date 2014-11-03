@@ -1,4 +1,7 @@
 
+--Free space not reporeted properly
+-open file fails in mirror due to free space.. should set error
+
 cleanup suggestion
 -Seasons that are all watched
 -TVShows with 20% watched, last time it was watched over 4months ago

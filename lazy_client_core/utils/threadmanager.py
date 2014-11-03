@@ -1,18 +1,9 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-from os.path import exists, join
-from django.db.models import Q
-import re
 from decimal import Decimal
-from subprocess import Popen
-from threading import Event, Lock
 from time import sleep, time
 from lazy_common.utils import delete, get_size
 from django.db.models import Q
 
 import os
-from traceback import print_exc
-from random import choice
 from datetime import datetime
 from datetime import timedelta
 from threading import Thread
@@ -21,7 +12,6 @@ from django.conf import settings
 import logging
 from lazy_client_core.models import DownloadItem
 import ftplib
-from lazy_client_core.exceptions import DownloadException
 from lazy_common import ftpmanager
 from lazy_common import utils
 from lazy_common.exceptions import FTPException
@@ -106,11 +96,8 @@ class QueueManager(Thread):
             self.download_threads.append(thread)
 
     def dlitem_running(self, dlitem):
-        print "check %s " % dlitem.title
         for t in self.download_threads:
-            print t.active
             if type(t.active) is DownloadItem:
-                print t.active.title
                 if t.active.title == dlitem.title:
                     #Already running
                     return True

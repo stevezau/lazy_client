@@ -38,19 +38,15 @@ class IndexView(TemplateView):
         from lazy_client_core.utils.threadmanager import queue_manager
         context['queue_running'] = queue_manager.queue_running()
 
-        if os.path.exists(settings.DATA_PATH):
-            statvfs = os.statvfs(settings.DATA_PATH)
+        context['mount_points'] = []
 
-            dt = statvfs.f_frsize * statvfs.f_blocks     # Size of filesystem in bytes
-            df = statvfs.f_frsize * statvfs.f_bfree      # Actual number of free bytes
+        from lazy_client_core.utils import common as core_common
 
-            percentfree = (df / float(dt)) * 100
-            percentused = round(100 - percentfree, 2)
+        for mount_point in core_common.get_mount_points():
+            free_bytes = core_common.get_fs_freespace(mount_point)
+            free_gb = free_bytes / 1024 / 1024 / 1024
+            percentused = core_common.get_fs_percent_used(mount_point)
 
-            context['free_gb'] = df / 1024 / 1024 / 1024
-            context['percent_used'] = percentused
-        else:
-            context['free_gb'] = 0
-            context['percent_used'] = 0
+            context['mount_points'].append({"mount_point": mount_point, "free_gb": free_gb, "percent_used": percentused})
 
         return context

@@ -76,6 +76,27 @@ def green_color(msg):
 def blue_color(msg):
     return bcolors.OKBLUE + msg + bcolors.ENDC
 
+def get_mount_points():
+    mount_points = []
+
+    for path in [
+        settings.DATA_PATH,
+        settings.INCOMING_PATH,
+        settings.MOVIE_PATH,
+        settings.TV_PATH,
+        settings.TV_PATH_TEMP,
+        settings.MOVIE_PATH_TEMP,
+        settings.REQUESTS_PATH_TEMP,
+    ]:
+
+        if os.path.exists(path):
+            mount_point = get_mount_point(path)
+
+            if mount_point not in mount_points:
+                mount_points.append(mount_point)
+
+    return mount_points
+
 def get_lazy_errors():
 
     errors = []
@@ -92,25 +113,71 @@ def get_lazy_errors():
         settings.REQUESTS_PATH_TEMP,
     ]:
 
+        path = os.path.realpath(path)
+
         if not os.path.exists(path):
             errors.append("Path does not exist: %s" % path)
         if not os.access(path, os.W_OK):
             errors.append("Path is not writable: %s" % path)
 
     #Check Free space
-    if os.path.exists(settings.DATA_PATH):
-        statvfs = os.statvfs(settings.DATA_PATH)
+    for mount_point in get_mount_points():
+        if os.path.exists(mount_point):
+            free_bytes = get_fs_freespace(mount_point)
+            free_gb = free_bytes / 1024 / 1024 / 1024
 
-        dt = statvfs.f_frsize * statvfs.f_blocks     # Size of filesystem in bytes
-        df = statvfs.f_frsize * statvfs.f_bfree      # Actual number of free bytes
-
-        free_gb = df / 1024 / 1024 / 1024
-
-        if free_gb < settings.FREE_SPACE:
-            errors.append("Not enough free space %s GB free" % free_gb)
+            if free_gb < settings.FREE_SPACE:
+                errors.append("Not enough free space %s GB free" % free_gb)
 
     return errors
 
+def get_mount_point(pathname):
+    "Get the mount point of the filesystem containing pathname"
+    pathname = os.path.normcase(os.path.realpath(pathname))
+    parent_device = path_device= os.stat(pathname).st_dev
+    while parent_device == path_device:
+        mount_point= pathname
+        pathname = os.path.dirname(pathname)
+        if pathname == mount_point: break
+        parent_device = os.stat(pathname).st_dev
+    return mount_point
+
+def get_mounted_device(pathname):
+    "Get the device mounted at pathname"
+    # uses "/proc/mounts"
+    pathname = os.path.normcase(pathname) # might be unnecessary here
+    try:
+        with open("/proc/mounts", "r") as ifp:
+            for line in ifp:
+                fields = line.rstrip('\n').split()
+                # note that line above assumes that
+                # no mount points contain whitespace
+                if fields[1] == pathname:
+                    return fields[0]
+    except EnvironmentError:
+        pass
+    return None # explicit
+
+def get_fs_freespace(pathname):
+    "Get the free space of the filesystem containing pathname"
+    stat = os.statvfs(pathname)
+    # use f_bfree for superuser, or f_bavail if filesystem
+    # has reserved space for superuser
+    return stat.f_bfree*stat.f_bsize
+
+def get_fs_percent_used(pathname):
+    "Get the free space of the filesystem containing pathname"
+    stat = os.statvfs(pathname)
+    # use f_bfree for superuser, or f_bavail if filesystem
+    # has reserved space for superuser
+    total = (stat.f_blocks * stat.f_frsize)
+    used = (stat.f_blocks - stat.f_bfree) * stat.f_frsize
+    try:
+        percent = ret = (float(used) / total) * 100
+    except ZeroDivisionError:
+        percent = 0
+
+    return percent
 
 def truncate_file(file, size):
     if os.path.exists(file):
