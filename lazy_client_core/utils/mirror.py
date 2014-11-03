@@ -224,8 +224,6 @@ class FTPMirror(Thread):
             self.cleanup()
             return
 
-        last_err = ""
-
         while num_processed < num_urls:
             # If there is an url to process and a free curl object, add to multi stack
             while queue and freelist:
