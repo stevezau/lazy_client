@@ -234,18 +234,22 @@ class TVShow(models.Model):
         fix_threads.append(scanner_thread)
 
     def get_local_path(self):
+        if self.localpath == settings.TV_PATH:
+            self.localpath = None
+
         if not self.localpath:
             #lets try find
             for title in self.get_titles():
-                path = os.path.join(settings.TV_PATH, title)
-                if os.path.exists(path):
-                    logger.info("Found local path for tvshow as %s" % path)
-                    self.localpath = path
-                    self.save()
+                if len(title) > 1:
+                    path = os.path.join(settings.TV_PATH, title)
+                    if os.path.exists(path):
+                        logger.info("Found local path for tvshow as %s" % path)
+                        self.localpath = path
+                        self.save()
 
             #If didn't find existing find one
             if not self.localpath:
-                if self.title:
+                if self.title and len(self.title) > 1:
                     self.localpath = os.path.join(settings.TV_PATH, self.title)
                     self.save()
 
@@ -273,6 +277,9 @@ class TVShow(models.Model):
 
     def exists(self):
         local_path = self.get_local_path()
+        if local_path == settings.TV_PATH:
+            return False
+
         if local_path and os.path.exists(local_path):
             return True
 

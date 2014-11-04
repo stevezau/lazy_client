@@ -317,6 +317,15 @@ body {
 /* Home Page */
 /* ######### */
 
+.home .progress-text {
+    float: left;
+    min-width: 240px;
+    font-weight: bold;
+    text-align: left;
+    margin-left: 5px;
+}
+
+
 .home, .home a {
     float: none;
     max-width: 550px;
