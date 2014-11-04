@@ -206,7 +206,7 @@ class QueueManager(Thread):
             else:
                 #Didnt finish properly
                 if not dlitem.message or len(dlitem.message) == 0:
-                    dlitem.message = "didn't download properly" % settings.DOWNLOAD_RETRY_COUNT
+                    dlitem.message = "didn't download properly"
                 dlitem.log(dlitem.message)
 
                 if dlitem.retries >= settings.DOWNLOAD_RETRY_COUNT:
