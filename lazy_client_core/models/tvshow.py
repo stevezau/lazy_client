@@ -234,7 +234,7 @@ class TVShow(models.Model):
         fix_threads.append(scanner_thread)
 
     def get_local_path(self):
-        if self.localpath == settings.TV_PATH:
+        if self.localpath and  self.localpath.rstrip("/").lower() == settings.TV_PATH.rstrip("/").lower():
             self.localpath = None
 
         if not self.localpath:
@@ -277,7 +277,7 @@ class TVShow(models.Model):
 
     def exists(self):
         local_path = self.get_local_path()
-        if local_path == settings.TV_PATH:
+        if local_path.rstrip("/").lower() == settings.TV_PATH.rstrip("/").lower():
             return False
 
         if local_path and os.path.exists(local_path):
