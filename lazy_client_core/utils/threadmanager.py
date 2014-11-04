@@ -31,7 +31,8 @@ queue_manager = None
 def save(obj):
     try:
         obj.save()
-    except OperationalError:
+    except OperationalError as e:
+        logger.exception(e)
         connection.close()
         obj.save()
 

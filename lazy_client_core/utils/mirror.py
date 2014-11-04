@@ -280,6 +280,7 @@ class FTPMirror(Thread):
                 for url in self.urls:
                     self.add_url_queue(url)
             except Exception as e:
+                logger.exception(e)
                 self.dlitem.log("Error: %s" % str(e))
                 self.dlitem.message = str(e)
                 self.dlitem.save()
@@ -311,6 +312,7 @@ class FTPMirror(Thread):
                     try:
                         self.add_file_curl(freelist.pop(), url, filename, remote_size)
                     except Exception as e:
+                        logger.exception(e)
                         self.dlitem.log("Error: %s" % str(e))
                         self.dlitem.message = str(e)
                         self.dlitem.save()
