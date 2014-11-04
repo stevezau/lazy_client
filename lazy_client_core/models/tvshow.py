@@ -277,7 +277,7 @@ class TVShow(models.Model):
 
     def exists(self):
         local_path = self.get_local_path()
-        if local_path.rstrip("/").lower() == settings.TV_PATH.rstrip("/").lower():
+        if local_path and local_path.rstrip("/").lower() == settings.TV_PATH.rstrip("/").lower():
             return False
 
         if local_path and os.path.exists(local_path):
