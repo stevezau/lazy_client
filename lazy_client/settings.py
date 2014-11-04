@@ -411,6 +411,9 @@ else:
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': 'lazy.db',
+            'OPTIONS': {
+                'timeout': 5,
+            }
         }
     }
 
