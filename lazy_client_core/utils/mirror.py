@@ -257,202 +257,207 @@ class FTPMirror(Thread):
         curl.url = url
 
     def run(self):
-        max_speed_kb = settings.MAX_SPEED_PER_DOWNLOAD
-        speed_delay = 0
-
-        self.savepath = self.dlitem.localpath
-
-        self.dlitem.log("Starting Download")
-
-        update_interval = 1
-
-        self.timer = Timer(update_interval, dummy_timer_fn)
-        self.timer.start()
-
-        self.m = pycurl.CurlMulti()
-
-        # Make a queue with (url, filename) tuples
-        self.queue = []
-        self.priority = []
-
         try:
-            for url in self.urls:
-                self.add_url_queue(url)
-        except Exception as e:
-            self.dlitem.log("Error: %s" % str(e))
-            self.dlitem.message = str(e)
-            self.dlitem.save()
-            return
+            max_speed_kb = settings.MAX_SPEED_PER_DOWNLOAD
+            speed_delay = 0
 
-        self.queue = self.priority + self.queue
+            self.savepath = self.dlitem.localpath
 
-        # Pre-allocate a list of curl objects
-        self.create_curls()
+            self.dlitem.log("Starting Download")
 
-        num_urls = len(self.queue)
-        self.failed_list = {}
+            update_interval = 1
 
-        # Main loop
-        freelist = self.m.handles[:]
-        num_processed = 0
-        while num_processed < num_urls:
-            # If there is an url to process and a free curl object, add to multi stack
-            while self.queue and freelist:
-                key = self.get_next_queue()
+            self.timer = Timer(update_interval, dummy_timer_fn)
+            self.timer.start()
 
-                if None is key:
-                    #didn't find any to process.. are we still downloading an item??
-                    if len(freelist) == settings.THREADS_PER_DOWNLOAD:
-                        time.sleep(0.5)
-                    break
+            self.m = pycurl.CurlMulti()
 
-                url, filename, remote_size, ___ = self.queue.pop(key)
-                try:
-                    self.add_file_curl(freelist.pop(), url, filename, remote_size)
-                except Exception as e:
-                    self.dlitem.log("Error: %s" % str(e))
-                    self.dlitem.message = str(e)
-                    self.dlitem.save()
-                    self.cleanup()
-                    return
+            # Make a queue with (url, filename) tuples
+            self.queue = []
+            self.priority = []
 
-            # Run the internal curl state machine for the multi stack
-            while 1:
-                ret, num_handles = self.m.perform()
-                if ret != pycurl.E_CALL_MULTI_PERFORM:
-                    break
+            try:
+                for url in self.urls:
+                    self.add_url_queue(url)
+            except Exception as e:
+                self.dlitem.log("Error: %s" % str(e))
+                self.dlitem.message = str(e)
+                self.dlitem.save()
+                return
 
-            # Check for curl objects which have terminated, and add them to the freelist
-            while 1:
-                num_q, ok_list, err_list = self.m.info_read()
-                for c in ok_list:
-                    logger.debug("Closing file %s" % c.fp)
+            self.queue = self.priority + self.queue
 
-                    common.close_file(c.fp)
+            # Pre-allocate a list of curl objects
+            self.create_curls()
 
-                    #Did we download the file properly???
-                    success = False
+            num_urls = len(self.queue)
+            self.failed_list = {}
 
-                    for x in range(0, 4):
-                        local_size = os.path.getsize(c.filename)
+            # Main loop
+            freelist = self.m.handles[:]
+            num_processed = 0
+            while num_processed < num_urls:
+                # If there is an url to process and a free curl object, add to multi stack
+                while self.queue and freelist:
+                    key = self.get_next_queue()
 
-                        if local_size == c.remote_size:
-                            success = True
-                            break
-                        time.sleep(3)
+                    if None is key:
+                        #didn't find any to process.. are we still downloading an item??
+                        if len(freelist) == settings.THREADS_PER_DOWNLOAD:
+                            time.sleep(0.5)
+                        break
 
-                    if success:
-                        self.dlitem.log("CURL Thread: %s Success:%s" % (c.thread_num, os.path.basename(c.filename)))
-                    else:
-                        self.failed_list[c.filename] = 1
-                        self.queue.append((c.url, c.filename, c.remote_size, datetime.now()))
-                        num_processed -= 1
-                        self.dlitem.log("CURL Thread: %s  Failure: %s as it Didnt download properly, the local (%s) size does not match the remote size (%s), lets retry" % (c.thread_num, os.path.basename(c.filename), local_size, c.remote_size))
+                    url, filename, remote_size, ___ = self.queue.pop(key)
+                    try:
+                        self.add_file_curl(freelist.pop(), url, filename, remote_size)
+                    except Exception as e:
+                        self.dlitem.log("Error: %s" % str(e))
+                        self.dlitem.message = str(e)
+                        self.dlitem.save()
+                        self.cleanup()
+                        return
 
-                    c.fp = None
-                    freelist.append(c)
-                    self.m.remove_handle(c)
+                # Run the internal curl state machine for the multi stack
+                while 1:
+                    ret, num_handles = self.m.perform()
+                    if ret != pycurl.E_CALL_MULTI_PERFORM:
+                        break
 
-                for c, errno, errmsg in err_list:
+                # Check for curl objects which have terminated, and add them to the freelist
+                while 1:
+                    num_q, ok_list, err_list = self.m.info_read()
+                    for c in ok_list:
+                        logger.debug("Closing file %s" % c.fp)
 
-                    common.close_file(c.fp)
-                    c.fp = None
-                    self.m.remove_handle(c)
+                        common.close_file(c.fp)
 
-                    #should we retry?
-                    if errno in retry_on_errors:
+                        #Did we download the file properly???
+                        success = False
 
-                        if errmsg == "Callback aborted":
-                            errmsg = "No data received for %s seconds" % ftpmanager.FTP_TIMEOUT_TRANSFER
+                        for x in range(0, 4):
+                            local_size = os.path.getsize(c.filename)
 
-                        msg = "CURL Thread %s: Unlimited retrying: %s %s %s" % (c.thread_num, os.path.basename(c.filename), errno, errmsg)
-                        self.queue.append((c.url, c.filename, c.remote_size, datetime.now()))
-                        num_processed -= 1
+                            if local_size == c.remote_size:
+                                success = True
+                                break
+                            time.sleep(3)
 
-                    else:
-                        if c.filename in self.failed_list:
-                            #what count are we at
-                            count = self.failed_list.get(c.filename)
+                        if success:
+                            self.dlitem.log("CURL Thread: %s Success:%s" % (c.thread_num, os.path.basename(c.filename)))
+                        else:
+                            self.failed_list[c.filename] = 1
+                            self.queue.append((c.url, c.filename, c.remote_size, datetime.now()))
+                            num_processed -= 1
+                            self.dlitem.log("CURL Thread: %s  Failure: %s as it Didnt download properly, the local (%s) size does not match the remote size (%s), lets retry" % (c.thread_num, os.path.basename(c.filename), local_size, c.remote_size))
 
-                            if count >= 3:
-                                msg = "CURL Thread %s: Failed: %s %s %s" % (c.thread_num, os.path.basename(c.filename), errno, errmsg)
-                                last_err = errmsg
+                        c.fp = None
+                        freelist.append(c)
+                        self.m.remove_handle(c)
+
+                    for c, errno, errmsg in err_list:
+
+                        common.close_file(c.fp)
+                        c.fp = None
+                        self.m.remove_handle(c)
+
+                        #should we retry?
+                        if errno in retry_on_errors:
+
+                            if errmsg == "Callback aborted":
+                                errmsg = "No data received for %s seconds" % ftpmanager.FTP_TIMEOUT_TRANSFER
+
+                            msg = "CURL Thread %s: Unlimited retrying: %s %s %s" % (c.thread_num, os.path.basename(c.filename), errno, errmsg)
+                            self.queue.append((c.url, c.filename, c.remote_size, datetime.now()))
+                            num_processed -= 1
+
+                        else:
+                            if c.filename in self.failed_list:
+                                #what count are we at
+                                count = self.failed_list.get(c.filename)
+
+                                if count >= 3:
+                                    msg = "CURL Thread %s: Failed: %s %s %s" % (c.thread_num, os.path.basename(c.filename), errno, errmsg)
+                                    last_err = errmsg
+                                else:
+                                    self.failed_list[c.filename] += 1
+
+                                    #retry
+                                    self.queue.append((c.url, c.filename, c.remote_size, datetime.now()))
+                                    msg = "CURL Thread %s: Retrying: %s %s %s" % (c.thread_num, os.path.basename(c.filename), errno, errmsg)
+                                    num_processed -= 1
+
                             else:
-                                self.failed_list[c.filename] += 1
-
-                                #retry
+                                #lets retry
+                                self.failed_list[c.filename] = 1
                                 self.queue.append((c.url, c.filename, c.remote_size, datetime.now()))
                                 msg = "CURL Thread %s: Retrying: %s %s %s" % (c.thread_num, os.path.basename(c.filename), errno, errmsg)
                                 num_processed -= 1
 
-                        else:
-                            #lets retry
-                            self.failed_list[c.filename] = 1
-                            self.queue.append((c.url, c.filename, c.remote_size, datetime.now()))
-                            msg = "CURL Thread %s: Retrying: %s %s %s" % (c.thread_num, os.path.basename(c.filename), errno, errmsg)
-                            num_processed -= 1
+                        self.dlitem.log(msg)
+                        freelist.append(c)
 
-                    self.dlitem.log(msg)
-                    freelist.append(c)
+                    num_processed = num_processed + len(ok_list) + len(err_list)
 
-                num_processed = num_processed + len(ok_list) + len(err_list)
+                    if num_q == 0:
+                        break
 
-                if num_q == 0:
-                    break
+                #lets do checks
+                if not self.timer.isAlive():
 
-            #lets do checks
-            if not self.timer.isAlive():
+                    if self.abort:
+                        self.cleanup()
+                        return
 
-                if self.abort:
-                    self.cleanup()
-                    return
+                    #Lets get speed
+                    self.speed = 0
 
-                #Lets get speed
-                self.speed = 0
+                    for handle in self.m.handles:
+                        try:
+                            self.speed = self.speed + handle.getinfo(pycurl.SPEED_DOWNLOAD)
+                        except:
+                            pass
 
-                for handle in self.m.handles:
-                    try:
-                        self.speed = self.speed + handle.getinfo(pycurl.SPEED_DOWNLOAD)
-                    except:
-                        pass
+                    current_speed_kb = self.speed / 1024
 
-                current_speed_kb = self.speed / 1024
+                    #Do we need to throttle the speed?
+                    if max_speed_kb > 0:
 
-                #Do we need to throttle the speed?
-                if max_speed_kb > 0:
+                        #Are we over our limit??
+                        if current_speed_kb > max_speed_kb:
+                            #Throttle down
+                            over_by = current_speed_kb - max_speed_kb
 
-                    #Are we over our limit??
-                    if current_speed_kb > max_speed_kb:
-                        #Throttle down
-                        over_by = current_speed_kb - max_speed_kb
+                            if over_by > 5:
+                                delay_by = over_by / 2000
 
-                        if over_by > 5:
-                            delay_by = over_by / 2000
+                                speed_delay += delay_by
 
-                            speed_delay += delay_by
+                        #Are we under the limit
+                        if current_speed_kb < max_speed_kb:
 
-                    #Are we under the limit
-                    if current_speed_kb < max_speed_kb:
+                            if speed_delay > 0:
+                                #Throttle up
+                                under_by = max_speed_kb - current_speed_kb
+                                delay_by = under_by / 2000
 
-                        if speed_delay > 0:
-                            #Throttle up
-                            under_by = max_speed_kb - current_speed_kb
-                            delay_by = under_by / 2000
+                                if under_by > 5:
+                                    speed_delay -= delay_by
 
-                            if under_by > 5:
-                                speed_delay -= delay_by
+                                    if speed_delay < 0:
+                                        speed_delay = 0
 
-                                if speed_delay < 0:
-                                    speed_delay = 0
+                    #Lets restart the timer for updates..
+                    self.timer = Timer(update_interval, dummy_timer_fn)
+                    self.timer.start()
 
-                #Lets restart the timer for updates..
-                self.timer = Timer(update_interval, dummy_timer_fn)
-                self.timer.start()
+                # We just call select() to sleep until some more data is available.
+                if speed_delay > 0:
+                    time.sleep(speed_delay)
+                self.m.select(1.0)
+        except Exception as e:
+            self.dlitem.message = str(e)
+            self.dlitem.save()
 
-            # We just call select() to sleep until some more data is available.
-            if speed_delay > 0:
-                time.sleep(speed_delay)
-            self.m.select(1.0)
-
-        # Cleanup
-        self.cleanup()
+        finally:
+            # Cleanup
+            self.cleanup()
