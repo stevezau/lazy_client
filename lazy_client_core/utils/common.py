@@ -80,7 +80,6 @@ def get_mount_points():
     mount_points = []
 
     for path in [
-        settings.DATA_PATH,
         settings.INCOMING_PATH,
         settings.MOVIE_PATH,
         settings.TV_PATH,
@@ -104,7 +103,6 @@ def get_lazy_errors():
     #Firte lets check if it should be running..
     for path in [
         settings.MEDIA_ROOT,
-        settings.DATA_PATH,
         settings.INCOMING_PATH,
         settings.MOVIE_PATH,
         settings.TV_PATH,

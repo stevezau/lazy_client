@@ -22,10 +22,19 @@ from lazy_client_core.utils.mirror import FTPMirror
 from django.core.cache import cache
 from lazy_client_core.utils import common
 from django.db import connection
+from django.db import OperationalError
 
 logger = logging.getLogger(__name__)
 
 queue_manager = None
+
+def save(obj):
+    try:
+        obj.save()
+    except OperationalError:
+        connection.close()
+        obj.save()
+
 
 #######################
 #### Queue Manager ####
@@ -141,7 +150,7 @@ class QueueManager(Thread):
                 if dlitem.retries > settings.DOWNLOAD_RETRY_COUNT:
                     dlitem.log("Job hit too many retires, setting to failed")
                     dlitem.retries += 1
-                    dlitem.save()
+                    save(dlitem)
                     continue
 
                 logger.info('Starting download %s' % dlitem.title)
@@ -192,26 +201,22 @@ class QueueManager(Thread):
                 dlitem.status = DownloadItem.EXTRACT
                 dlitem.retries = 0
                 dlitem.message = None
-                dlitem.save()
+                save(dlitem)
 
             else:
                 #Didnt finish properly
+                if not dlitem.message or len(dlitem.message) == 0:
+                    dlitem.message = "didn't download properly" % settings.DOWNLOAD_RETRY_COUNT
+                dlitem.log(dlitem.message)
+
                 if dlitem.retries >= settings.DOWNLOAD_RETRY_COUNT:
                     #Failed download
-                    msg = "didn't download properly after %s retries" % settings.DOWNLOAD_RETRY_COUNT
-                    dlitem.log(msg)
                     dlitem.retries += 1
-                    dlitem.message = str(msg)
-                    dlitem.save()
                 else:
                     #Didnt download properly, put it back in the queue and let others try download first.
-                    msg = "didn't download properly, trying again"
-                    dlitem.log(msg)
                     dlitem.retries += 1
-                    dlitem.message = str(msg)
                     dlitem.status = DownloadItem.QUEUE
-                    dlitem.save()
-            dlitem.save()
+            save(dlitem)
 
     def pause(self, errors=False):
         #Stop the queue
@@ -260,8 +265,7 @@ class QueueManager(Thread):
                         self.sleep()
                         continue
                 else:
-                    now = datetime.now()
-                    diff = now - self.last_check
+                    diff = datetime.now() - self.last_check
                     if diff.total_seconds() > 30:
                         if not self.queue_running():
                             self.sleep()
@@ -271,7 +275,7 @@ class QueueManager(Thread):
                 self.check_finished()
                 self.extract()
             except Exception as e:
-                logger.exception("Some error occured in mainthread %s" % str(e))
+                logger.exception("Some error in main thread %s" % str(e))
 
             self.sleep()
 
@@ -281,6 +285,11 @@ class QueueManager(Thread):
 ####################
 
 class Downloader(Thread):
+
+    retry_errors = [
+        111,
+    ]
+
     def __init__(self):
         Thread.__init__(self)
         self.queue = Queue()
@@ -301,9 +310,6 @@ class Downloader(Thread):
             pass
 
     def update_dlitem(self, dlitem, message=None, failed=False):
-        #Close connection in case it has timmed out
-        connection.close()
-
         if message:
             logger.info(message)
             dlitem.message = message
@@ -312,11 +318,12 @@ class Downloader(Thread):
         if failed:
             dlitem.retries += 1
 
-        dlitem.save()
+        save(dlitem)
 
     def download(self, dlitem):
         dlitem.dlstart = datetime.now()
-        dlitem.save()
+        dlitem.message = None
+        save(dlitem)
 
         #Get files and folders for download
         try:
@@ -332,14 +339,17 @@ class Downloader(Thread):
             if "FileNotFound" in resp or "file not found" in resp and dlitem.requested:
                 logger.info("Unable to get size and files for %s" % dlitem.ftppath)
                 dlitem.message = 'Waiting for item to download on server'
-                dlitem.save()
+                save(dlitem)
                 return
             else:
                 self.update_dlitem(dlitem, message=str(e), failed=True)
                 return
         except FTPException as e:
-            logger.exception("Exception getting files and folders for download" % str(e))
-            self.update_dlitem(dlitem, message=str(e), failed=True)
+            if e.errno and e.errno in self.retry_errors:
+                self.update_dlitem(dlitem, message=e.message, failed=False)
+            else:
+                logger.exception("Exception getting files and folders for download" % str(e))
+                self.update_dlitem(dlitem, message=str(e), failed=True)
             return
 
         if remotesize > 0 and len(files) > 0:
@@ -352,7 +362,7 @@ class Downloader(Thread):
             #Time to start the downloading
             self.mirror_thread = FTPMirror(files, dlitem)
             dlitem.status = DownloadItem.DOWNLOADING
-            dlitem.save()
+            save(dlitem)
 
             while True:
                 sleep(1)
@@ -360,9 +370,8 @@ class Downloader(Thread):
                 try:
                     if self.abort_download:
                         self.abort_mirror()
-                        connection.close()
                         dlitem.status = DownloadItem.QUEUE
-                        dlitem.save()
+                        save(dlitem)
                         return
                 except:
                     return
@@ -373,11 +382,12 @@ class Downloader(Thread):
         except Exception as e:
             logger.exception(e)
             self.abort_mirror()
-            connection.close()
             dlitem.status = DownloadItem.QUEUE
-            dlitem.save()
+            dlitem.message = str(e)
+            save(dlitem)
+            dlitem.log(str(e))
 
-        dlitem.save()
+        save(dlitem)
 
     def run(self):
 
@@ -399,7 +409,6 @@ class Downloader(Thread):
                 continue
 
             try:
-                connection.close()
                 dlitem = self.active
                 self.download(dlitem)
             except Extractor as e:
@@ -437,10 +446,7 @@ class Extractor(Thread):
             dlitem.message = error
 
         dlitem.retries += 1
-        try:
-            dlitem.save()
-        except:
-            pass
+        save(dlitem)
 
     def sleep(self):
         sleep(2)
@@ -494,7 +500,7 @@ class Extractor(Thread):
 
                     logger.info("Extraction passed")
                     dlitem.status = DownloadItem.RENAME
-                    dlitem.save()
+                    save(dlitem)
 
                 if dlitem.status == DownloadItem.RENAME:
                     logger.info("Renaming download item")
@@ -506,7 +512,7 @@ class Extractor(Thread):
 
                         dlitem.status = DownloadItem.COMPLETE
                         dlitem.retries = 0
-                        dlitem.save()
+                        save(dlitem)
 
                         logger.info("Deleting temp folder")
                         delete(dlitem.localpath)
@@ -540,7 +546,7 @@ class Extractor(Thread):
 
 
                         self._fail_dlitem(dlitem, error=msg)
-                        dlitem.save()
+                        save(dlitem)
                     except Exception as e:
                         self._fail_dlitem(dlitem, error=str(e))
                         continue
@@ -577,7 +583,7 @@ class Maintenance(Thread):
                 self.tvdb[int(tvshow.id)]
             else:
                 tvshow.update_from_tvdb()
-                tvshow.save()
+                save(tvshow)
 
             if "Duplicate of" in tvshow.title:
                 tvshow.delete()
@@ -650,7 +656,10 @@ class Maintenance(Thread):
             hours = diff.total_seconds() / 60 / 60
 
             if hours >= 24:
-                self.do_maintenance()
+                try:
+                    self.do_maintenance()
+                except Exception as e:
+                    logger.exception("Error in extractor thread %s" % str(e))
 
             self.sleep()
 

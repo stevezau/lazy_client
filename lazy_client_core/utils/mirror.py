@@ -114,77 +114,45 @@ class FTPMirror(Thread):
             c.close()
         self.m.close()
 
-    def run(self):
-        max_speed_kb = settings.MAX_SPEED_PER_DOWNLOAD
-        speed_delay = 0
+    def add_url_queue(self, url):
+        size = url[1]
+        urlpath = url[0].strip().lstrip("/")
 
-        savepath = self.dlitem.localpath
+        ftpurl = "ftp://%s:%s@%s:%s/%s" % (ftpmanager.FTP_USER, ftpmanager.FTP_PASS, ftpmanager.FTP_IP, ftpmanager.FTP_PORT, urlpath)
+        ftpurl = ftpurl.encode("UTF-8")
 
-        self.dlitem.log("Starting Download")
+        basepath = ""
 
-        update_interval = 1
+        for part in urlpath.split(os.sep)[3:]:
+            basepath = os.path.join(basepath, part)
 
-        self.timer = Timer(update_interval, dummy_timer_fn)
-        self.timer.start()
+        url_savepath = os.path.join(self.savepath, basepath).rstrip("/")
 
-        self.m = pycurl.CurlMulti()
+        if os.path.isfile(url_savepath):
+            #compare sizes
+            local_size = os.path.getsize(url_savepath)
 
-        # Make a queue with (url, filename) tuples
-        queue = []
-        priority = []
+            if local_size > 0 and local_size == size:
+                #Already downloaded, skip
+                return
 
-        if self.abort:
-            self.cleanup()
-            return
-
-        for url in self.urls:
-            size = url[1]
-            urlpath = url[0].strip()
-
-            ftpurl = "ftp://%s:%s@%s:%s/%s" % (ftpmanager.FTP_USER, ftpmanager.FTP_PASS, ftpmanager.FTP_IP, ftpmanager.FTP_PORT, urlpath.lstrip("/"))
-
-            ftpurl = ftpurl.encode("UTF-8")
-
-            basepath = ""
-
-            i = 0
-
-            urlpath_split = urlpath.split(os.sep)
-
-            if len(urlpath_split) == 3:
+        #make local folders if they dont exist
+        try:
+            os.makedirs(os.path.split(url_savepath)[0])
+        except OSError as e:
+            if e.errno == 17:
                 pass
             else:
-                for path in urlpath_split:
-                    if i > 2:
-                        basepath = os.path.join(basepath, path)
-                    i += 1
+                raise(e)
 
-            urlsavepath = os.path.join(savepath, basepath).rstrip("/")
+        if re.match(".+\.sfv$", urlpath):
+            #download first
+            self.priority.append((ftpurl, url_savepath, size, 0))
+        else:
+            #add it to the queue
+            self.queue.append((ftpurl, url_savepath, size, 0))
 
-            if os.path.isfile(urlsavepath):
-                #compare sizes
-                local_size = os.path.getsize(urlsavepath)
-
-                if local_size > 0 and local_size == size:
-                    #skip
-                    continue
-
-            #make local folders if they dont exist
-            try:
-                os.makedirs(os.path.split(urlsavepath)[0])
-            except:
-                pass
-
-            if re.match(".+\.sfv$", urlpath):
-                #download first
-                priority.append((ftpurl, urlsavepath, size, 0))
-            else:
-                #add it to the queue
-                queue.append((ftpurl, urlsavepath, size, 0))
-
-        queue = priority + queue
-
-        # Pre-allocate a list of curl objects
+    def create_curls(self):
         self.m.handles = []
 
         for i in range(settings.THREADS_PER_DOWNLOAD):
@@ -212,107 +180,141 @@ class FTPMirror(Thread):
             c.setopt(188, 1)
             self.m.handles.append(c)
 
-        num_urls = len(queue)
+    def get_next_queue(self):
+        #lets find the next one we want to process
+        pop_key = None
+        now = datetime.now()
 
-        failed_list = {}
+        for idx, queue_item in enumerate(self.queue):
+            if queue_item[3] == 0:
+                pop_key = idx
+                break
+            else:
+                seconds = (now-queue_item[3]).total_seconds()
+                if seconds > 30:
+                    #lets use this one
+                    pop_key = idx
+                    break
+
+        return pop_key
+
+    def add_file_curl(self, curl, url, filename, remote_size):
+        curl.checker.reset()
+        self.dlitem.log("Remote file %s size: %s" % (filename, remote_size))
+
+        short_filename = os.path.basename(filename)
+        local_size = 0
+
+        f = None
+
+        if os.path.isfile(filename):
+            #compare sizes
+            local_size = os.path.getsize(filename)
+
+            if local_size == 0:
+                #try again
+                self.dlitem.log("Will download %s (%s bytes)" % (short_filename, remote_size))
+                f = common.open_file(filename, "wb")
+
+            if local_size > remote_size:
+
+                f = common.open_file(filename, "wb")
+
+                #lets retry
+                if filename in self.failed_list:
+                    #what count are we at
+                    count = self.failed_list.get(curl.filename)
+
+                    if count >= 2:
+                        self.dlitem.log("Local size was bigger then remote, max reties reached, setting to failed" % short_filename)
+                        return
+                    else:
+                        self.failed_list[filename] += 1
+                else:
+                    self.failed_list[filename] = 1
+
+                self.dlitem.log("Strange, local size was bigger then remote, re-downloading %s" % short_filename)
+                f = common.open_file(filename, "wb")
+            else:
+                #lets resume
+                self.dlitem.log("Partial download %s (%s bytes), lets resume from %s bytes" % (short_filename, local_size, local_size))
+                f = common.open_file(filename, "ab")
+
+        else:
+            self.dlitem.log("Will download %s (%s bytes)" % (short_filename, remote_size))
+            f = common.open_file(filename, "wb")
+
+        curl.setopt(pycurl.RESUME_FROM, local_size)
+        curl.fp = f
+
+        curl.setopt(pycurl.URL, url)
+        curl.setopt(pycurl.WRITEDATA, curl.fp)
+        self.m.add_handle(curl)
+
+        # store some info
+        curl.filename = filename
+        curl.remote_size = remote_size
+        curl.url = url
+
+    def run(self):
+        max_speed_kb = settings.MAX_SPEED_PER_DOWNLOAD
+        speed_delay = 0
+
+        self.savepath = self.dlitem.localpath
+
+        self.dlitem.log("Starting Download")
+
+        update_interval = 1
+
+        self.timer = Timer(update_interval, dummy_timer_fn)
+        self.timer.start()
+
+        self.m = pycurl.CurlMulti()
+
+        # Make a queue with (url, filename) tuples
+        self.queue = []
+        self.priority = []
+
+        try:
+            for url in self.urls:
+                self.add_url_queue(url)
+        except Exception as e:
+            self.dlitem.log("Error: %s" % str(e))
+            self.dlitem.message = str(e)
+            self.dlitem.save()
+            return
+
+        self.queue = self.priority + self.queue
+
+        # Pre-allocate a list of curl objects
+        self.create_curls()
+
+        num_urls = len(self.queue)
+        self.failed_list = {}
 
         # Main loop
         freelist = self.m.handles[:]
         num_processed = 0
-
-        if self.abort:
-            self.cleanup()
-            return
-
         while num_processed < num_urls:
             # If there is an url to process and a free curl object, add to multi stack
-            while queue and freelist:
-                #lets find the next one we want to process
-                pop_key = None
+            while self.queue and freelist:
+                key = self.get_next_queue()
 
-                now = datetime.now()
-
-                for idx, queue_item in enumerate(queue):
-                    if queue_item[3] == 0:
-                        pop_key = idx
-                        break
-                    else:
-                        seconds = (now-queue_item[3]).total_seconds()
-
-                        print "now %s seconds %s" % (queue_item[3], seconds)
-                        if seconds > 30:
-                            #lets use this one
-                            pop_key = idx
-                            break
-
-                if None is pop_key:
+                if None is key:
                     #didn't find any to process.. are we still downloading an item??
                     if len(freelist) == settings.THREADS_PER_DOWNLOAD:
-                        #logger.debug("Sleeping 1 second")
-                        time.sleep(1)
+                        time.sleep(0.5)
                     break
 
-                url, filename, remote_size, ___ = queue.pop(pop_key)
-                c = freelist.pop()
-
-                c.checker.reset()
-                logger.debug("CREATE NEW Thread %s  sec: %s      OTHER: %s" % (c.checker.thread_num, c.checker.last_check, c.checker))
-
-                self.dlitem.log("Remote file %s size: %s" % (filename, remote_size))
-
-                short_filename = os.path.basename(filename)
-
-                local_size = 0
-                f = None
-
-                if os.path.isfile(filename):
-                    #compare sizes
-                    local_size = os.path.getsize(filename)
-
-                    if local_size == 0:
-                        #try again
-                        self.dlitem.log("Will download %s (%s bytes)" % (short_filename, remote_size))
-                        f = common.open_file(filename, "wb")
-
-                    if local_size > remote_size:
-
-                        f = common.open_file(filename, "wb")
-
-                        #lets retry
-                        if filename in failed_list:
-                            #what count are we at
-                            count = failed_list.get(c.filename)
-
-                            if count >= 2:
-                                self.dlitem.log("Local size was bigger then remote, max reties reached, setting to failed" % short_filename)
-                                continue
-                            else:
-                                failed_list[filename] += 1
-                        else:
-                            failed_list[filename] = 1
-
-                        self.dlitem.log("Strange, local size was bigger then remote, re-downloading %s" % short_filename)
-                        f = common.open_file(filename, "wb")
-                    else:
-                        #lets resume
-                        self.dlitem.log("Partial download %s (%s bytes), lets resume from %s bytes" % (short_filename, local_size, local_size))
-                        f = common.open_file(filename, "ab")
-
-                else:
-                    self.dlitem.log("Will download %s (%s bytes)" % (short_filename, remote_size))
-                    f = common.open_file(filename, "wb")
-
-                c.setopt(pycurl.RESUME_FROM, local_size)
-                c.fp = f
-
-                c.setopt(pycurl.URL, url)
-                c.setopt(pycurl.WRITEDATA, c.fp)
-                self.m.add_handle(c)
-
-                # store some info
-                c.filename = filename
-                c.remote_size = remote_size
-                c.url = url
+                url, filename, remote_size, ___ = self.queue.pop(key)
+                try:
+                    self.add_file_curl(freelist.pop(), url, filename, remote_size)
+                except Exception as e:
+                    self.dlitem.log("Error: %s" % str(e))
+                    self.dlitem.message = str(e)
+                    self.dlitem.save()
+                    self.cleanup()
+                    return
 
             # Run the internal curl state machine for the multi stack
             while 1:
@@ -342,8 +344,8 @@ class FTPMirror(Thread):
                     if success:
                         self.dlitem.log("CURL Thread: %s Success:%s" % (c.thread_num, os.path.basename(c.filename)))
                     else:
-                        failed_list[c.filename] = 1
-                        queue.append((c.url, c.filename, c.remote_size, datetime.now()))
+                        self.failed_list[c.filename] = 1
+                        self.queue.append((c.url, c.filename, c.remote_size, datetime.now()))
                         num_processed -= 1
                         self.dlitem.log("CURL Thread: %s  Failure: %s as it Didnt download properly, the local (%s) size does not match the remote size (%s), lets retry" % (c.thread_num, os.path.basename(c.filename), local_size, c.remote_size))
 
@@ -364,29 +366,29 @@ class FTPMirror(Thread):
                             errmsg = "No data received for %s seconds" % ftpmanager.FTP_TIMEOUT_TRANSFER
 
                         msg = "CURL Thread %s: Unlimited retrying: %s %s %s" % (c.thread_num, os.path.basename(c.filename), errno, errmsg)
-                        queue.append((c.url, c.filename, c.remote_size, datetime.now()))
+                        self.queue.append((c.url, c.filename, c.remote_size, datetime.now()))
                         num_processed -= 1
 
                     else:
-                        if c.filename in failed_list:
+                        if c.filename in self.failed_list:
                             #what count are we at
-                            count = failed_list.get(c.filename)
+                            count = self.failed_list.get(c.filename)
 
                             if count >= 3:
                                 msg = "CURL Thread %s: Failed: %s %s %s" % (c.thread_num, os.path.basename(c.filename), errno, errmsg)
                                 last_err = errmsg
                             else:
-                                failed_list[c.filename] += 1
+                                self.failed_list[c.filename] += 1
 
                                 #retry
-                                queue.append((c.url, c.filename, c.remote_size, datetime.now()))
+                                self.queue.append((c.url, c.filename, c.remote_size, datetime.now()))
                                 msg = "CURL Thread %s: Retrying: %s %s %s" % (c.thread_num, os.path.basename(c.filename), errno, errmsg)
                                 num_processed -= 1
 
                         else:
                             #lets retry
-                            failed_list[c.filename] = 1
-                            queue.append((c.url, c.filename, c.remote_size, datetime.now()))
+                            self.failed_list[c.filename] = 1
+                            self.queue.append((c.url, c.filename, c.remote_size, datetime.now()))
                             msg = "CURL Thread %s: Retrying: %s %s %s" % (c.thread_num, os.path.basename(c.filename), errno, errmsg)
                             num_processed -= 1
 
@@ -411,8 +413,8 @@ class FTPMirror(Thread):
                 for handle in self.m.handles:
                     try:
                         self.speed = self.speed + handle.getinfo(pycurl.SPEED_DOWNLOAD)
-                    except Exception as e:
-                        self.dlitem.log("error getting speed %s" % e.message)
+                    except:
+                        pass
 
                 current_speed_kb = self.speed / 1024
 
