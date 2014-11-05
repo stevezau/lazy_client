@@ -51,7 +51,6 @@ FTP_PASS = "XXXX"
 
 # Flexget get files
 FLEXGET_APPROVED = "/home/media/.flexget/approve.yml"
-FLEXGET_IGNORE = "/home/media/.flexget/ignore.yml"
 
 # XBMC API (Auto library updates)
 XBMC_API_URL = 'http://192.168.0.190:8080/jsonrpc'

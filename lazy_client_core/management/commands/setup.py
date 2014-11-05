@@ -1,6 +1,5 @@
 from __future__ import division
 from django.core.management.base import BaseCommand
-from celery.task.base import periodic_task, task
 import logging
 from datetime import timedelta
 from lazy_client_core.models import DownloadItem

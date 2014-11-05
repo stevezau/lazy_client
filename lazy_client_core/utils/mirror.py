@@ -328,6 +328,7 @@ class FTPMirror(Thread):
                     if None is key:
                         #didn't find any to process.. are we still downloading an item??
                         if len(freelist) == settings.THREADS_PER_DOWNLOAD:
+                            logger.debug("Sleeping 0.5 secs")
                             time.sleep(0.5)
                         break
 
@@ -364,6 +365,7 @@ class FTPMirror(Thread):
                             if local_size == c.remote_size:
                                 success = True
                                 break
+                                logger.debug("sleeping 3 seconds")
                             time.sleep(3)
 
                         if success:
