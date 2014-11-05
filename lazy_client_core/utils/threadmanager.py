@@ -476,17 +476,17 @@ class Extractor(Thread):
                     return
 
             logger.info("Extraction passed")
-            update_dlitem(status=DownloadItem.RENAME)
+            update_dlitem(dlitem_id, status=DownloadItem.RENAME)
 
         if status == DownloadItem.RENAME:
             logger.info("Renaming download item")
-            update_dlitem(dlstart=datetime.now())
+            update_dlitem(dlitem_id, dlstart=datetime.now())
 
             try:
                 renamer.rename(localpath, id=dlitem_id)
                 logger.info("Renaming done")
 
-                update_dlitem(status=DownloadItem.COMPLETE, retries=0)
+                update_dlitem(dlitem_id, status=DownloadItem.COMPLETE, retries=0)
 
                 logger.info("Deleting temp folder")
                 delete(localpath)
@@ -500,7 +500,7 @@ class Extractor(Thread):
             except ManuallyFixException as e:
                 msg = "Unable to auto rename the below files, please manually fix"
 
-                update_dlitem(video_files=None)
+                update_dlitem(dlitem_id, video_files=None)
 
                 for f in e.fix_files:
                     msg += "\n File: %s Error: %s" % (f['file'], f['error'])
