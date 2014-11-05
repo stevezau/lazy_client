@@ -300,63 +300,80 @@ class Downloader(Thread):
         except:
             pass
 
-    def update_dlitem(self, id, message=None, failed=False):
-        try:
-            dlitem = DownloadItem.objects.get(id=id)
-            if message:
-                logger.info(message)
-                dlitem.message = message
-                dlitem.log(message)
+    def update_dlitem(self, id, message=None, failed=False,  dlstart=None, remotesize=None, status=None):
+        dlitem = DownloadItem.objects.get(id=id)
+        if message:
+            logger.info(message)
+            dlitem.message = message
+            dlitem.log(message)
 
-            if failed:
-                dlitem.retries += 1
+        if failed:
+            dlitem.retries += 1
 
-            dlitem.save()
-        except:
-            pass
+        if dlstart:
+            dlitem.dlstart = dlstart
+
+        if remotesize:
+            dlitem.remotesize = remotesize
+
+        if status:
+            dlitem.status = status
+
+        dlitem.save()
+
+    def get_onlyget(self, id):
+        dlitem = DownloadItem.objects.get(id=id)
+        return dlitem.onlyget
+
+    def get_ftppath(self, id):
+        dlitem = DownloadItem.objects.get(id=id)
+        return dlitem.ftppath
+
+    def get_requested(self, id):
+        dlitem = DownloadItem.objects.get(id=id)
+        return dlitem.requested
 
     def download(self, id):
-        dlitem = DownloadItem.objects.get(id=id)
-        dlitem.dlstart = datetime.now()
-        dlitem.message = None
-        dlitem.save()
+        self.update_dlitem(id, message="", dlstart=datetime.now())
+
+        onlyget = self.get_onlyget(id)
+        ftppath = self.get_ftppath(id)
+        requested = self.get_requested(id)
 
         #Get files and folders for download
         try:
-            if dlitem.onlyget:
+            if onlyget:
                 #we dont want to get everything.. lets figure this out
-                files, remotesize = ftpmanager.get_required_folders_for_multi(dlitem.ftppath, dlitem.onlyget)
+                files, remotesize = ftpmanager.get_required_folders_for_multi(ftppath, onlyget)
             else:
-                files, remotesize = ftpmanager.get_files_for_download(dlitem.ftppath)
+                files, remotesize = ftpmanager.get_files_for_download(ftppath)
         except ftplib.error_perm as e:
             resp = e.args[0]
 
             #It does not exist?
-            if "FileNotFound" in resp or "file not found" in resp and dlitem.requested:
-                logger.info("Unable to get size and files for %s" % dlitem.ftppath)
-                dlitem.message = 'Waiting for item to download on server'
-                dlitem.save()
+            if "FileNotFound" in resp or "file not found" in resp and requested:
+                logger.info("Unable to get size and files for %s" % ftppath)
+                self.update_dlitem(id, message='Waiting for item to download on server')
                 return
             else:
-                self.update_dlitem(dlitem, message=str(e), failed=True)
+                self.update_dlitem(id, message=str(e), failed=True)
                 return
         except FTPException as e:
             if e.errno and e.errno in self.retry_errors:
-                self.update_dlitem(dlitem, message=e.message, failed=False)
+                self.update_dlitem(id, message=e.message, failed=False)
             else:
                 logger.exception("Exception getting files and folders for download" % str(e))
-                self.update_dlitem(dlitem, message=str(e), failed=True)
+                self.update_dlitem(id, message=str(e), failed=True)
             return
 
         if remotesize > 0 and len(files) > 0:
-            dlitem.remotesize = remotesize
+            self.update_dlitem(id, remotesize=remotesize)
         else:
-            self.update_dlitem(dlitem, message="Unable to get size and files on the FTP", failed=True)
+            self.update_dlitem(id, message="Unable to get size and files on the FTP", failed=True)
             return
 
         #Time to start the downloading
-        dlitem.status = DownloadItem.DOWNLOADING
-        dlitem.save()
+        self.update_dlitem(id, status=DownloadItem.DOWNLOADING)
         self.mirror_thread = FTPMirror(id, files)
 
         try:
@@ -366,8 +383,7 @@ class Downloader(Thread):
                 try:
                     if self.abort_download:
                         self.abort_mirror()
-                        dlitem.status = DownloadItem.QUEUE
-                        dlitem.save()
+                        self.update_dlitem(id, status=DownloadItem.QUEUE)
                         return
                 except:
                     return
@@ -378,12 +394,7 @@ class Downloader(Thread):
         except Exception as e:
             logger.exception(e)
             self.abort_mirror()
-            dlitem.status = DownloadItem.QUEUE
-            dlitem.message = str(e)
-            dlitem.save()
-            dlitem.log(str(e))
-
-        dlitem.save()
+            self.update_dlitem(id, status=DownloadItem.QUEUE, message=str(e))
 
     def run(self):
 
