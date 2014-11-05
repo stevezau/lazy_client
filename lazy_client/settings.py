@@ -369,12 +369,14 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'lazy_client_ui.context_processors.errors',
 )
 
+
 TEMPLATE_LOADERS = (
     'django_mobile.loader.Loader',
-    'django.template.loaders.filesystem.Loader',
-    'django.template.loaders.app_directories.Loader',
+    ('django.template.loaders.cached.Loader', (
+        'django.template.loaders.filesystem.Loader',
+        'django.template.loaders.app_directories.Loader',
+    )),
 )
-
 
 REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'lazy_client_api.utils.custom_exception_handler'

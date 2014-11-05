@@ -166,7 +166,6 @@ class QueueManage(ListView):
         super(QueueManage, self).__init__()
 
     def get_context_data(self, **kwargs):
-        logger.debug("Get context data")
         context = super(QueueManage, self).get_context_data(**kwargs)
 
         from lazy_client_ui import common
@@ -205,12 +204,10 @@ class QueueManage(ListView):
             page = paginate.num_pages
             context['downloads'] = paginate.page(paginate.num_pages)
 
-        logger.debug("finsihed Get context data")
         return context
 
 
     def get_queryset(self):
-        logger.debug("Get query set")
         self.type = self.kwargs.get('type')
 
         if self.type.lower() == "error":
@@ -234,8 +231,6 @@ class QueueManage(ListView):
             objects = DownloadItem.objects.filter(~Q(status=DownloadItem.COMPLETE), retries__gt=settings.DOWNLOAD_RETRY_COUNT).order_by('priority','id')
         else:
             objects = DownloadItem.objects.all().filter(status=self.dlget, retries__lte=settings.DOWNLOAD_RETRY_COUNT)
-
-        logger.debug("Finished uqery set")
 
         return objects
 
