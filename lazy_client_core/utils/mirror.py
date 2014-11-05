@@ -86,9 +86,6 @@ class FTPChecker:
             self.downloaded = dlnow
 
             if xfer_rate < ftpmanager.FTP_TIMEOUT_MIN_SPEED:
-                print xfer_rate
-                print dlnow
-                print seconds_last_check
                 self.debug("NO DATA RECEIVED LETS KILL IT")
                 #hmm, lets kill it!
                 self.killed = True
@@ -121,7 +118,7 @@ class FTPMirror(Thread):
 
     def add_url_queue(self, url):
         size = url[1]
-        urlpath = url[0].strip().lstrip("/")
+        urlpath = url[0].strip().rstrip("/")
 
         ftpurl = "ftp://%s:%s@%s:%s/%s" % (ftpmanager.FTP_USER, ftpmanager.FTP_PASS, ftpmanager.FTP_IP, ftpmanager.FTP_PORT, urlpath)
         ftpurl = ftpurl.encode("UTF-8")

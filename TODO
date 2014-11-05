@@ -1,6 +1,8 @@
 --erics cleanup tv shows 2.6 tb on Smoky Mountain Money
 --shows that are in errors
 
+setup set initial version
+
 cleanup suggestion
 -Seasons that are all watched
 -TVShows with 20% watched, last time it was watched over 4months ago

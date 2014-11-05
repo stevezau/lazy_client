@@ -82,25 +82,3 @@ def upgrade():
     shutil.move(settings.FLEXGET_IGNORE + "temp", settings.FLEXGET_IGNORE)
 
 
-    #Then figure out the ignored via the ignore.yml
-    found_count = 0
-    not_count = 0
-    for line in open(settings.FLEXGET_IGNORE, "r"):
-        if line.startswith("    - ^"):
-            show_name = line.replace("    - ^", "").replace(".", " ").strip()
-            show_name = TVShow.clean_title(show_name)
-
-            try:
-                found = TVShow.find_by_title(show_name)
-                found.ignored = True
-                found.save()
-                found_count += 1
-            except:
-                print show_name
-                not_count += 1
-
-    if found_count:
-        logger.info("%s shows marked as ignored" % found_count)
-
-    if not_count:
-        logger.info("%s shows marked as ignored but not found in database" % not_count)
