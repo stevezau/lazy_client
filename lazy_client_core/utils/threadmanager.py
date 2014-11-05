@@ -356,7 +356,7 @@ class Downloader(Thread):
 
         #Time to start the downloading
         dlitem.status = DownloadItem.DOWNLOADING
-        dlitem.save(dlitem)
+        dlitem.save()
         self.mirror_thread = FTPMirror(id, files)
 
         try:
@@ -383,7 +383,7 @@ class Downloader(Thread):
             dlitem.save()
             dlitem.log(str(e))
 
-        dlitem.save(dlitem)
+        dlitem.save()
 
     def run(self):
 
@@ -401,14 +401,12 @@ class Downloader(Thread):
                 self.sleep()
                 continue
 
-            if not isinstance(self.active, int):
-                continue
-
-            try:
-                id = self.active
-                self.download(id)
-            except Extractor as e:
-                logger.exception("Some error while downloading %s" % str(e))
+            if isinstance(self.active, long) or isinstance(self.active, int):
+                try:
+                    id = self.active
+                    self.download(id)
+                except Extractor as e:
+                    logger.exception("Some error while downloading %s" % str(e))
 
             self.sleep()
 
@@ -546,7 +544,9 @@ class Extractor(Thread):
                     self.sleep()
                     continue
 
-                if not isinstance(self.active, int):
+                if isinstance(self.active, int) or isinstance(self.active, long):
+                    self.extract(id)
+                else:
                     self.sleep()
                     continue
 

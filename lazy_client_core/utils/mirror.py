@@ -107,7 +107,7 @@ class FTPMirror(Thread):
         self.start()
 
     def log(self, msg):
-        log = DownloadLog(download_id=self.id, message=msg)
+        log = DownloadLog(download_id_id=self.id, message=msg)
         log.save()
 
     def cleanup(self):
