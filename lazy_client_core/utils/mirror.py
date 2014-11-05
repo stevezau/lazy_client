@@ -11,6 +11,7 @@ from lazy_client_core.utils import common
 from django.conf import settings
 from lazy_common import ftpmanager
 from lazy_common.utils import bytes2human
+from lazy_client_core.models import DownloadLog, DownloadItem
 
 logger = logging.getLogger(__name__)
 
@@ -96,14 +97,18 @@ class FTPChecker:
 
 class FTPMirror(Thread):
 
-    def __init__(self, urls, dlitem):
+    def __init__(self, id, urls):
         Thread.__init__(self)
         self.abort = False
         self.urls = urls
-        self.dlitem = dlitem
+        self.id = id
         self.speed = 0
 
         self.start()
+
+    def log(self, msg):
+        log = DownloadLog(download_id=self.id, message=msg)
+        log.save()
 
     def cleanup(self):
         # Cleanup
@@ -200,7 +205,7 @@ class FTPMirror(Thread):
 
     def add_file_curl(self, curl, url, filename, remote_size):
         curl.checker.reset()
-        self.dlitem.log("Remote file %s size: %s" % (filename, remote_size))
+        self.log("Remote file %s size: %s" % (filename, remote_size))
 
         short_filename = os.path.basename(filename)
         local_size = 0
@@ -213,7 +218,7 @@ class FTPMirror(Thread):
 
             if local_size == 0:
                 #try again
-                self.dlitem.log("Will download %s (%s bytes)" % (short_filename, remote_size))
+                self.log("Will download %s (%s bytes)" % (short_filename, remote_size))
                 f = common.open_file(filename, "wb")
 
             if local_size > remote_size:
@@ -226,22 +231,22 @@ class FTPMirror(Thread):
                     count = self.failed_list.get(curl.filename)
 
                     if count >= 2:
-                        self.dlitem.log("Local size was bigger then remote, max reties reached, setting to failed" % short_filename)
+                        self.log("Local size was bigger then remote, max reties reached, setting to failed %s" % short_filename)
                         return
                     else:
                         self.failed_list[filename] += 1
                 else:
                     self.failed_list[filename] = 1
 
-                self.dlitem.log("Strange, local size was bigger then remote, re-downloading %s" % short_filename)
+                self.log("Strange, local size was bigger then remote, re-downloading %s" % short_filename)
                 f = common.open_file(filename, "wb")
             else:
                 #lets resume
-                self.dlitem.log("Partial download %s (%s bytes), lets resume from %s bytes" % (short_filename, local_size, local_size))
+                self.log("Partial download %s (%s bytes), lets resume from %s bytes" % (short_filename, local_size, local_size))
                 f = common.open_file(filename, "ab")
 
         else:
-            self.dlitem.log("Will download %s (%s bytes)" % (short_filename, remote_size))
+            self.log("Will download %s (%s bytes)" % (short_filename, remote_size))
             f = common.open_file(filename, "wb")
 
         curl.setopt(pycurl.RESUME_FROM, local_size)
@@ -256,14 +261,33 @@ class FTPMirror(Thread):
         curl.remote_size = remote_size
         curl.url = url
 
+    def get_save_path(self):
+        dlitem = DownloadItem.objects.get(id=self.id)
+        return dlitem.localpath
+
+    def update_dlitem(self, id, message=None, failed=False):
+        try:
+            dlitem = DownloadItem.objects.get(id=id)
+            if message:
+                logger.info(message)
+                dlitem.message = message
+                dlitem.log(message)
+
+            if failed:
+                dlitem.retries += 1
+
+            dlitem.save()
+        except:
+            pass
+
     def run(self):
         try:
             max_speed_kb = settings.MAX_SPEED_PER_DOWNLOAD
             speed_delay = 0
 
-            self.savepath = self.dlitem.localpath
+            self.savepath = self.get_save_path()
 
-            self.dlitem.log("Starting Download")
+            self.log("Starting Download")
 
             update_interval = 1
 
@@ -281,9 +305,8 @@ class FTPMirror(Thread):
                     self.add_url_queue(url)
             except Exception as e:
                 logger.exception(e)
-                self.dlitem.log("Error: %s" % str(e))
-                self.dlitem.message = str(e)
-                self.dlitem.save()
+                self.log("Error: %s" % str(e))
+                self.update_dlitem(self.id, message=str(e))
                 return
 
             self.queue = self.priority + self.queue
@@ -313,9 +336,8 @@ class FTPMirror(Thread):
                         self.add_file_curl(freelist.pop(), url, filename, remote_size)
                     except Exception as e:
                         logger.exception(e)
-                        self.dlitem.log("Error: %s" % str(e))
-                        self.dlitem.message = str(e)
-                        self.dlitem.save()
+                        self.log(str(e))
+                        self.update_dlitem(self.id, message=str(e))
                         self.cleanup()
                         return
 
@@ -345,12 +367,12 @@ class FTPMirror(Thread):
                             time.sleep(3)
 
                         if success:
-                            self.dlitem.log("CURL Thread: %s Success:%s" % (c.thread_num, os.path.basename(c.filename)))
+                            self.log("CURL Thread: %s Success:%s" % (c.thread_num, os.path.basename(c.filename)))
                         else:
                             self.failed_list[c.filename] = 1
                             self.queue.append((c.url, c.filename, c.remote_size, datetime.now()))
                             num_processed -= 1
-                            self.dlitem.log("CURL Thread: %s  Failure: %s as it Didnt download properly, the local (%s) size does not match the remote size (%s), lets retry" % (c.thread_num, os.path.basename(c.filename), local_size, c.remote_size))
+                            self.log("CURL Thread: %s  Failure: %s as it Didnt download properly, the local (%s) size does not match the remote size (%s), lets retry" % (c.thread_num, os.path.basename(c.filename), local_size, c.remote_size))
 
                         c.fp = None
                         freelist.append(c)
@@ -395,7 +417,7 @@ class FTPMirror(Thread):
                                 msg = "CURL Thread %s: Retrying: %s %s %s" % (c.thread_num, os.path.basename(c.filename), errno, errmsg)
                                 num_processed -= 1
 
-                        self.dlitem.log(msg)
+                        self.log(msg)
                         freelist.append(c)
 
                     num_processed = num_processed + len(ok_list) + len(err_list)
@@ -457,8 +479,8 @@ class FTPMirror(Thread):
                     time.sleep(speed_delay)
                 self.m.select(1.0)
         except Exception as e:
-            self.dlitem.message = str(e)
-            self.dlitem.save()
+            logger.exception(e)
+            self.update_dlitem(self.id, message=str(e))
 
         finally:
             # Cleanup

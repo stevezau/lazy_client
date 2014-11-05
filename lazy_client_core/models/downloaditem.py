@@ -256,7 +256,7 @@ class DownloadItem(models.Model):
 
     def get_speed(self):
         from lazy_client_core.utils import threadmanager
-        return threadmanager.queue_manager.get_speed(self)
+        return threadmanager.queue_manager.get_speed(self.id)
 
     def add_download(self, add_season, add_ep):
 
@@ -306,7 +306,7 @@ class DownloadItem(models.Model):
 
     def killjob(self):
         from lazy_client_core.utils.threadmanager import queue_manager
-        queue_manager.abort_dlitem(self)
+        queue_manager.abort_dlitem(self.id)
 
     def reset(self, force=False):
         self.killjob()
