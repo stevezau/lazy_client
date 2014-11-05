@@ -218,6 +218,11 @@ LOGGING = {
             'propagate': True,
             'level':'DEBUG',
         },
+        'django.db.backends': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
         'guessit': {
             'handlers':['console'],
             'propagate': True,
@@ -267,11 +272,6 @@ LOGGING = {
             'handlers':['console'],
             'propagate': True,
             'level':'INFO',
-        },
-        'django.db.backends': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': False,
         },
         'stevedore.extension': {
             'handlers': ['console'],

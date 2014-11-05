@@ -161,10 +161,6 @@ class QueueManage(ListView):
     type = None
     dlget = DownloadItem.DOWNLOADING
 
-    def __init__(self):
-        logger.debug("Startin")
-        super(QueueManage, self).__init__()
-
     def get_context_data(self, **kwargs):
         context = super(QueueManage, self).get_context_data(**kwargs)
 
