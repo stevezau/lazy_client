@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 queue_manager = None
 
-## THREAD SAFE QUERIES for sqlite ###
+## THREAD ScAFE QUERIES for sqlite ###
 def get_attr(id, attr):
     dlitem = DownloadItem.objects.get(id=id)
     return getattr(dlitem, attr)
@@ -444,35 +444,35 @@ class Extractor(Thread):
     def sleep(self):
         sleep(2)
 
-    def extract(self, id):
+    def extract(self, dlitem_id):
 
-        status = get_attr(id, "status")
-        localpath = get_attr(id, "localpath")
-        retries = get_attr(id, "retries")
-        title = get_attr(id, "title")
+        status = get_attr(dlitem_id, "status")
+        localpath = get_attr(dlitem_id, "localpath")
+        retries = get_attr(dlitem_id, "retries")
+        title = get_attr(dlitem_id, "title")
 
         if status == DownloadItem.EXTRACT:
             logger.info("Extracting Download Item: %s" % localpath)
-            update_dlitem(id, dlstart=datetime.now())
+            update_dlitem(dlitem_id, dlstart=datetime.now())
 
             if retries >= settings.DOWNLOAD_RETRY_COUNT:
                 logger.info("Tried to extract %s times already but failed.. will skip: %s" % (retries, title))
-                self._fail_dlitem(id)
+                self._fail_dlitem(dlitem_id)
                 return
 
             if not os.path.exists(localpath):
-                self._fail_dlitem(id, error="Local download folder does not exist", backto=DownloadItem.QUEUE)
+                self._fail_dlitem(dlitem_id, error="Local download folder does not exist", backto=DownloadItem.QUEUE)
 
             #Only need to extract folders, not files
             if os.path.isdir(localpath):
                 try:
                     extractor.extract(localpath)
                 except ExtractException as e:
-                    self._fail_dlitem(id, error=str(e), backto=DownloadItem.QUEUE)
-                    DownloadItem.objects.get(id=id).reset()
+                    self._fail_dlitem(dlitem_id, error=str(e), backto=DownloadItem.QUEUE)
+                    DownloadItem.objects.get(id=dlitem_id).reset()
                 except ExtractCRCException as e:
-                    self._fail_dlitem(id, error=str(e), backto=DownloadItem.QUEUE)
-                    DownloadItem.objects.get(id=id).reset()
+                    self._fail_dlitem(dlitem_id, error=str(e), backto=DownloadItem.QUEUE)
+                    DownloadItem.objects.get(id=dlitem_id).reset()
                     return
 
             logger.info("Extraction passed")
@@ -483,7 +483,7 @@ class Extractor(Thread):
             update_dlitem(dlstart=datetime.now())
 
             try:
-                renamer.rename(localpath, id=id)
+                renamer.rename(localpath, id=dlitem_id)
                 logger.info("Renaming done")
 
                 update_dlitem(status=DownloadItem.COMPLETE, retries=0)
@@ -492,10 +492,10 @@ class Extractor(Thread):
                 delete(localpath)
 
             except NoMediaFilesFoundException as e:
-                self._fail_dlitem(id, error=str(e))
+                self._fail_dlitem(dlitem_id, error=str(e))
                 return
             except RenameException as e:
-                self._fail_dlitem(id, error=str(e))
+                self._fail_dlitem(dlitem_id, error=str(e))
                 return
             except ManuallyFixException as e:
                 msg = "Unable to auto rename the below files, please manually fix"
@@ -505,7 +505,7 @@ class Extractor(Thread):
                 for f in e.fix_files:
                     msg += "\n File: %s Error: %s" % (f['file'], f['error'])
 
-                    video_files = get_attr(id, "video_files")
+                    video_files = get_attr(dlitem_id, "video_files")
 
                     if video_files:
                         already_there = False
@@ -516,15 +516,15 @@ class Extractor(Thread):
 
                         if not already_there:
                             video_files.append(f)
-                            update_dlitem(id, video_files=video_files)
+                            update_dlitem(dlitem_id, video_files=video_files)
 
                     else:
                         video_files = [f]
-                        update_dlitem(id, video_files=video_files)
+                        update_dlitem(dlitem_id, video_files=video_files)
 
-                self._fail_dlitem(id, error=msg)
+                self._fail_dlitem(dlitem_id, error=msg)
             except Exception as e:
-                self._fail_dlitem(id, error=str(e))
+                self._fail_dlitem(dlitem_id, error=str(e))
                 return
 
     def run(self):
@@ -543,7 +543,7 @@ class Extractor(Thread):
                     continue
 
                 if isinstance(self.active, int) or isinstance(self.active, long):
-                    self.extract(id)
+                    self.extract(self.active)
                 else:
                     self.sleep()
                     continue
