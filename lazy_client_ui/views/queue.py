@@ -161,7 +161,12 @@ class QueueManage(ListView):
     type = None
     dlget = DownloadItem.DOWNLOADING
 
+    def __init__(self):
+        logger.debug("Startin")
+        super(QueueManage, self).__init__()
+
     def get_context_data(self, **kwargs):
+        logger.debug("Get context data")
         context = super(QueueManage, self).get_context_data(**kwargs)
 
         from lazy_client_ui import common
@@ -200,10 +205,12 @@ class QueueManage(ListView):
             page = paginate.num_pages
             context['downloads'] = paginate.page(paginate.num_pages)
 
+        logger.debug("finsihed Get context data")
         return context
 
 
     def get_queryset(self):
+        logger.debug("Get query set")
         self.type = self.kwargs.get('type')
 
         if self.type.lower() == "error":
@@ -214,17 +221,23 @@ class QueueManage(ListView):
                 if dlint[1].lower() == self.type.lower():
                     self.dlget = dlint[0]
 
+        objects = None
+
         if self.dlget == DownloadItem.COMPLETE:
             from datetime import timedelta
             from django.utils import timezone
             some_day_last_week = timezone.now().date() - timedelta(days=14)
-            return DownloadItem.objects.filter(status=DownloadItem.COMPLETE, dateadded__gt=some_day_last_week).order_by('-dateadded')
+            objects = DownloadItem.objects.filter(status=DownloadItem.COMPLETE, dateadded__gt=some_day_last_week).order_by('-dateadded')
         elif self.dlget == DownloadItem.QUEUE:
-            return DownloadItem.objects.all().filter(retries__lte=settings.DOWNLOAD_RETRY_COUNT, status=self.dlget).order_by('priority','id')
+            objects = DownloadItem.objects.all().filter(retries__lte=settings.DOWNLOAD_RETRY_COUNT, status=self.dlget).order_by('priority','id')
         elif self.dlget == 99:
-            return DownloadItem.objects.filter(~Q(status=DownloadItem.COMPLETE), retries__gt=settings.DOWNLOAD_RETRY_COUNT).order_by('priority','id')
+            objects = DownloadItem.objects.filter(~Q(status=DownloadItem.COMPLETE), retries__gt=settings.DOWNLOAD_RETRY_COUNT).order_by('priority','id')
         else:
-            return DownloadItem.objects.all().filter(status=self.dlget, retries__lte=settings.DOWNLOAD_RETRY_COUNT)
+            objects = DownloadItem.objects.all().filter(status=self.dlget, retries__lte=settings.DOWNLOAD_RETRY_COUNT)
+
+        logger.debug("Finished uqery set")
+
+        return objects
 
     def key_function(self, dlitem):
         try:
