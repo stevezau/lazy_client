@@ -44,7 +44,11 @@ def get_renamer(path, type=metaparser.TYPE_UNKNOWN):
         return TVRenamer()
 
 
-def rename(path, type=metaparser.TYPE_UNKNOWN, dlitem=None):
+def rename(path, type=metaparser.TYPE_UNKNOWN, id=None):
+
+    if id:
+        from lazy_client_core.models import DownloadItem
+        dlitem = DownloadItem.objects.get(id=id)
 
     if None is dlitem:
         renamer = get_renamer(path)

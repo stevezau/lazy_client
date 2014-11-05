@@ -28,7 +28,26 @@ logger = logging.getLogger(__name__)
 
 queue_manager = None
 
+## THREAD SAFE QUERIES for sqlite ###
+def get_attr(id, attr):
+    dlitem = DownloadItem.objects.get(id=id)
+    return getattr(dlitem, attr)
 
+def update_dlitem(id, **kwargs):
+    dlitem = DownloadItem.objects.get(id=id)
+
+    for key, value in kwargs.iteritems():
+
+        if key == "failed":
+            dlitem.retries += value
+        elif key =="message":
+            dlitem.message = value
+            dlitem.log(value)
+        else:
+            setattr(dlitem, key, value)
+
+    dlitem.save()
+        
 #######################
 #### Queue Manager ####
 #######################
@@ -300,45 +319,13 @@ class Downloader(Thread):
         except:
             pass
 
-    def update_dlitem(self, id, message=None, failed=False,  dlstart=None, remotesize=None, status=None):
-        dlitem = DownloadItem.objects.get(id=id)
-        if message:
-            logger.info(message)
-            dlitem.message = message
-            dlitem.log(message)
-
-        if failed:
-            dlitem.retries += 1
-
-        if dlstart:
-            dlitem.dlstart = dlstart
-
-        if remotesize:
-            dlitem.remotesize = remotesize
-
-        if status:
-            dlitem.status = status
-
-        dlitem.save()
-
-    def get_onlyget(self, id):
-        dlitem = DownloadItem.objects.get(id=id)
-        return dlitem.onlyget
-
-    def get_ftppath(self, id):
-        dlitem = DownloadItem.objects.get(id=id)
-        return dlitem.ftppath
-
-    def get_requested(self, id):
-        dlitem = DownloadItem.objects.get(id=id)
-        return dlitem.requested
 
     def download(self, id):
-        self.update_dlitem(id, message="", dlstart=datetime.now())
+        update_dlitem(id, message="", dlstart=datetime.now())
 
-        onlyget = self.get_onlyget(id)
-        ftppath = self.get_ftppath(id)
-        requested = self.get_requested(id)
+        onlyget = get_attr(id, "onlyget")
+        ftppath = get_attr(id, "ftppath")
+        requested = get_attr(id, "requested")
 
         #Get files and folders for download
         try:
@@ -353,27 +340,27 @@ class Downloader(Thread):
             #It does not exist?
             if "FileNotFound" in resp or "file not found" in resp and requested:
                 logger.info("Unable to get size and files for %s" % ftppath)
-                self.update_dlitem(id, message='Waiting for item to download on server')
+                update_dlitem(id, message='Waiting for item to download on server')
                 return
             else:
-                self.update_dlitem(id, message=str(e), failed=True)
+                update_dlitem(id, message=str(e), failed=1)
                 return
         except FTPException as e:
             if e.errno and e.errno in self.retry_errors:
-                self.update_dlitem(id, message=e.message, failed=False)
+                update_dlitem(id, message=e.message, failed=1)
             else:
                 logger.exception("Exception getting files and folders for download" % str(e))
-                self.update_dlitem(id, message=str(e), failed=True)
+                update_dlitem(id, message=str(e), failed=1)
             return
 
         if remotesize > 0 and len(files) > 0:
-            self.update_dlitem(id, remotesize=remotesize)
+            update_dlitem(id, remotesize=remotesize)
         else:
-            self.update_dlitem(id, message="Unable to get size and files on the FTP", failed=True)
+            update_dlitem(id, message="Unable to get size and files on the FTP", failed=1)
             return
 
         #Time to start the downloading
-        self.update_dlitem(id, status=DownloadItem.DOWNLOADING)
+        update_dlitem(id, status=DownloadItem.DOWNLOADING)
         self.mirror_thread = FTPMirror(id, files)
 
         try:
@@ -383,7 +370,7 @@ class Downloader(Thread):
                 try:
                     if self.abort_download:
                         self.abort_mirror()
-                        self.update_dlitem(id, status=DownloadItem.QUEUE)
+                        update_dlitem(id, status=DownloadItem.QUEUE)
                         return
                 except:
                     return
@@ -394,7 +381,7 @@ class Downloader(Thread):
         except Exception as e:
             logger.exception(e)
             self.abort_mirror()
-            self.update_dlitem(id, status=DownloadItem.QUEUE, message=str(e))
+            update_dlitem(id, status=DownloadItem.QUEUE, message=str(e))
 
     def run(self):
 
@@ -458,51 +445,51 @@ class Extractor(Thread):
         sleep(2)
 
     def extract(self, id):
-        dlitem = DownloadItem.objects.get(id=id)
 
-        if dlitem.status == DownloadItem.EXTRACT:
-            logger.info("Extracting Download Item: %s" % dlitem.localpath)
-            dlitem.dlstart = datetime.now()
+        status = get_attr(id, "status")
+        localpath = get_attr(id, "localpath")
+        retries = get_attr(id, "retries")
+        title = get_attr(id, "title")
 
-            if dlitem.retries >= settings.DOWNLOAD_RETRY_COUNT:
-                logger.info("Tried to extract %s times already but failed.. will skip: %s" % (dlitem.retries, dlitem.title))
+        if status == DownloadItem.EXTRACT:
+            logger.info("Extracting Download Item: %s" % localpath)
+            update_dlitem(id, dlstart=datetime.now())
+
+            if retries >= settings.DOWNLOAD_RETRY_COUNT:
+                logger.info("Tried to extract %s times already but failed.. will skip: %s" % (retries, title))
                 self._fail_dlitem(id)
                 return
 
-            if not os.path.exists(dlitem.localpath):
+            if not os.path.exists(localpath):
                 self._fail_dlitem(id, error="Local download folder does not exist", backto=DownloadItem.QUEUE)
 
             #Only need to extract folders, not files
-            if os.path.isdir(dlitem.localpath):
+            if os.path.isdir(localpath):
                 try:
-                    extractor.extract(dlitem.localpath)
+                    extractor.extract(localpath)
                 except ExtractException as e:
                     self._fail_dlitem(id, error=str(e), backto=DownloadItem.QUEUE)
-                    dlitem.reset()
-                    return
+                    DownloadItem.objects.get(id=id).reset()
                 except ExtractCRCException as e:
                     self._fail_dlitem(id, error=str(e), backto=DownloadItem.QUEUE)
-                    dlitem.reset()
+                    DownloadItem.objects.get(id=id).reset()
                     return
 
             logger.info("Extraction passed")
-            dlitem.status = DownloadItem.RENAME
-            dlitem.save()
+            update_dlitem(status=DownloadItem.RENAME)
 
-        if dlitem.status == DownloadItem.RENAME:
+        if status == DownloadItem.RENAME:
             logger.info("Renaming download item")
-            dlitem.dlstart = datetime.now()
+            update_dlitem(dlstart=datetime.now())
 
             try:
-                renamer.rename(dlitem.localpath, dlitem=dlitem)
+                renamer.rename(localpath, id=id)
                 logger.info("Renaming done")
 
-                dlitem.status = DownloadItem.COMPLETE
-                dlitem.retries = 0
-                dlitem.save()
+                update_dlitem(status=DownloadItem.COMPLETE, retries=0)
 
                 logger.info("Deleting temp folder")
-                delete(dlitem.localpath)
+                delete(localpath)
 
             except NoMediaFilesFoundException as e:
                 self._fail_dlitem(id, error=str(e))
@@ -513,34 +500,34 @@ class Extractor(Thread):
             except ManuallyFixException as e:
                 msg = "Unable to auto rename the below files, please manually fix"
 
-                dlitem.video_files = None
+                update_dlitem(video_files=None)
 
                 for f in e.fix_files:
                     msg += "\n File: %s Error: %s" % (f['file'], f['error'])
 
-                    if dlitem.video_files:
+                    video_files = get_attr(id, "video_files")
+
+                    if video_files:
                         already_there = False
 
-                        for video_file in dlitem.video_files:
+                        for video_file in video_files:
                             if video_file['file'] == f['file']:
                                 already_there = True
 
                         if not already_there:
-                            dlitem.video_files.append(f)
-                    else:
-                        dlitem.video_files = []
-                        dlitem.video_files.append(f)
+                            video_files.append(f)
+                            update_dlitem(id, video_files=video_files)
 
+                    else:
+                        video_files = [f]
+                        update_dlitem(id, video_files=video_files)
 
                 self._fail_dlitem(id, error=msg)
-                dlitem.save()
             except Exception as e:
                 self._fail_dlitem(id, error=str(e))
                 return
 
-
     def run(self):
-
         while True:
 
             try:

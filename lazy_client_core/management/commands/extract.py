@@ -89,7 +89,7 @@ class Command(BaseCommand):
             logger.info("Renaming download item")
 
             try:
-                renamer.rename(dlitem.localpath, dlitem=dlitem)
+                renamer.rename(dlitem.localpath, dlitem=dlitem.id)
                 logger.info("Renaming done")
 
                 dlitem.status = DownloadItem.COMPLETE
