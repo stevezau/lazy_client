@@ -134,7 +134,7 @@ SECRET_KEY = 'afizuu0e=b50x8!eu7n3-7e+0yv*u$mpxrdoi%@9f9^h)!q3)c'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-TEMPLATE_DEBUG = True
+TEMPLATE_DEBUG = False
 TEMPLATE_DIRS = [
     os.path.join(BASE_DIR, 'templates'),
     os.path.join(BASE_DIR, "lazy_client_ui", 'templates'),

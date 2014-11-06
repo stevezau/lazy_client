@@ -114,6 +114,9 @@ def start_server():
     # Unsubscribe the default server
     cherrypy.server.unsubscribe()
 
+    cherrypy.config.update({'engine.autoreload.on': False})
+    cherrypy.config.update({'environment': 'embedded'})
+
     # Instantiate a new server object
     server = cherrypy._cpserver.Server()
 
