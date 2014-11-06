@@ -30,14 +30,25 @@ def get_ep_season(dlitem):
 
     text = ""
 
-    season = dlitem.get_season()
+    seasons = dlitem.get_seasons()
     eps = dlitem.get_eps()
 
-    if season > 0 and len(eps) > 0:
-        text += "Season %s ep" % season
+    if len(seasons) > 0 or len(eps) > 0:
+        if len(seasons) == 1:
+            text += "Season %s" % seasons[0]
+        if len(seasons) > 1:
+            text += "Seasons "
+            for season in seasons:
+                text += "%s," % season
+            text.rstrip(",")
 
-        for ep in eps:
-            text += " %s" % ep
+        if len(eps) == 1:
+            text += " Ep %s" % eps[0]
+        if len(eps) > 1:
+            text += " Eps "
+            for ep in eps:
+                text += "%s," % ep
+            text.rstrip(",")
     else:
         parser = dlitem.metaparser()
         if 'date' in parser.details:
@@ -59,36 +70,6 @@ def tvshow_next_aired(tvshow):
             aired_date = datetime.datetime.strptime(ep_obj['firstaired'], '%Y-%m-%d') + datetime.timedelta(days=1)
 
             return {"season": next_season, "ep": next_ep, "title": title, "date": aired_date}
-
-
-@register.filter(name='format_torrent_title')
-def format_torrent_title(title):
-    from lazy_common import metaparser
-    parser = metaparser.get_parser_cache(title)
-
-    title = ""
-
-    series = False
-
-    if 'doco_channel' in parser.details:
-        title += "%s: " % parser.details['doco_channel']
-
-    if 'series' in parser.details:
-
-        title += parser.details['series']
-        series = True
-
-    if 'title' in parser.details:
-        if series:
-            title += ": %s" % parser.details['title']
-        else:
-            title += " %s" % parser.details['title']
-
-    if 'date' in parser.details:
-        title += " %s" % parser.details['date'].strftime('%m.%d.%Y')
-
-    return title
-
 
 @register.filter
 def truncatesmart(value, limit=80):

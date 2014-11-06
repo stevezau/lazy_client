@@ -9,6 +9,7 @@ from django.core.management.base import CommandError
 logger = logging.getLogger(__name__)
 from lazy_client_core.utils.common import blue_color, fail_color, green_color
 from django.conf import settings
+from lazy_client_core.models import Version
 
 
 class Command(BaseCommand):
@@ -41,5 +42,10 @@ class Command(BaseCommand):
 
         print green_color("Running Syncdb")
         call_command('collectstatic',  interactive=False)
+
+        new_ver = Version()
+        new_ver.id = 1
+        new_ver.version = settings.__VERSION__
+        new_ver.save()
 
         print blue_color("Setup success")

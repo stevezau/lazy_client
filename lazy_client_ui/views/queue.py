@@ -220,13 +220,13 @@ class QueueManage(ListView):
             from datetime import timedelta
             from django.utils import timezone
             some_day_last_week = timezone.now().date() - timedelta(days=14)
-            objects = DownloadItem.objects.filter(status=DownloadItem.COMPLETE, dateadded__gt=some_day_last_week).order_by('-dateadded')
+            objects = DownloadItem.objects.select_related('imdbid', 'tvdbid').filter(status=DownloadItem.COMPLETE, dateadded__gt=some_day_last_week).order_by('-dateadded')
         elif self.dlget == DownloadItem.QUEUE:
-            objects = DownloadItem.objects.all().filter(retries__lte=settings.DOWNLOAD_RETRY_COUNT, status=self.dlget).order_by('priority','id')
+            objects = DownloadItem.objects.select_related('imdbid', 'tvdbid').filter(retries__lte=settings.DOWNLOAD_RETRY_COUNT, status=self.dlget).order_by('priority','id')
         elif self.dlget == 99:
-            objects = DownloadItem.objects.filter(~Q(status=DownloadItem.COMPLETE), retries__gt=settings.DOWNLOAD_RETRY_COUNT).order_by('priority','id')
+            objects = DownloadItem.objects.select_related('imdbid', 'tvdbid').filter(~Q(status=DownloadItem.COMPLETE), retries__gt=settings.DOWNLOAD_RETRY_COUNT).order_by('priority','id')
         else:
-            objects = DownloadItem.objects.all().filter(status=self.dlget, retries__lte=settings.DOWNLOAD_RETRY_COUNT)
+            objects = DownloadItem.objects.select_related('imdbid', 'tvdbid').filter(status=self.dlget, retries__lte=settings.DOWNLOAD_RETRY_COUNT)
 
         return objects
 

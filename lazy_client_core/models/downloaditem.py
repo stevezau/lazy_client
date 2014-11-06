@@ -70,6 +70,7 @@ class DownloadItem(models.Model):
 
 
     title = models.CharField(max_length=150, db_index=True, blank=True, null=True)
+    title_clean = models.CharField(max_length=150, blank=True, null=True)
     section = models.CharField(max_length=10, db_index=True, blank=True, null=True)
     ftppath = models.CharField(max_length=255, db_index=True, unique=True)
     localpath = models.CharField(max_length=255, blank=True, null=True)
@@ -90,7 +91,42 @@ class DownloadItem(models.Model):
     onlyget = JSONField(blank=True, null=True)
     video_files = JSONField(blank=True, null=True)
 
+    epsiodes = JSONField(blank=True, null=True)
+    seasons = JSONField(blank=True, null=True)
+    date = models.DateTimeField(null=True, blank=True)
+    quality = JSONField(blank=True, null=True)
+
     parser = None
+
+    def get_title_clean(self):
+
+        if not self.title_clean:
+            parser = self.metaparser()
+            title = ""
+            series = False
+
+            if 'doco_channel' in parser.details:
+                title += "%s: " % parser.details['doco_channel']
+
+            if 'series' in parser.details:
+
+                title += parser.details['series']
+                series = True
+
+            if 'title' in parser.details:
+                if series:
+                    title += ": %s" % parser.details['title']
+                else:
+                    title += " %s" % parser.details['title']
+
+            if 'date' in parser.details:
+                title += " %s" % parser.details['date'].strftime('%m.%d.%Y')
+
+            if len(title) > 0:
+                self.title_clean = title
+                self.save()
+
+        return self.title_clean
 
     def is_season_pack(self):
         parser = self.metaparser()
@@ -121,59 +157,78 @@ class DownloadItem(models.Model):
                     return True
         return False
 
-    def get_season(self):
-        parser = self.metaparser()
-        if 'season' in parser.details:
-            return parser.details['season']
-
     def get_seasons(self):
-        parser = self.metaparser()
-        return parser.get_seasons()
+        if not self.seasons:
+            parser = self.metaparser()
+            seasons = parser.get_seasons()
+
+            if len(seasons) > 0:
+                self.seasons = seasons
+                self.save()
+
+        return self.seasons
 
     def get_eps(self):
-        parser = self.metaparser()
+        if not self.epsiodes:
+            epsiodes = []
+            parser = self.metaparser()
 
-        if 'episodeList' in parser.details:
-            return parser.details['episodeList']
-        elif 'episodeNumber' in parser.details:
-            return [parser.details['episodeNumber']]
+            if 'episodeList' in parser.details:
+                epsiodes = parser.details['episodeList']
+            elif 'episodeNumber' in parser.details:
+                epsiodes = [parser.details['episodeNumber']]
+            if len(epsiodes) > 0:
+                self.epsiodes = epsiodes
+                self.save()
+
+        return self.epsiodes
 
     def get_quality(self):
-        parser = self.metaparser()
+        if not self.quality:
+            parser = self.metaparser()
+            quality = []
 
-        quality = []
+            if parser.quality.resolution:
+                quality.append(parser.quality.resolution.name)
 
-        if parser.quality.resolution:
-            quality.append(parser.quality.resolution.name)
+            if parser.quality and parser.quality.source:
+                quality.append(parser.quality.source.name)
 
-        if parser.quality and parser.quality.source:
-            quality.append(parser.quality.source.name)
+            if len(quality) == 0 and 'format' in parser.details:
+                quality.append(parser.details['format'])
 
-        if len(quality) == 0 and 'format' in parser.details:
-            quality.append(parser.details['format'])
+            formatted_quality = []
+            for q in quality:
+                if q.lower() == "hdtv":
+                    q = "HDTV"
+                if q.lower() == "xvid":
+                    q = "XVID"
+                if q.lower() == "sdtv":
+                    q = "SDTV"
+                if q.lower() == "bluray":
+                    q = "Blu-Ray"
+                if q.lower() == "dvdrip":
+                    q = "DVDRip"
 
-        formatted_quality = []
-        for q in quality:
-            if q.lower() == "hdtv":
-                q = "HDTV"
-            if q.lower() == "xvid":
-                q = "XVID"
-            if q.lower() == "sdtv":
-                q = "SDTV"
-            if q.lower() == "bluray":
-                q = "Blu-Ray"
-            if q.lower() == "dvdrip":
-                q = "DVDRip"
+                formatted_quality.append(q)
 
-            formatted_quality.append(q)
+            if len(formatted_quality) > 0:
+                self.quality = formatted_quality
+                self.save()
 
-        return formatted_quality
+        return self.quality
 
-    def get_year(self):
-        parser = self.metaparser()
+    def get_date(self):
+        if not self.date:
+            parser = self.metaparser()
+            if 'date' in parser.details:
+                self.date = parser.details['date']
+                self.save()
+            elif 'year' in parser.details:
+                self.date = datetime.strptime(parser.details['year'], '%Y')
+                self.save()
 
-        if 'year' in parser.details:
-            return parser.details['year']
+        return self.date
 
     def retry(self):
         self.dlstart = None
@@ -572,73 +627,73 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
 
         #Now we have sorted both imdbid and thetvdbid lets sort it all out
 
-    #If we have a tvdbid do we need to add it to the db or does it exist or ignored?
-    if instance.tvdbid_id is not None and instance.tvdbid_id != "":
+        #If we have a tvdbid do we need to add it to the db or does it exist or ignored?
+        if instance.tvdbid_id is not None and instance.tvdbid_id != "":
 
-        #Does it already exist?
-        try:
-            if instance.tvdbid:
-                #Do we need to update it
-                curTime = datetime.now()
-                hours = 0
-
-                if instance.tvdbid.updated is None:
-                    hours = 50
-                else:
-                    diff = curTime - instance.tvdbid.updated.replace(tzinfo=None)
-                    hours = diff.total_seconds() / 60 / 60
-
-                if hours > 24:
-                    try:
-                        instance.tvdbid.update_from_tvdb()
-                        instance.tvdbid.save()
-                    except Exception as e:
-                        logger.exception("Error updating TVDB info %s" % e.message)
-        except ObjectDoesNotExist as e:
-            logger.debug("Getting tvdb data for release")
-
-            new_tvdb_item = TVShow()
-            new_tvdb_item.id = instance.tvdbid_id
+            #Does it already exist?
             try:
-                new_tvdb_item.save()
-            except:
-                instance.tvdbid = None
-                pass
+                if instance.tvdbid:
+                    #Do we need to update it
+                    curTime = datetime.now()
+                    hours = 0
 
-        if instance.tvdbid.ignored:
-            logger.info("Show wont be added as it is marked as ignored")
-            raise Ignored("Show wont be added as it is marked as ignored")
+                    if instance.tvdbid.updated is None:
+                        hours = 50
+                    else:
+                        diff = curTime - instance.tvdbid.updated.replace(tzinfo=None)
+                        hours = diff.total_seconds() / 60 / 60
 
-    #If we have a imdbid do we need to add it to the db or does it exist
-    if instance.imdbid_id is not None and instance.imdbid_id != "":
-        try:
-            if instance.imdbid:
-                #Do we need to update it
-                curTime = datetime.now()
-                imdb_date = instance.imdbid.updated
+                    if hours > 24:
+                        try:
+                            instance.tvdbid.update_from_tvdb()
+                            instance.tvdbid.save()
+                        except Exception as e:
+                            logger.exception("Error updating TVDB info %s" % e.message)
+            except ObjectDoesNotExist as e:
+                logger.debug("Getting tvdb data for release")
+
+                new_tvdb_item = TVShow()
+                new_tvdb_item.id = instance.tvdbid_id
+                try:
+                    new_tvdb_item.save()
+                except:
+                    instance.tvdbid = None
+                    pass
+
+            if instance.tvdbid.ignored:
+                logger.info("Show wont be added as it is marked as ignored")
+                raise Ignored("Show wont be added as it is marked as ignored")
+
+        #If we have a imdbid do we need to add it to the db or does it exist
+        if instance.imdbid_id is not None and instance.imdbid_id != "":
+            try:
+                if instance.imdbid:
+                    #Do we need to update it
+                    curTime = datetime.now()
+                    imdb_date = instance.imdbid.updated
+
+                    try:
+                        if imdb_date:
+                            diff = curTime - instance.imdbid.updated.replace(tzinfo=None)
+                            hours = diff.total_seconds() / 60 / 60
+                            if hours > 24:
+                                instance.imdbid.update_from_imdb()
+                        else:
+                            instance.imdbid.update_from_imdb()
+                    except ObjectDoesNotExist as e:
+                            logger.info("Error updating IMDB info as it was not found")
+
+            except ObjectDoesNotExist as e:
+                logger.debug("Getting IMDB data for release")
+
+                new_imdb = Movie()
+                new_imdb.id = instance.imdbid_id
 
                 try:
-                    if imdb_date:
-                        diff = curTime - instance.imdbid.updated.replace(tzinfo=None)
-                        hours = diff.total_seconds() / 60 / 60
-                        if hours > 24:
-                            instance.imdbid.update_from_imdb()
-                    else:
-                        instance.imdbid.update_from_imdb()
-                except ObjectDoesNotExist as e:
-                        logger.info("Error updating IMDB info as it was not found")
+                    new_imdb.save()
+                except ObjectDoesNotExist:
+                    instance.imdbid_id = None
 
-        except ObjectDoesNotExist as e:
-            logger.debug("Getting IMDB data for release")
-
-            new_imdb = Movie()
-            new_imdb.id = instance.imdbid_id
-
-            try:
-                new_imdb.save()
-            except ObjectDoesNotExist:
-                instance.imdbid_id = None
-
-        if instance.imdbid.ignored:
-            logger.info("Movie wont be added as it is marked as ignored")
-            raise Ignored("Movie cannot be added as it is marked as ignored")
+            if instance.imdbid.ignored:
+                logger.info("Movie wont be added as it is marked as ignored")
+                raise Ignored("Movie cannot be added as it is marked as ignored")

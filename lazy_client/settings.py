@@ -178,7 +178,104 @@ INSTALLED_APPS = (
     'lazy_client_ui',
     'lazy_common',
     'pure_pagination',
+    'raven.contrib.django.raven_compat',
 )
+
+RAVEN_CONFIG = {
+    'dsn': 'http://fc6b36d8e68342b9bbddbc84cfea32e0:3ec333e1679d408fb9aab774158d31ec@south.drifthost.com:9000/2',
+}
+
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'lazy_cache',
+    }
+
+}
+
+MIDDLEWARE_CLASSES = (
+    'django.middleware.gzip.GZipMiddleware',
+    'htmlmin.middleware.HtmlMinifyMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'htmlmin.middleware.MarkRequestMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django_mobile.middleware.MobileDetectionMiddleware',
+    'django_mobile.middleware.SetFlavourMiddleware',
+    'lazy_client_ui.middleware.LoginRequiredMiddleware',
+)
+
+
+LOGIN_EXEMPT_URLS = (
+    'login/',
+    'lazy/api',
+    'api'
+)
+
+LOGIN_URL = "/login"
+
+ROOT_URLCONF = 'lazy_client.urls'
+
+WSGI_APPLICATION = 'lazy_client.wsgi.application'
+
+
+CRISPY_TEMPLATE_PACK = 'bootstrap3'
+
+# Internationalization
+# https://docs.djangoproject.com/en/1.6/topics/i18n/
+
+LANGUAGE_CODE = 'en-us'
+
+#TIME_ZONE = "Australia/Sydney"
+USE_I18N = True
+USE_L10N = True
+#USE_TZ = True
+
+INTERNAL_IPS = (
+    '192.168.0.200',
+    '115.64.6.2',
+    '127.0.0.1',
+)
+
+PWD_PROTECT = True
+
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/1.6/howto/static-files/
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
+
+TEMPLATE_CONTEXT_PROCESSORS = (
+    'django.contrib.auth.context_processors.auth',
+    'django.core.context_processors.debug',
+    'django.core.context_processors.i18n',
+    'django.core.context_processors.request',
+    'django.core.context_processors.static',
+    'django.contrib.messages.context_processors.messages',
+    'django_mobile.context_processors.flavour',
+    'lazy_client_ui.context_processors.errors',
+)
+
+
+TEMPLATE_LOADERS = (
+    'django_mobile.loader.Loader',
+    ('django.template.loaders.cached.Loader', (
+        'django.template.loaders.filesystem.Loader',
+        'django.template.loaders.app_directories.Loader',
+    )),
+)
+
+REST_FRAMEWORK = {
+    'EXCEPTION_HANDLER': 'lazy_client_api.utils.custom_exception_handler'
+}
+# Database
+# https://docs.djangoproject.com/en/1.6/ref/settings/#databases
+
+ALLOWED_HOSTS = ['*']
 
 LOGGING = {
     'version': 1,
@@ -189,10 +286,14 @@ LOGGING = {
             'datefmt' : "%d/%b/%Y %H:%M:%S"
         },
     },
+    'root': {
+        'level': 'WARNING',
+        'handlers': ['sentry', 'console', 'logfile'],
+    },
     'handlers': {
-        'mail_admins': {
+        'sentry': {
             'level': 'ERROR',
-            'class': 'django.utils.log.AdminEmailHandler'
+            'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler',
         },
         'null': {
             'level':'DEBUG',
@@ -214,7 +315,7 @@ LOGGING = {
     },
     'loggers': {
         'django': {
-            'handlers':['console', 'mail_admins'],
+            'handlers':['console', 'logfile', 'sentry'],
             'propagate': True,
             'level':'DEBUG',
         },
@@ -279,123 +380,29 @@ LOGGING = {
             'propagate': False,
         },
         'lazy_common': {
+            'handlers': ['console', 'logfile', 'sentry'],
             'level': 'DEBUG',
         },
         'tvdb_api': {
-            'handlers': ['console', 'logfile', 'mail_admins'],
+            'handlers': ['console', 'logfile', 'sentry'],
             'level': 'DEBUG',
         },
         '': {
-            'handlers': ['console', 'logfile', 'mail_admins'],
+            'handlers': ['console', 'logfile', 'sentry'],
             'level': 'DEBUG',
         },
-
-        #'lazy_client_core': {
-        #    'handlers': ['console'],
-        #    'level': 'DEBUG',
-        #},
     }
 }
 
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
-        'LOCATION': 'lazy_cache',
-    }
-
-}
-
-MIDDLEWARE_CLASSES = (
-    'django.middleware.gzip.GZipMiddleware',
-    'htmlmin.middleware.HtmlMinifyMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'htmlmin.middleware.MarkRequestMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'django_mobile.middleware.MobileDetectionMiddleware',
-    'django_mobile.middleware.SetFlavourMiddleware',
-    'lazy_client_ui.middleware.LoginRequiredMiddleware',
-)
-
-
-LOGIN_EXEMPT_URLS = (
-    'login/',
-    'lazy/api',
-    'api'
-)
-
-LOGIN_URL = "/login"
-
-ROOT_URLCONF = 'lazy_client.urls'
-
-WSGI_APPLICATION = 'lazy_client.wsgi.application'
-
-
-CRISPY_TEMPLATE_PACK = 'bootstrap3'
-
-# Internationalization
-# https://docs.djangoproject.com/en/1.6/topics/i18n/
-
-LANGUAGE_CODE = 'en-us'
-
-#TIME_ZONE = "Australia/Sydney"
-USE_I18N = True
-USE_L10N = True
-#USE_TZ = True
-
-INTERNAL_IPS = (
-    '192.168.0.200'
-)
-
-PWD_PROTECT = True
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/1.6/howto/static-files/
-STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-
-
-TEMPLATE_CONTEXT_PROCESSORS = (
-    'django.contrib.auth.context_processors.auth',
-    'django.core.context_processors.debug',
-    'django.core.context_processors.i18n',
-    'django.core.context_processors.request',
-    'django.core.context_processors.static',
-    'django.contrib.messages.context_processors.messages',
-    'django_mobile.context_processors.flavour',
-    'lazy_client_ui.context_processors.errors',
-)
-
-
-TEMPLATE_LOADERS = (
-    'django_mobile.loader.Loader',
-    ('django.template.loaders.cached.Loader', (
-        'django.template.loaders.filesystem.Loader',
-        'django.template.loaders.app_directories.Loader',
-    )),
-)
-
-REST_FRAMEWORK = {
-    'EXCEPTION_HANDLER': 'lazy_client_api.utils.custom_exception_handler'
-}
-# Database
-# https://docs.djangoproject.com/en/1.6/ref/settings/#databases
-
-ALLOWED_HOSTS = ['*']
 
 import lazysettings
 from lazysettings import *
 
+if hasattr(lazysettings, "SERVER_NAME"):
+    RAVEN_CONFIG['name'] = lazysettings.SERVER_NAME
+
 if DEBUG:
     INSTALLED_APPS = INSTALLED_APPS + ("debug_toolbar",)
-
-if hasattr(lazysettings, "SERVER_NAME"):
-    EMAIL_SUBJECT_PREFIX = "[LAZY_CLIENT] [%s]" % lazysettings.SERVER_NAME
-else:
-    EMAIL_SUBJECT_PREFIX = "[DJANGO] "
 
 if DB_TYPE == "mysql":
     DATABASES = {

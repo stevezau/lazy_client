@@ -399,7 +399,9 @@ class TVShow(models.Model):
                 for f in files:
                     if utils.is_video_file(f):
                         parser = metaparser.get_parser_cache(os.path.basename(f), type=metaparser.TYPE_TVSHOW)
-                        f_season = parser.get_season()
+                        f_season = parser.get_seasons()
+                        if f_season:
+                            f_season = f_season[0]
                         f_eps = parser.get_eps()
 
                         if season == f_season:

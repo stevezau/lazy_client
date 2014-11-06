@@ -24,8 +24,8 @@
 
         <div class="detail">
             <div class="top">
-                <h4><span class="title" title="{{ download.title }}">{{ download.title|format_torrent_title }}</span>
-                    {% if download.get_year %}<small><i>({{ download.get_year }})</i></small>{% endif %}
+                <h4><span class="title" title="{{ download.title }}">{{ download.get_title_clean }}</span>
+                    {% if download.get_type == 2 and download.get_date %}<small><i>({{ download.get_date.year }})</i></small>{% endif %}
 
                     {% if downloadgroup.list|length == 1 or downloadgroup.list|length == 0 or not downloadgroup %}
                         {% if download.get_type == 1 %}
