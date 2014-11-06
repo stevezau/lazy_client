@@ -26,11 +26,11 @@ def num_extracting():
 
 
 def num_queue():
-    return DownloadItem.objects.filter(status=DownloadItem.QUEUE, retries__lt=settings.DOWNLOAD_RETRY_COUNT).count()
+    return DownloadItem.objects.filter(status=DownloadItem.QUEUE, retries__lte=settings.DOWNLOAD_RETRY_COUNT).count()
 
 
 def num_pending():
-    return DownloadItem.objects.filter(status=DownloadItem.PENDING, retries__lt=settings.DOWNLOAD_RETRY_COUNT).count()
+    return DownloadItem.objects.filter(status=DownloadItem.PENDING, retries__lte=settings.DOWNLOAD_RETRY_COUNT).count()
 
 
 def num_error():

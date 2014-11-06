@@ -35,7 +35,7 @@
                                         S{{ season }}
                                     {% endfor %}
                                 {% else %}
-                                    S{{ download.get_season }}
+                                    S{{ download.get_seasons.0 }}
                                     {% for ep in download.get_eps %}
                                         E{{ ep }}
                                     {% endfor %}

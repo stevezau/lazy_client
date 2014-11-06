@@ -287,7 +287,7 @@ LOGGING = {
         },
     },
     'root': {
-        'level': 'WARNING',
+        'level': 'DEBUG',
         'handlers': ['sentry', 'console', 'logfile'],
     },
     'handlers': {
