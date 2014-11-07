@@ -111,10 +111,13 @@ class QueueManager(Thread):
             thread.abort_download = True
 
     def createThreads(self):
-        #create a download thread
-        for i in range(settings.MAX_SIM_DOWNLOAD_JOBS):
-            thread = Downloader()
-            self.download_threads.append(thread)
+        if self.queue_running():
+            #create a download thread
+            for i in range(settings.MAX_SIM_DOWNLOAD_JOBS):
+                thread = Downloader()
+                self.download_threads.append(thread)
+        else:
+            self.download_threads = []
 
     def dlitem_running(self, id):
         for t in self.download_threads:
