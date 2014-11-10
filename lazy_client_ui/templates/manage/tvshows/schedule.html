@@ -13,5 +13,15 @@
     <hr/>
 
     <h1 class="text-center">Comming Soon</h1>
+    <table>
+    {% for show in shows %}
+        <tr>
+            <td>{{ show.title }}</td>
+            <td>{{ show.next_ep.season }}x{{ show.next_ep.epsiode }}</td>
+            <td>{{ now }}{{ show.next_ep.aired|timeuntil2 }}</td>
+        </tr>
+
+    {% endfor %}
+    </table>
 </div>
 {% endblock %}

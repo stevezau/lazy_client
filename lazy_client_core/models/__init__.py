@@ -13,6 +13,8 @@ class Version(models.Model):
 
 from .downloaditem import DownloadItem
 from .tvshow import TVShow
+from .tvshow import Epsiodes
+from .tvshow import Seasons
 from .tvshow import TVShowMappings
 from .tvshow import TVShowNetworks
 from .tvshow import TVShowGenres
@@ -22,4 +24,4 @@ from .log import DownloadLog
 from .log import Job
 
 
-__all__ = ["DownloadItem", "TVShow", "TVShowMappings", "Log", "Movie", "DownloadLog", "Job", "TVShowNetworks", "TVShowGenres", "GenreNames", "Version"]
+__all__ = ["DownloadItem", "TVShow", "TVShowMappings", "Log", "Movie", "DownloadLog", "Job", "TVShowNetworks", "TVShowGenres", "GenreNames", "Version", "Epsiodes", "Seasons"]

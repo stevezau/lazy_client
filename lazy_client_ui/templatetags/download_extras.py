@@ -1,6 +1,5 @@
 from django import template
-from django.template.defaultfilters import stringfilter
-import datetime
+from django.utils import timezone
 
 register = template.Library()
 
@@ -58,18 +57,10 @@ def get_ep_season(dlitem):
 
 @register.inclusion_tag('manage/tvshows/tvshow_next_aired.html')
 def tvshow_next_aired(tvshow):
+    next_ep = tvshow.get_next_ep()
 
-    next_season = tvshow.get_next_season()
-
-    if next_season:
-        next_ep = tvshow.get_next_ep(next_season)
-        if next_ep:
-
-            ep_obj = tvshow.get_tvdb_obj()[next_season][next_ep]
-            title = ep_obj['episodename']
-            aired_date = datetime.datetime.strptime(ep_obj['firstaired'], '%Y-%m-%d') + datetime.timedelta(days=1)
-
-            return {"season": next_season, "ep": next_ep, "title": title, "date": aired_date}
+    if next_ep:
+        return {"season": next_ep.season.season, "ep": next_ep.epsiode, "title": next_ep.title, "date": next_ep.aired}
 
 @register.filter
 def truncatesmart(value, limit=80):
@@ -128,7 +119,6 @@ def timesince2(d, now=None, reversed=False):
 
     if not now:
         now = datetime.datetime.now(utc if is_aware(d) else None)
-        now = datetime.datetime(now.year, now.month, now.day)
 
     delta = (d - now) if reversed else (now - d)
     # ignore microseconds

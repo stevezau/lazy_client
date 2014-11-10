@@ -256,7 +256,7 @@
                             </div>
                         {% endif %}
 
-                        {% if download.status == 1 and download.retries < 3 %}
+                        {% if download.status == 1 and download.retries <= 3 %}
                             <div class="btn-group">
                                 <button type="button" class="btn btn-default btn-xl btn-responsive dropdown-toggle priority" data-toggle="dropdown">
                                 Priority:<span class="value">{% if download.priority >= 10 %}

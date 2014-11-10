@@ -43,9 +43,12 @@ class Command(BaseCommand):
         print green_color("Running Syncdb")
         call_command('collectstatic',  interactive=False)
 
-        new_ver = Version()
-        new_ver.id = 1
-        new_ver.version = settings.__VERSION__
-        new_ver.save()
+        try:
+            Version.objects.get(id=1)
+        except:
+            new_ver = Version()
+            new_ver.id = 1
+            new_ver.version = settings.__VERSION__
+            new_ver.save()
 
         print blue_color("Setup success")

@@ -6,12 +6,14 @@ import os
 import re
 from datetime import datetime
 import inspect
+from django.utils import timezone
 import time
 from django.dispatch import receiver
 from django.db.models.signals import pre_save, post_save
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from flexget.utils.imdb import ImdbSearch, ImdbParser
+import pytz
 from django.db.models import Q
 from lazy_common.tvdb_api import Tvdb
 from lazy_client_core.exceptions import AlradyExists_Updated, AlradyExists, Ignored
@@ -99,33 +101,6 @@ class DownloadItem(models.Model):
     parser = None
 
     def get_title_clean(self):
-
-        if not self.title_clean:
-            parser = self.metaparser()
-            title = ""
-            series = False
-
-            if 'doco_channel' in parser.details:
-                title += "%s: " % parser.details['doco_channel']
-
-            if 'series' in parser.details:
-
-                title += parser.details['series']
-                series = True
-
-            if 'title' in parser.details:
-                if series:
-                    title += ": %s" % parser.details['title']
-                else:
-                    title += " %s" % parser.details['title']
-
-            if 'date' in parser.details:
-                title += " %s" % parser.details['date'].strftime('%m.%d.%Y')
-
-            if len(title) > 0:
-                self.title_clean = title
-                self.save()
-
         return self.title_clean
 
     def is_season_pack(self):
@@ -158,76 +133,89 @@ class DownloadItem(models.Model):
         return False
 
     def get_seasons(self):
-        if not self.seasons:
-            parser = self.metaparser()
-            seasons = parser.get_seasons()
+        if None is self.seasons:
+            return []
+        else:
+            return self.seasons
 
-            if len(seasons) > 0:
-                self.seasons = seasons
-                self.save()
+    def parse_title(self):
+        parser = self.metaparser()
 
-        return self.seasons
+        #Seasons
+        self.seasons = parser.get_seasons()
+
+        #Get Eps
+        self.epsiodes = []
+        if 'episodeList' in parser.details:
+            self.epsiodes = parser.details['episodeList']
+        elif 'episodeNumber' in parser.details:
+            self.epsiodes = [parser.details['episodeNumber']]
+
+        #Title_clean
+        self.title_clean = ""
+        series = False
+
+        if 'doco_channel' in parser.details:
+            self.title_clean += "%s: " % parser.details['doco_channel']
+
+        if 'series' in parser.details:
+
+            self.title_clean += parser.details['series']
+            series = True
+
+        if 'title' in parser.details:
+            if series:
+                self.title_clean += ": %s" % parser.details['title']
+            else:
+                self.title_clean += " %s" % parser.details['title']
+
+        if 'date' in parser.details:
+            self.title_clean += " %s" % parser.details['date'].strftime('%m.%d.%Y')
+
+        #Quality
+        quality = []
+
+        if parser.quality.resolution:
+            quality.append(parser.quality.resolution.name)
+
+        if parser.quality and parser.quality.source:
+            quality.append(parser.quality.source.name)
+
+        if len(quality) == 0 and 'format' in parser.details:
+            quality.append(parser.details['format'])
+
+        self.quality = []
+        for q in self.quality:
+            if q.lower() == "hdtv":
+                q = "HDTV"
+            if q.lower() == "xvid":
+                q = "XVID"
+            if q.lower() == "sdtv":
+                q = "SDTV"
+            if q.lower() == "bluray":
+                q = "Blu-Ray"
+            if q.lower() == "dvdrip":
+                q = "DVDRip"
+
+            self.quality.append(q)
+
+        #date
+        if 'date' in parser.details:
+            d = parser.details['date']
+            self.date = datetime(d.year, d.month, d.day, 0, 0, 0, 0, pytz.UTC)
+        elif 'year' in parser.details:
+            self.date = datetime(int(parser.details['year']), 1, 1, 0, 0, 0, 0, pytz.UTC)
 
     def get_eps(self):
-        if not self.epsiodes:
-            epsiodes = []
-            parser = self.metaparser()
-
-            if 'episodeList' in parser.details:
-                epsiodes = parser.details['episodeList']
-            elif 'episodeNumber' in parser.details:
-                epsiodes = [parser.details['episodeNumber']]
-            if len(epsiodes) > 0:
-                self.epsiodes = epsiodes
-                self.save()
-
-        return self.epsiodes
+        if None is self.epsiodes:
+            return []
+        else:
+            return self.epsiodes
 
     def get_quality(self):
-        if not self.quality:
-            parser = self.metaparser()
-            quality = []
-
-            if parser.quality.resolution:
-                quality.append(parser.quality.resolution.name)
-
-            if parser.quality and parser.quality.source:
-                quality.append(parser.quality.source.name)
-
-            if len(quality) == 0 and 'format' in parser.details:
-                quality.append(parser.details['format'])
-
-            formatted_quality = []
-            for q in quality:
-                if q.lower() == "hdtv":
-                    q = "HDTV"
-                if q.lower() == "xvid":
-                    q = "XVID"
-                if q.lower() == "sdtv":
-                    q = "SDTV"
-                if q.lower() == "bluray":
-                    q = "Blu-Ray"
-                if q.lower() == "dvdrip":
-                    q = "DVDRip"
-
-                formatted_quality.append(q)
-
-            if len(formatted_quality) > 0:
-                self.quality = formatted_quality
-                self.save()
-
         return self.quality
 
     def get_date(self):
-        if not self.date:
-            parser = self.metaparser()
-            if 'date' in parser.details:
-                self.date = parser.details['date']
-                self.save()
-            elif 'year' in parser.details:
-                self.date = datetime.strptime(parser.details['year'], '%Y')
-                self.save()
-
         return self.date
 
     def retry(self):
@@ -396,7 +384,7 @@ class DownloadItem(models.Model):
             if speed > 0:
                 remaining = total_size - downloaded
                 seconds_left = remaining / speed
-                return datetime.now() + timedelta(seconds=seconds_left)
+                return timezone.now() + timedelta(seconds=seconds_left)
 
     def get_percent_complete(self):
 
@@ -439,13 +427,13 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
 
             if existing_obj.status == DownloadItem.COMPLETE:
                 #its complete... maybe delete it so we can re-add if its older then 2 weeks?
-                curTime = datetime.now()
+                curTime = timezone.now()
                 hours = 0
 
                 if existing_obj.dateadded is None:
                     hours = 300
                 else:
-                    diff = curTime - existing_obj.dateadded.replace(tzinfo=None)
+                    diff = curTime - existing_obj.dateadded
                     hours = diff.total_seconds() / 60 / 60
 
                 if hours > 288:
@@ -503,6 +491,8 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
                 raise Exception("Unable to find section path in config: %s" % section)
 
             instance.localpath = os.path.join(path, instance.title)
+
+        instance.parse_title()
 
         parser = instance.metaparser()
         title = None
@@ -634,13 +624,13 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
             try:
                 if instance.tvdbid:
                     #Do we need to update it
-                    curTime = datetime.now()
+                    curTime = timezone.now()
                     hours = 0
 
                     if instance.tvdbid.updated is None:
                         hours = 50
                     else:
-                        diff = curTime - instance.tvdbid.updated.replace(tzinfo=None)
+                        diff = curTime - instance.tvdbid.updated
                         hours = diff.total_seconds() / 60 / 60
 
                     if hours > 24:
@@ -660,7 +650,7 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
                     instance.tvdbid = None
                     pass
 
-            if instance.tvdbid.ignored:
+            if instance.tvdbid and instance.tvdbid.ignored:
                 logger.info("Show wont be added as it is marked as ignored")
                 raise Ignored("Show wont be added as it is marked as ignored")
 
@@ -669,12 +659,12 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
             try:
                 if instance.imdbid:
                     #Do we need to update it
-                    curTime = datetime.now()
+                    curTime = timezone.now()
                     imdb_date = instance.imdbid.updated
 
                     try:
                         if imdb_date:
-                            diff = curTime - instance.imdbid.updated.replace(tzinfo=None)
+                            diff = curTime - instance.imdbid.updated
                             hours = diff.total_seconds() / 60 / 60
                             if hours > 24:
                                 instance.imdbid.update_from_imdb()

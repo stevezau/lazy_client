@@ -37,13 +37,13 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for id, ep in eps.items %}
+                                    {% for ep in eps %}
                                         <tr>
-                                            <td>{% if not ep.downloading %}<input type="checkbox" name="{{ season }}" value="{{ ep.episodenumber }}">{% endif %}</td>
-                                            <td>{{ ep.episodenumber }}</td>
-                                            <td>{{ ep.episodename }}</td>
+                                            <td>{% if not ep.downloading %}<input type="checkbox" name="{{ season }}" value="{{ ep.epsiode }}">{% endif %}</td>
+                                            <td>{{ ep.epsiode }}</td>
+                                            <td>{{ ep.title }}</td>
                                             <td>{% if ep.downloading %}<span class="label label-primary">Downloading</span>{% endif %}</td>
-                                            <td class="text-nowrap">{{ ep.firstaired }}</td>
+                                            <td class="text-nowrap">{{ ep.aired|date:"D d M Y" }}</td>
                                         </tr>
                                     {% endfor %}
                                 </tbody>

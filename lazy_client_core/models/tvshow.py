@@ -1,11 +1,11 @@
 from __future__ import division
 
 from datetime import timedelta
+from django.utils import timezone
 import urllib2
 import logging
 import os
-from datetime import datetime
-
+import pytz
 import inspect
 from picklefield.fields import PickledObjectField
 from django.core.files import File
@@ -16,14 +16,13 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 
 from lazy_client_core.utils import common
+from datetime import datetime
 from lazy_common import utils
 
 from lazy_client_core.utils.common import OverwriteStorage
 from lazy_common.tvdb_api import Tvdb
 from django.db import models
 from lazy_common import metaparser
-
-import time
 from lazy_client_core.utils.common import LowerCaseCharField
 
 logger = logging.getLogger(__name__)
@@ -49,7 +48,7 @@ def get_by_path(tvshow_path):
 
     #Lets try find it by ID on TheTVDB.com
     try:
-        tvdbapi = Tvdb(convert_xem=True)
+        tvdbapi = Tvdb()
         tvdb_obj = tvdbapi[os.path.basename(tvshow_path)]
         tvdbcache_obj = TVShow.objects.get(id=tvdb_obj)
         logger.debug("Found matching tvdbcache item %s" % tvdbcache_obj.id)
@@ -81,14 +80,12 @@ def update_show_favs():
                 except:
                     pass
 
-
         #now remove favs that should not be there
         for tvshow in TVShow.objects.filter(favorite=True):
             if tvshow.id not in tvdbfavs:
                 logger.info("Removing show as fav as it was not marked as fav in thetvdb.com")
                 tvshow.favorite = False
                 tvshow.save()
-
 
 ###########################################
 ########### TV SHOW MAPPING ###############
@@ -190,8 +187,17 @@ class TVShow(models.Model):
     fix_jobid = models.CharField(max_length=255, blank=True, null=True)
     network = models.ForeignKey(TVShowNetworks, blank=True, null=True)
 
-    tvdbapi = Tvdb(convert_xem=True)
+    tvdbapi = Tvdb()
     tvdb_obj = None
+
+    def get_next_ep(self):
+        season = self.get_next_season()
+        last_ep = None
+        if season:
+            for ep in season.epsiodes_set.exclude(aired__isnull=True).reverse():
+                if ep.has_aired():
+                    return last_ep
+                last_ep = ep
 
     def set_ignored(self, ignored):
         if ignored and self.is_favorite():
@@ -285,230 +291,55 @@ class TVShow(models.Model):
 
         return False
 
-    def get_latest_ep(self, season):
-        tvdb_obj = self.get_tvdb_obj()
-
-        if tvdb_obj is not None:
-            for ep in reversed(tvdb_obj[season].keys()):
-                if self.ep_has_aired(season, ep):
-                    return ep
-
-    def get_next_ep(self, season):
-        now = datetime.now()
-
-        tvdb_obj = self.get_tvdb_obj()
-
-        if tvdb_obj is not None:
-            for ep in tvdb_obj[season].keys():
-                    ep_obj = tvdb_obj[season][ep]
-
-                    aired_date = ep_obj['firstaired']
-
-                    if aired_date is not None:
-                        aired_date = datetime.strptime(aired_date, '%Y-%m-%d') + timedelta(days=1)
-
-                        if aired_date.date() == datetime.today().date():
-                            if ep == 0:
-                                return 1
-                            else:
-                                return ep
-
-                        if now < aired_date:
-                            if ep == 0:
-                                return 1
-                            else:
-                                return ep
-        return 1
+    def get_season(self, season):
+        try:
+            return self.seasons_set.get(season=season)
+        except:
+            pass
 
     def get_next_season(self):
-        tvdb_obj = self.get_tvdb_obj()
+        #loop through each season
+        for season in self.get_seasons().reverse():
+            #Lets loop through each ep..
+            prev_season = season
 
-        if tvdb_obj is not None:
-            now = datetime.now() - timedelta()
-
-            #loop through each season
-            for season in reversed(tvdb_obj.keys()):
-                #Lets loop through each ep..
-                prev_season = season
-
-                for ep in tvdb_obj[season].keys():
-                    ep_obj = self.tvdb_obj[season][ep]
-
-                    aired_date = ep_obj['firstaired']
-
-                    if aired_date:
-                        aired_date = datetime.strptime(aired_date, '%Y-%m-%d') + timedelta(days=1)
-
-                        if now < aired_date:
-                            #Found the ep and season
-                            return season
-
+            for ep in season.epsiodes_set.all():
+                if ep.has_aired():
+                    return season
 
     def get_latest_season(self):
-        tvdb_obj = self.get_tvdb_obj()
-
-        if tvdb_obj is not None:
-            now = datetime.now() - timedelta(days=2)
-
-            #loop through each season
-            for season in reversed(tvdb_obj.keys()):
-
-                #Lets loop through each ep..
-                for ep in reversed(tvdb_obj[season].keys()):
-                    if self.ep_has_aired(season, ep):
-                        continue
-                    else:
-                        return season
+        #loop through each season
+        for season in self.seasons_set.all().reverse():
+            #Lets loop through each ep..
+            for ep in season.epsiodes_set.all().reverse():
+                if ep.has_aired():
+                    continue
+                else:
+                    return season.season
         return 1
-
-    def get_last_ep(self, season):
-        tvdb_obj = self.get_tvdb_obj()
-
-        if tvdb_obj is not None:
-            season_obj = self.tvdb_obj[season]
-            return season_obj.keys()[-1]
-
-    def get_ep(self, season, ep):
-        tvdb_obj = self.get_tvdb_obj()
-        return tvdb_obj[season][ep]
-
-    def season_finished(self, season):
-        latest_season = self.get_latest_season()
-        if latest_season > season:
-            return True
-        if latest_season < season:
-            return False
-
-        if season == latest_season:
-            latest_ep = self.get_last_ep(season)
-
-            if self.ep_has_aired(season, latest_ep):
-                return True
-        return False
-
-    def get_existing_eps(self, season):
-        from lazy_common import metaparser
-        if self.get_local_path():
-            season_folder = common.find_season_folder(self.get_local_path(), season)
-
-            found = []
-
-            if season_folder and os.path.exists(season_folder):
-                files = [f for f in os.listdir(season_folder) if os.path.isfile(os.path.join(season_folder, f))]
-
-                for f in files:
-                    if utils.is_video_file(f):
-                        parser = metaparser.get_parser_cache(os.path.basename(f), type=metaparser.TYPE_TVSHOW)
-                        f_season = parser.get_seasons()
-                        if f_season:
-                            f_season = f_season[0]
-                        f_eps = parser.get_eps()
-
-                        if season == f_season:
-                            for ep in f_eps:
-                                found.append(ep)
-            return found
-
-    def find_season_folder(self, season):
-        if not os.path.exists(self.get_local_path()):
-            return
-
-        from lazy_common import metaparser
-
-        folders = [f for f in os.listdir(self.get_local_path()) if os.path.isdir(os.path.join(self.get_local_path(), f))]
-
-        for folder_name in folders:
-
-            if season == 0 and folder_name.lower() == "specials":
-                return os.path.join(self.get_local_path(), folder_name)
-
-            parser = metaparser.get_parser_cache(folder_name, metaparser.TYPE_TVSHOW)
-
-            if 'season' in parser.details:
-                if parser.details['season'] == season:
-                    return os.path.join(self.get_local_path(), folder_name)
-
-    def ep_has_aired(self, season, ep):
-        tvdb_obj = self.get_tvdb_obj()
-        now = datetime.now() - timedelta(days=2)
-
-        if tvdb_obj is not None and season in tvdb_obj and ep in tvdb_obj[season]:
-            ep_obj = tvdb_obj[season][ep]
-            aired_date = ep_obj['firstaired']
-
-            if aired_date is not None:
-                aired_date = datetime.strptime(aired_date, '%Y-%m-%d')
-
-                if now > aired_date:
-                    return True
-        return False
-
-    def get_missing_eps_season(self, season):
-        logger.info("Checking for missing eps in season season %s" % season)
-        missing = []
-
-        #get latest ep of this season
-        tvdb_latest_ep = self.get_latest_ep(season)
-
-        if tvdb_latest_ep:
-            logger.info("Latest ep for season %s is %s" % (season, tvdb_latest_ep))
-
-            if self.get_local_path():
-                season_path = common.find_season_folder(self.get_local_path(), season)
-            else:
-                season_path = None
-
-            if not season_path or not os.path.isdir(season_path):
-                missing = self.get_eps(season)
-            else:
-                #Find all the existing Eps..
-                existing_eps = self.get_existing_eps(season)
-
-                #Now lets figure out whats actually missing
-                for ep_no in range(1, tvdb_latest_ep + 1):
-                    if ep_no not in existing_eps:
-                        missing.append(ep_no)
-
-        return missing
 
     def get_missing_details(self):
         logger.info("Looking for missing eps in %s" % self.get_local_path())
 
         missing = {}
 
-        tvdbobj = self.get_tvdb_obj()
-
         from lazy_client_core.models import DownloadItem
         dlitems = DownloadItem.objects.filter(tvdbid_id=self.id).exclude(status=DownloadItem.COMPLETE)
 
-        for cur_season in self.get_seasons():
-            if cur_season == 0:
+        for season_obj in self.get_seasons():
+            if season_obj.season == 0:
                 continue
 
-            #do we want to process this season?
-            missing_eps = self.get_missing_eps_season(cur_season)
+            missing_eps = season_obj.get_missing_eps()
+            for ep in missing_eps:
+                ep.downloading = False
+
+                for dlitem in dlitems:
+                    if dlitem.is_downloading(season_obj.season, ep.epsiode):
+                        ep.downloading = True
 
             if len(missing_eps) > 0:
-                eps_dict = {}
-
-                for ep in missing_eps:
-                    try:
-                        ep_dict = tvdbobj[cur_season][ep]
-
-                        if 'episodename' in ep_dict:
-                            ep_dict['episodename'] = ep_dict['episodename'].encode('ascii', 'ignore')
-                        eps_dict[ep] = ep_dict
-                    except:
-                        eps_dict[ep] = {'episodenumber': ep}
-
-                    eps_dict[ep]['downloading'] = False
-
-                    #We alrady downloaing it?
-                    for dlitem in dlitems:
-                        if dlitem.is_downloading(cur_season, ep):
-                            eps_dict[ep]['downloading'] = True
-
-                missing[cur_season] = eps_dict
+                missing[season_obj.season] = missing_eps
 
         return missing
 
@@ -517,41 +348,20 @@ class TVShow(models.Model):
 
         missing = {}
 
-        for cur_season in self.get_seasons():
+        for season_obj in self.get_seasons():
+            cur_season = season_obj.season
             if cur_season == 0:
                 continue
 
-            missing_eps = self.get_missing_eps_season(cur_season)
+            missing_eps = season_obj.get_missing_eps()
 
             if len(missing_eps) > 0:
                 missing[cur_season] = missing_eps
 
         return missing
 
-    def get_seasons(self, xem=True):
-        tvdb_obj = self.get_tvdb_obj()
-
-        if xem:
-            tvdb_obj
-
-        return tvdb_obj.keys()
-
-    def get_eps(self, season, xem=True, aired=True):
-        if xem:
-            tvdb_obj = self.get_tvdb_obj(xem=xem)
-
-        if aired:
-            latest_ep = self.get_latest_ep(season)
-
-            eps = []
-            for ep in tvdb_obj[season].keys():
-                if ep == 0:
-                    continue
-                if ep <= latest_ep:
-                    eps.append(ep)
-            return eps
-        else:
-            return tvdb_obj[season].keys()
+    def get_seasons(self):
+        return self.seasons_set.all().order_by("season")
 
     def set_titles(self, titles):
         #delete existing shows
@@ -577,9 +387,7 @@ class TVShow(models.Model):
         except:
             pass
 
-    def get_tvdb_obj(self, xem=True):
-
-        self.tvdbapi.config['convert_xem'] = xem
+    def get_tvdb_obj(self):
 
         if self.tvdb_obj is not None:
             return self.tvdb_obj
@@ -815,7 +623,46 @@ class TVShow(models.Model):
                 except:
                     pass
 
-            self.updated = datetime.now()
+            self.updated = timezone.now()
+
+            #Seasons and eps
+            updated_seasons = []
+            updated_eps = []
+
+            for season in tvdb_obj.keys():
+                try:
+                    s = Seasons.objects.get(season=season, tvdbid_id=self.id)
+                except ObjectDoesNotExist:
+                    s = Seasons(season=season, tvdbid=self)
+                    s.save()
+                updated_seasons.append(s.id)
+
+                for ep_no in tvdb_obj[season].keys():
+                    e = tvdb_obj[season][ep_no]
+
+                    try:
+                        epsiode = Epsiodes.objects.get(epsiode=ep_no, tvdbid_id=self.id, season=s)
+                    except ObjectDoesNotExist:
+                        epsiode = Epsiodes()
+
+                    epsiode.title = common.get_from_dict(e, 'episodename').encode('ascii', 'ignore')
+
+                    aired = common.get_from_dict(e, 'firstaired')
+
+                    if aired:
+                        epsiode.aired = datetime.strptime(aired, "%Y-%m-%d").replace(tzinfo=pytz.UTC)
+
+                    overview = common.get_from_dict(e, 'overview')
+
+                    if overview:
+                        epsiode.overview = overview.encode('ascii', 'ignore')
+
+                    epsiode.season = s
+                    epsiode.epsiode = ep_no
+                    epsiode.updated = timezone.now()
+                    epsiode.tvdbid = self
+                    epsiode.save()
+                    updated_eps.append(epsiode.id)
         else:
             logger.info("Unable to get tvdbobject for %s" % self.title)
 
@@ -856,7 +703,7 @@ class TVShowScanner(Thread):
         #If none specified then try fix everything.. (all seasons, eps)
         if len(self.fix) == 0:
             for season in self.tvshow_obj.get_seasons():
-                self.fix[season] = [0]
+                self.fix[season.season] = [0]
 
         #Now lets clear old logs
         for obj in self.tvshow_obj.downloadlog_set.all():
@@ -868,7 +715,8 @@ class TVShowScanner(Thread):
         for season, eps in self.fix.iteritems():
             if 0 in eps:
                 #Fix all
-                eps = self.tvshow_obj.get_missing_eps_season(season)
+                season_obj = self.tvshow_obj.get_season(season)
+                eps = [ep.epsiode for ep in season_obj.get_missing_eps()]
 
             for ep in eps:
                 self.set_ep_status(season, ep, "Searching")
@@ -1210,10 +1058,12 @@ class TVShowScanner(Thread):
             for cur_season_no, eps in self.fix.iteritems():
                 self.log("Attempting to fix season %s" % cur_season_no)
 
+                season_obj = self.tvshow_obj.get_season(cur_season_no)
+
                 try:
-                    existing_eps = self.tvshow_obj.get_existing_eps(cur_season_no)
-                    missing_eps = self.tvshow_obj.get_missing_eps_season(cur_season_no)
-                    all_season_eps = self.tvshow_obj.get_eps(cur_season_no, aired=True)
+                    existing_eps = [ep.epsiode for ep in season_obj.get_existing_eps()]
+                    missing_eps = [ep.epsiode for ep in season_obj.get_missing_eps()]
+                    all_season_eps = [ep.epsiode for ep in season_obj.get_eps() if ep.has_aired()]
                 except tvdb_seasonnotfound:
                     self.log("Season was not found, aborting season %s" % cur_season_no)
                     continue
@@ -1239,7 +1089,7 @@ class TVShowScanner(Thread):
                 else:
                     downloaded_percent = 100 * len(existing_eps)/len(all_season_eps)
 
-                if downloaded_percent < 65 and self.tvshow_obj.season_finished(cur_season_no):
+                if downloaded_percent < 65 and season_obj.finished():
                     #Has this season finished??
                     self.log("Season %s has finished broadcast and only %s percent of the epsiodes exists, will try search for the season pack" % (cur_season_no, downloaded_percent))
                     if self.find_season(cur_season_no, eps):
@@ -1330,7 +1180,7 @@ class TVShowScanner(Thread):
                     if not found:
                         didnt_find_eps.append(ep_no)
 
-                if len(didnt_find_eps) > 0 and self.tvshow_obj.season_finished(cur_season_no):
+                if len(didnt_find_eps) > 0 and season_obj.finished():
                     self.log("Didn't find eps %s.. lets try get season pack instead.." % didnt_find_eps)
                     #remove the skip eps from the eps to download as they were added via the ftp
                     for ep in skip_eps:
@@ -1395,3 +1245,167 @@ def add_new_tvdbitem(sender, created, instance, **kwargs):
         if not instance.title or len(instance.title) == 0:
             logger.error("Unable to figure out tvdb info")
             raise Exception("Unable to determine TVDB information")
+
+###################################
+########### Seasons ###############
+###################################
+
+class Seasons(models.Model):
+    class Meta:
+        """ Meta """
+        db_table = 'seasons'
+        ordering = ['season']
+        app_label = 'lazy_client_core'
+
+    def __unicode__(self):
+        return str(self.season)
+
+    season = models.IntegerField()
+    tvdbid = models.ForeignKey(TVShow)
+    path = models.CharField(max_length=255, blank=True, null=True)
+
+    def get_next_ep(self):
+        for ep in self.epsiodes_set.all().reverse():
+            if ep.has_aired():
+                return ep
+        return 1
+
+    def get_eps(self):
+        return self.epsiodes_set.all()
+
+    def get_path(self):
+        if self.path and os.path.exists(self.path):
+            return self.path
+
+        tvshow_path = self.tvdbid.get_local_path()
+
+        if not tvshow_path or not os.path.exists(tvshow_path):
+            return
+
+        from lazy_common import metaparser
+        folders = [f for f in os.listdir(tvshow_path) if os.path.isdir(os.path.join(tvshow_path, f))]
+
+        for folder_name in folders:
+            if self.season == 0 and folder_name.lower() == "specials":
+                return os.path.join(tvshow_path, folder_name)
+
+            parser = metaparser.get_parser_cache(folder_name, metaparser.TYPE_TVSHOW)
+
+            if 'season' in parser.details:
+                if parser.details['season'] == self.season:
+                    return os.path.join(tvshow_path, folder_name)
+
+    def get_existing_eps(self):
+        season_folder = self.get_path()
+        existing = []
+
+        if season_folder and os.path.exists(season_folder):
+            for ep in self.get_eps():
+                if ep.exists():
+                    existing.append(ep)
+
+        return existing
+
+    def get_missing_eps(self):
+        logger.info("Checking for missing eps in season season %s" % self.season)
+        missing = []
+
+        #get latest ep of this season
+        tvdb_latest_ep = self.get_latest_ep()
+
+        if tvdb_latest_ep:
+            logger.info("Latest ep for season %s is %s" % (self.season, tvdb_latest_ep.epsiode))
+
+            season_path = self.get_path()
+
+            if not season_path or not os.path.isdir(season_path):
+                missing = [ep for ep in self.get_eps() if ep.has_aired()]
+            else:
+                #Find all the existing Eps..
+                existing_eps = self.get_existing_eps()
+
+                #Now lets figure out whats actually missing
+                for ep in self.get_eps():
+                    if ep.has_aired() and ep not in existing_eps:
+                        missing.append(ep)
+
+        return missing
+
+
+    def get_last_ep(self):
+        eps = self.epsiodes_set.all().reverse()
+        if len(eps) > 0:
+            return eps[0]
+
+    def finished(self):
+        latest_ep = self.get_last_ep()
+
+        if latest_ep and latest_ep.has_aired():
+            return True
+
+        return False
+
+    def get_ep(self, ep):
+        try:
+            return self.epsiodes_set.get(epsiode=ep)
+        except ObjectDoesNotExist:
+            pass
+
+    def get_latest_ep(self):
+        for ep in self.epsiodes_set.all().reverse():
+            if ep.has_aired():
+                return ep
+
+####################################
+########### Episodes ###############
+####################################
+
+class Epsiodes(models.Model):
+    class Meta:
+        """ Meta """
+        db_table = 'epsiodes'
+        ordering = ['epsiode']
+        app_label = 'lazy_client_core'
+
+    def __unicode__(self):
+        return "%sx%s %s" % (self.season.season, self.epsiode, self.title)
+
+    aired = models.DateTimeField(blank=True, null=True)
+    overview = models.TextField(max_length=255, blank=True, null=True)
+    title = models.CharField(max_length=150, db_index=True, unique=False)
+    tvdbid = models.ForeignKey(TVShow)
+    season = models.ForeignKey(Seasons)
+    epsiode = models.IntegerField()
+    updated = models.DateTimeField(blank=True, null=True)
+    path = models.CharField(max_length=255, blank=True, null=True)
+
+    def __eq__(self, other):
+        return other.season.season == self.season.season and self.epsiode == other.epsiode
+
+    def has_aired(self):
+        now = timezone.now() - timedelta(days=2)
+        if self.aired is not None:
+            if now > self.aired:
+                return True
+        return False
+
+    def exists(self):
+        if self.path and os.path.exists(self.path):
+            return True
+
+        season_folder = self.season.get_path()
+
+        if season_folder:
+            for f in [f for f in os.listdir(season_folder) if os.path.isfile(os.path.join(season_folder, f))]:
+                if utils.is_video_file(f):
+                    parser = metaparser.get_parser_cache(os.path.basename(f), type=metaparser.TYPE_TVSHOW)
+                    f_season = parser.get_seasons()
+                    if f_season:
+                        f_season = f_season[0]
+                    f_eps = parser.get_eps()
+
+                    if self.season.season == f_season:
+                        if self.epsiode in f_eps:
+                            self.path = f
+                            self.save()
+                            return True

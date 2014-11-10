@@ -37,9 +37,9 @@ def num_error():
     return DownloadItem.objects.filter(~Q(status=DownloadItem.COMPLETE), retries__gt=settings.DOWNLOAD_RETRY_COUNT).count()
 
 
-def num_complete(days=7):
+def num_complete(days=14):
     from datetime import timedelta
     from django.utils import timezone
-    some_day_last_week = timezone.now().date() - timedelta(days=14)
+    some_day_last_week = timezone.now() - timedelta(days=days)
     return DownloadItem.objects.filter(status=DownloadItem.COMPLETE, dateadded__gt=some_day_last_week).order_by('-dateadded').count()
 

@@ -15,7 +15,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 ###Lazy settings###
 ###################
 
-__VERSION__ = 9
+__VERSION__ = 10
 
 QUEUE = "rabbitmq"
 DB_TYPE = "mysql"
@@ -233,7 +233,7 @@ LANGUAGE_CODE = 'en-us'
 #TIME_ZONE = "Australia/Sydney"
 USE_I18N = True
 USE_L10N = True
-#USE_TZ = True
+USE_TZ = True
 
 INTERNAL_IPS = (
     '192.168.0.200',

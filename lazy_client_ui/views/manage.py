@@ -2,16 +2,14 @@ import logging
 import os
 from django.shortcuts import render
 from lazy_client_ui.forms import FindTVShow, FindMovie
-from django.http import HttpResponseRedirect, HttpResponse
-from lazy_client_core.models import TVShow, TVShowMappings
+from lazy_client_core.models import TVShow, TVShowMappings, Epsiodes
 from lazy_common.tvdb_api import Tvdb
 from django.shortcuts import redirect
 from django.views.generic import TemplateView, ListView, DetailView, UpdateView
 from lazy_client_core.utils import xbmc
 from lazy_client_core.exceptions import XBMCConnectionError, InvalidXBMCURL
-from lazy_common import metaparser
+from django.utils import timezone
 from lazy_client_core.utils import common
-import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +23,7 @@ class TVShowDetail(UpdateView):
             object.update_from_tvdb()
             object.save()
         else:
-            print type(datetime.datetime.now())
-            delta = datetime.datetime.now() - object.updated.replace(tzinfo=None)
+            delta = timezone.now() - object.updated
             if delta.days > 7:
                 object.update_from_tvdb()
                 object.save()
@@ -191,9 +188,20 @@ class TVShowMissingLog(DetailView):
     template_name = "manage/tvshows/log.html"
 
 def tv_schedule(request):
-    return render(request, 'manage/tvshows/schedule.html', {})
 
+    shows = []
 
+    for show in TVShow.objects.filter(status=1, ignored=False).exclude(localpath__isnull=True).exclude(localpath__exact='').select_related("seasons", "epsiodes"):
+        if show.exists():
+            next_ep = show.get_next_ep()
+            if next_ep:
+                show.next_ep = next_ep
+                shows.append(show)
+
+    shows.sort(key=lambda s: s.next_ep.aired)
+    context = {"shows": shows}
+
+    return render(request, 'manage/tvshows/schedule.html', context)
 
 def movies(request):
 

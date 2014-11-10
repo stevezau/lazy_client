@@ -9,15 +9,8 @@ Movies
 -search shows
 --estimated releae date of dvd/blueray (good copy)
 
--Figure out symlinks for hdd size
 -Put epsiodes into database for schedule
 -On queue, make sure numbers at top are updated
-
-NEW VERSION ACTIONS
--remove ignore.yml
--change to --disable-tracking
--update XBMC_API_URL
--add  = "Steve" in lazysettings.yp
 
 -ADD SUPPORT FOR SUBS
 -manual rename for files not found

@@ -219,7 +219,7 @@ class QueueManage(ListView):
         if self.dlget == DownloadItem.COMPLETE:
             from datetime import timedelta
             from django.utils import timezone
-            some_day_last_week = timezone.now().date() - timedelta(days=14)
+            some_day_last_week = timezone.now() - timedelta(days=14)
             objects = DownloadItem.objects.select_related('imdbid', 'tvdbid').filter(status=DownloadItem.COMPLETE, dateadded__gt=some_day_last_week).order_by('-dateadded')
         elif self.dlget == DownloadItem.QUEUE:
             objects = DownloadItem.objects.select_related('imdbid', 'tvdbid').filter(retries__lte=settings.DOWNLOAD_RETRY_COUNT, status=self.dlget).order_by('priority','id')

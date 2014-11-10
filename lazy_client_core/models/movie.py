@@ -2,8 +2,7 @@ from __future__ import division
 
 import urllib2
 import logging
-import os
-from datetime import datetime
+from django.utils import timezone
 from requests.exceptions import HTTPError
 from django.core.files import File
 from django.core.files.temp import NamedTemporaryFile
@@ -12,7 +11,6 @@ from django.db.models.signals import pre_save, post_save
 from django.core.exceptions import ObjectDoesNotExist
 from flexget.utils.imdb import ImdbSearch, ImdbParser
 from lazy_client_core.utils.common import OverwriteStorage
-from lazy_client_core.utils.jsonfield.fields import JSONField
 from lazy_common import utils
 from django.conf import settings
 
@@ -87,7 +85,7 @@ class Movie(models.Model):
                     logger.error("error saving image: %s" % e.message)
 
             self.save()
-            self.updated = datetime.now()
+            self.updated = timezone.now()
             self.save()
         except HTTPError as e:
             if e.errno == 404:

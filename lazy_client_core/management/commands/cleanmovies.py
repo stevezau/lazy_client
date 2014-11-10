@@ -3,7 +3,7 @@ from optparse import make_option
 import logging
 import os
 import shutil
-from datetime import datetime
+from django.utils import timezone
 import re
 
 from django.core.management.base import BaseCommand
@@ -132,7 +132,7 @@ class Command(BaseCommand):
                 #Step 3 - Get the latest info
                 try:
                     #Do we need to update it
-                    curTime = datetime.now()
+                    curTime = timezone.now()
                     imdb_date = imdb_obj.updated
 
                     if imdb_date:

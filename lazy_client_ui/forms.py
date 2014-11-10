@@ -188,17 +188,17 @@ class DownloadItemManualFixForm(forms.Form):
                             pass
 
                     #set the seasons
-                    tvdb_seasons = self.object.tvdbid.get_seasons(xem=False)
+                    tvdb_seasons = self.object.tvdbid.get_seasons()
 
                     if len(tvdb_seasons) > 0:
                         seasons = []
                         seasons.append(('Select Season', 'Select Season'))
 
-                        for season in tvdb_seasons:
-                            if season == 0:
-                                seasons.append((str(season), "Specials"))
+                        for season_obj in tvdb_seasons:
+                            if season_obj.season == 0:
+                                seasons.append((str(season_obj.season), "Specials"))
                             else:
-                                seasons.append((str(season), "Season %s" % season))
+                                seasons.append((str(season_obj.season), "Season %s" % season_obj.season))
 
                         self.fields['%s_tvdbid_season_override' % i].choices = seasons
 

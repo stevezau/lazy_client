@@ -155,6 +155,7 @@ class TVRenamer:
             if 'episodeNumber' in tvshow_file_metaparser.details:
                 tvshow_file_ep = tvshow_file_metaparser.details['episodeNumber']
 
+            """
             xem_exists = False
 
             if tvdbcache_obj:
@@ -168,6 +169,7 @@ class TVRenamer:
                             self.log("Found entry on thexem, converted the season and ep to %s x %s" % (xem_season, xem_ep))
                             tvshow_file_season = int(xem_season)
                             tvshow_file_ep = int(xem_ep)
+            """
 
             if season_override:
                 tvshow_file_season = season_override

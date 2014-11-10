@@ -2,15 +2,17 @@ from decimal import Decimal
 from time import sleep, time
 from lazy_common.utils import delete, get_size
 from django.db.models import Q
-
+import pytz
 import os
-from datetime import datetime
+from django.utils import timezone
 from datetime import timedelta
 from threading import Thread
+from datetime import datetime
 from Queue import Queue
 from django.conf import settings
 import logging
 from lazy_client_core.models import DownloadItem
+from django.db.utils import OperationalError
 import ftplib
 from lazy_common import ftpmanager
 from lazy_common import utils
@@ -20,15 +22,14 @@ from lazy_client_core.exceptions import *
 from lazy_client_core.utils import extractor
 from lazy_client_core.utils.mirror import FTPMirror
 from django.core.cache import cache
-from lazy_client_core.utils import common
 from django.db import connection
-from django.db import OperationalError
+from lazy_client_core.utils import common
 
 logger = logging.getLogger(__name__)
 
 queue_manager = None
 
-## THREAD ScAFE QUERIES for sqlite ###
+## THREAD SAFE QUERIES for sqlite ###
 def get_attr(id, attr):
     dlitem = DownloadItem.objects.get(id=id)
     return getattr(dlitem, attr)
@@ -73,7 +74,7 @@ class QueueManager(Thread):
         self.start()
 
     def queue_running(self):
-        self.last_check = datetime.now()
+        self.last_check = timezone.now()
 
         errors = common.get_lazy_errors()
 
@@ -152,7 +153,7 @@ class QueueManager(Thread):
             if not self.dlitem_running(dlitem.id):
                 #Check if this was just tried..
                 if dlitem.dlstart:
-                    cur_time = datetime.now()
+                    cur_time = timezone.now()
                     diff = cur_time - dlitem.dlstart
                     minutes = diff.total_seconds() / 60
 
@@ -177,7 +178,7 @@ class QueueManager(Thread):
         if self.extractor_thread and not self.extractor_thread.active:
             for dlitem in DownloadItem.objects.filter(Q(status=DownloadItem.EXTRACT) | Q(status=DownloadItem.RENAME),  retries__lte=settings.DOWNLOAD_RETRY_COUNT):
                 if dlitem.dlstart:
-                    cur_time = datetime.now()
+                    cur_time = timezone.now()
                     diff = cur_time - dlitem.dlstart
                     minutes = diff.total_seconds() / 60
 
@@ -278,7 +279,7 @@ class QueueManager(Thread):
                         self.sleep()
                         continue
                 else:
-                    diff = datetime.now() - self.last_check
+                    diff = timezone.now() - self.last_check
                     if diff.total_seconds() > 30:
                         if not self.queue_running():
                             self.sleep()
@@ -287,6 +288,9 @@ class QueueManager(Thread):
                 self.assign_download()
                 self.check_finished()
                 self.extract()
+            except OperationalError:
+                connection.close()
+                logger.info("Resetting mysql connection due to %s" % str(e))
             except Exception as e:
                 logger.exception("Some error in main thread %s" % str(e))
 
@@ -324,7 +328,7 @@ class Downloader(Thread):
 
 
     def download(self, id):
-        update_dlitem(id, message="", dlstart=datetime.now())
+        update_dlitem(id, message="", dlstart=timezone.now())
 
         onlyget = get_attr(id, "onlyget")
         ftppath = get_attr(id, "ftppath")
@@ -406,8 +410,12 @@ class Downloader(Thread):
                 try:
                     id = self.active
                     self.download(id)
+                except OperationalError:
+                    connection.close()
+                    self.queue.put(self.active)
+                    logger.info("Resetting mysql connection due to %s" % str(e))
                 except Extractor as e:
-                    logger.exception("Some error while downloading %s" % str(e))
+                        logger.exception("Some error while downloading %s" % str(e))
 
             self.sleep()
 
@@ -456,7 +464,7 @@ class Extractor(Thread):
 
         if status == DownloadItem.EXTRACT:
             logger.info("Extracting Download Item: %s" % localpath)
-            update_dlitem(dlitem_id, dlstart=datetime.now())
+            update_dlitem(dlitem_id, dlstart=timezone.now())
 
             if retries >= settings.DOWNLOAD_RETRY_COUNT:
                 logger.info("Tried to extract %s times already but failed.. will skip: %s" % (retries, title))
@@ -483,7 +491,7 @@ class Extractor(Thread):
 
         if status == DownloadItem.RENAME:
             logger.info("Renaming download item")
-            update_dlitem(dlitem_id, dlstart=datetime.now())
+            update_dlitem(dlitem_id, dlstart=timezone.now())
 
             try:
                 renamer.rename(localpath, id=dlitem_id)
@@ -550,7 +558,10 @@ class Extractor(Thread):
                 else:
                     self.sleep()
                     continue
-
+            except OperationalError:
+                self.queue.put(self.active)
+                connection.close()
+                logger.info("Resetting mysql connection due to %s" % str(e))
             except Exception as e:
                 logger.exception("Some error occured in exctractor %s " % str(e))
 
@@ -598,7 +609,7 @@ class Maintenance(Thread):
 
     def do_maintenance(self):
         logger.info("Task 1 - Cleanup downloaditem logs")
-        time_threshold = datetime.now() - timedelta(days=60)
+        time_threshold = timezone.now() - timedelta(days=60)
         dl_items = DownloadItem.objects.all().filter(dlstart__lt=time_threshold)
 
         for dlitem in dl_items:
@@ -611,8 +622,43 @@ class Maintenance(Thread):
         except:
             pass
 
-        logger.info("Task 3 - Update tvshow objects older then 2 weeks")
-        time_threshold = datetime.now() - timedelta(days=14)
+
+        logger.info("Task 3.1 - Update tvshow that are out of date")
+        last_check = cache.get("tvdb_update")
+        current = int(time())
+
+        if None is last_check:
+            last_check = current
+            cache.set("tvdb_update", current, None)
+
+        if last_check:
+            #Let's do the check for updates
+            from lazy_common import requests
+            try:
+                response = requests.get("http://thetvdb.com/api/Updates.php?time=%s&type=series" % last_check)
+
+                if response.status_code == 200:
+                    series_ids = []
+                    from xml.dom import minidom
+                    xmldoc = minidom.parseString(response.text)
+                    for node in xmldoc.getElementsByTagName('Series'):
+                        series_ids.append(int(node.firstChild.nodeValue))
+
+                    for id in series_ids:
+                        try:
+                            show = TVShow.objects.get(id=id)
+                            logger.debug("TVShow %s info has expired, updating" % show.title)
+                            self.update_tvshow(tvshow)
+                        except:
+                            pass
+
+                    cache.set("tvdb_update", current, None)
+
+            except Exception as e:
+                logger.exception(e)
+
+        logger.info("Task 3.2 - Update tvshow objects older then 2 weeks")
+        time_threshold = timezone.now() - timedelta(days=14)
         from lazy_client_core.models import TVShow
 
         tvshows = TVShow.objects.all().filter(updated__lt=time_threshold)
@@ -620,7 +666,7 @@ class Maintenance(Thread):
         for tvshow in tvshows:
             self.update_tvshow(tvshow)
 
-        logger.info("Task 3.1 - Update tvshow objects with no title")
+        logger.info("Task 3.3 - Update tvshow objects with no title")
         tvshows = TVShow.objects.filter(Q(title__isnull=True) | Q(title__exact=''))
         for tvshow in tvshows:
             self.update_tvshow(tvshow)
@@ -659,8 +705,11 @@ class Maintenance(Thread):
             if hours >= 24:
                 try:
                     self.do_maintenance()
+                except OperationalError:
+                    connection.close()
+                    logger.info("Resetting mysql connection due to %s" % str(e))
                 except Exception as e:
-                    logger.exception("Error in extractor thread %s" % str(e))
+                        logger.exception("Error in extractor thread %s" % str(e))
 
             self.sleep()
 

@@ -2,7 +2,7 @@ from __future__ import division
 from optparse import make_option
 import logging
 import os
-from datetime import datetime
+from django.utils import timezone
 import time
 
 from django.core.management.base import BaseCommand
@@ -125,7 +125,7 @@ class Command(BaseCommand):
                 #Step 2 - Get the latest info
                 try:
                     #Do we need to update it
-                    curTime = datetime.now()
+                    curTime = timezone.now()
                     tvdb_date = tvdb_obj.updated
 
                     if tvdb_date:

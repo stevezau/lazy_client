@@ -391,6 +391,9 @@ def find_ep_season(season_folder, season, ep):
 
     return found
 
+def get_from_dict(obj, key):
+    if obj and key in obj:
+        return obj[key]
 
 def get_video_files(path):
 
