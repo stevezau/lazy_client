@@ -9,12 +9,23 @@ logger = logging.getLogger(__name__)
 class DebugView(TemplateView):
     template_name = 'home/debug.html'
 
+    def dumpstacks(self):
+        import threading, traceback, sys
+        id2name = dict([(th.ident, th.name) for th in threading.enumerate()])
+        code = []
+        for threadId, stack in sys._current_frames().items():
+            code.append("\n# Thread: %s(%d)" % (id2name.get(threadId,""), threadId))
+            for filename, lineno, name, line in traceback.extract_stack(stack):
+                code.append('File: "%s", line %d, in %s' % (filename, lineno, name))
+                if line:
+                    code.append("  %s" % (line.strip()))
+        return "\n".join(code)
 
     def get_context_data(self, **kwargs):
         context = super(DebugView, self).get_context_data(**kwargs)
 
+        context['thread_stack'] = self.dumpstacks()
         from lazy_client_core.utils import threadmanager
-
         context['queue'] = threadmanager.queue_manager
 
         return context

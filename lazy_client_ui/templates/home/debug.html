@@ -17,7 +17,7 @@
 
     <pre>DL Threads
     {% for t in queue.download_threads %}
-
+        Thread {{ t }}
         Active: {{ t.active }}
         Mirror: {{ t.mirror_thread }}
         Mirror_Runnning: {{ t.mirror_thread.isAlive }}
@@ -35,4 +35,8 @@
 
     </pre>
 
+     <pre>
+     Thread Stack:
+     {{ thread_stack }}
+     </pre>
 {% endblock %}

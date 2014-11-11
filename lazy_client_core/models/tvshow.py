@@ -645,15 +645,15 @@ class TVShow(models.Model):
                     except ObjectDoesNotExist:
                         epsiode = Epsiodes()
 
-                    epsiode.title = common.get_from_dict(e, 'episodename').encode('ascii', 'ignore')
+                    title = common.get_from_dict(e, 'episodename')
+                    if title:
+                        epsiode.title = title.encode('ascii', 'ignore')
 
                     aired = common.get_from_dict(e, 'firstaired')
-
                     if aired:
                         epsiode.aired = datetime.strptime(aired, "%Y-%m-%d").replace(tzinfo=pytz.UTC)
 
                     overview = common.get_from_dict(e, 'overview')
-
                     if overview:
                         epsiode.overview = overview.encode('ascii', 'ignore')
 

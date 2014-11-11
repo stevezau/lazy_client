@@ -29,6 +29,8 @@ logger = logging.getLogger(__name__)
 
 queue_manager = None
 
+import threading, sys, traceback
+
 ## THREAD SAFE QUERIES for sqlite ###
 def get_attr(id, attr):
     dlitem = DownloadItem.objects.get(id=id)
@@ -43,7 +45,8 @@ def update_dlitem(id, **kwargs):
             dlitem.retries += value
         elif key =="message":
             dlitem.message = value
-            dlitem.log(value)
+            if len(value) > 0:
+                dlitem.log(value)
         else:
             setattr(dlitem, key, value)
 
