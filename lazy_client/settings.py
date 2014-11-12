@@ -379,10 +379,6 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
-        'lazy_common': {
-            'handlers': ['console', 'logfile', 'sentry'],
-            'level': 'DEBUG',
-        },
         'tvdb_api': {
             'handlers': ['console', 'logfile', 'sentry'],
             'level': 'DEBUG',

@@ -5,7 +5,7 @@ import re
 import shutil
 import time
 import logging
-
+from lazy_common import utils
 from django.conf import settings
 from easy_extract.archive_finder import ArchiveFinder
 from lazy_client_core.utils.rar import RarArchive
@@ -13,6 +13,7 @@ from lazy_common import utils
 from django.core.files.storage import FileSystemStorage
 
 from django.db.models.fields import CharField
+from lazy_common import metaparser
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +59,51 @@ class OverwriteStorage(FileSystemStorage):
             os.remove(os.path.join(settings.MEDIA_ROOT, name))
         return name
 
+def merge_tvshow(existing_tvshow, from_path):
+    from lazy_client_core.models import TVShow
+
+    existing_vid_files = existing_tvshow.get_existing_eps()
+    print "B"
+    from_files = get_video_files(from_path)
+    print "C"
+    from_files += get_files(from_path, [".nfo"])
+
+    print "21"
+    if len(from_files) == 0:
+        logger.info("No video files to merge deleting from folder")
+        shutil.rmtree(from_path)
+        return
+
+    for f in from_files:
+        try:
+            #Check if the season/ep exists in existing files
+            file_name, ext = os.path.splitext(os.path.basename(f))
+            file_name = TVShow.clean_title(file_name)
+            f_parser = metaparser.get_parser_cache(file_name, metaparser.TYPE_TVSHOW, title_only=False)
+
+            for existing_file in existing_vid_files:
+                if ext != ".nfo" and f_parser.get_season() == existing_file.season.season:
+                    f_eps = f_parser.get_eps()
+                    if existing_file.epsiode in f_eps:
+                        logger.info("Wont move ep %s as it already exists in dest" % f)
+                        continue
+
+            tvshow_season = existing_tvshow.get_season(f_parser.get_season())
+
+            if tvshow_season:
+                season_path = tvshow_season.get_path()
+                if season_path:
+                    utils.create_path(season_path)
+                    dest_path = os.path.join(season_path, file_name)
+
+                    logger.info('Moving file: %s to %s' % (f, dest_path))
+                    move_file(f, dest_path)
+                else:
+                    logger.info("Unable to find season path for %s" % f)
+
+            logger.info("Unable to move file %s to %s" % (f, season_path))
+        except Exception as e:
+            logger.info("Unable to move file %s as %s" % (f, str(e)))
 
 class bcolors:
     HEADER = '\033[95m'
@@ -394,6 +440,21 @@ def find_ep_season(season_folder, season, ep):
 def get_from_dict(obj, key):
     if obj and key in obj:
         return obj[key]
+
+def get_files(path, ext=[]):
+
+    files = []
+
+    for root, __, files in os.walk(path):
+        for f in files:
+            fullpath = os.path.join(root, f)
+
+            name, ext = os.path.splitext(f)
+
+            if ext.lower() in ext:
+                files.append(fullpath)
+
+    return files
 
 def get_video_files(path):
 

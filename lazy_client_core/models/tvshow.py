@@ -191,6 +191,13 @@ class TVShow(models.Model):
     tvdbapi = Tvdb()
     tvdb_obj = None
 
+    def get_existing_eps(self):
+        existing_eps = []
+        for season in self.get_seasons():
+            existing_eps.extend(season.get_existing_eps())
+
+        return existing_eps
+
     def get_next_ep(self):
         season = self.get_next_season()
         last_ep = None
@@ -1278,7 +1285,7 @@ class Seasons(models.Model):
 
         tvshow_path = self.tvdbid.get_local_path()
 
-        if not tvshow_path or not os.path.exists(tvshow_path):
+        if not tvshow_path:
             return
 
         from lazy_common import metaparser
@@ -1294,15 +1301,27 @@ class Seasons(models.Model):
                 if parser.details['season'] == self.season:
                     return os.path.join(tvshow_path, folder_name)
 
+        if self.season == 0:
+            return os.path.join(tvshow_path, "Specials")
+        else:
+            return os.path.join(tvshow_path, "Season%s" % self.season)
+
     def get_existing_eps(self):
         season_folder = self.get_path()
         existing = []
 
         if season_folder and os.path.exists(season_folder):
-            for ep in self.get_eps():
-                if ep.exists():
-                    existing.append(ep)
-
+            for f in [f for f in os.listdir(season_folder) if os.path.isfile(os.path.join(season_folder, f))]:
+                if utils.is_video_file(f):
+                    parser = metaparser.get_parser_cache(os.path.basename(f), type=metaparser.TYPE_TVSHOW)
+                    f_season = parser.get_season()
+                    f_eps = parser.get_eps()
+                    if f_season and f_eps and f_season == self.season:
+                        try:
+                            ep = self.epsiodes_set.get(epsiode=f_eps[0])
+                            existing.append(ep)
+                        except:
+                            pass
         return existing
 
     def get_missing_eps(self):

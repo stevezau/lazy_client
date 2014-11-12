@@ -25,6 +25,7 @@ from lazy_client_core.utils.mirror import FTPMirror
 from django.core.cache import cache
 from django.db import connection
 from lazy_client_core.utils import common
+from lazy_common.tvdb_api.tvdb_exceptions import tvdb_shownotfound
 
 logger = logging.getLogger(__name__)
 
@@ -224,6 +225,7 @@ class QueueManager(Thread):
             else:
                 #Didnt finish properly
                 if not dlitem.message or len(dlitem.message) == 0:
+                    dlitem.dlstart = None
                     dlitem.status = DownloadItem.QUEUE
                 else:
                     dlitem.log(dlitem.message)
@@ -346,7 +348,7 @@ class Downloader(Thread):
                 files, remotesize = ftpmanager.get_required_folders_for_multi(ftppath, onlyget)
             else:
                 files, remotesize = ftpmanager.get_files_for_download(ftppath)
-        except ftplib.error_perm as e:
+        except ftplib.eror_perm as e:
             resp = e.args[0]
 
             #It does not exist?
@@ -693,7 +695,7 @@ class Maintenance(Thread):
                 tvshow.fix_threads.remove(t)
 
         logger.info("Task 6: Maintain TVShow paths")
-        for show in TVShow.objects.all():
+        for show in TVShow.objects.filter(localpath__isnull=False):
             if not show.exists():
                 logger.info("Resetting TVShow path as it no longer exists")
                 show.localpath = None
@@ -704,11 +706,11 @@ class Maintenance(Thread):
         for folder in os.listdir(settings.TV_PATH):
             dir_clean = TVShow.clean_title(folder)
             path = os.path.join(settings.TV_PATH, folder)
-
             #lets see if it already belongs to a tvshow
             try:
                 TVShow.objects.get(localpath=path)
             except ObjectDoesNotExist:
+                continue
                 #does not exist
                 logger.info("FOLDER: %s is not associated with any tvdb object.. lets try fix" % folder)
                 try:
@@ -716,20 +718,28 @@ class Maintenance(Thread):
 
                     if show:
                         if show.exists():
-                            pass
-                        show.localpath = path
-                        show.save()
-                        logger.info("FOLDER: %s found tvshow by title id %s" % (folder, show.id))
-                        continue
+                            logger.info("FOLDER: Existing show found we should merge %s with %s" % (folder, show.get_local_path()))
+                            common.merge_tvshow(show, path)
+                            continue
+                        else:
+                            show.localpath = path
+                            show.save()
+                            logger.info("FOLDER: %s found tvshow by title id %s" % (folder, show.id))
+                            continue
 
                     showobj = tvdbapi[folder]
                     tvdbid = int(showobj['id'])
 
                     try:
-                        tvdbobj = TVShow.objects.get(id=int(showobj['id']))
-                        tvdbobj.localpath = path
-                        tvdbobj.save()
-                        logger.info("FOLDER: %s was associated with tvdb object id %s" % (folder, tvdbobj.id))
+                        show = TVShow.objects.get(id=int(showobj['id']))
+                        if show.exists():
+                            logger.info("FOLDER: Existing show found we should merge %s with %s" % (folder, show.get_local_path()))
+                            common.merge_tvshow(show, path)
+                            continue
+                        else:
+                            show.localpath = path
+                            show.save()
+                            logger.info("FOLDER: %s was associated with tvdb object id %s" % (folder, show.id))
                     except:
                         #does not exist in tvdbcache, lets create it
                         new_tvdbcache = TVShow()
@@ -737,12 +747,12 @@ class Maintenance(Thread):
                         new_tvdbcache.localpath = path
                         logger.info("FOLDER: %s create new tvdb object" % folder)
                         new_tvdbcache.save()
-
+                except tvdb_shownotfound:
+                    logger.info("DIR: %s Failed while searching via tvdb.com" % path)
                 except Exception as e:
-                    logger.info("DIR: %s Failed while searching via tvdb.com %s" % (path, e.message))
+                    logger.exception(e)
             except Exception as e:
-                logger.exception("DIR: %s Failed %s" % (path, e.message))
-
+                logger.exception("DIR: %s Failed %s" % (path, str(e)))
 
         cache.set("maintenance_run", datetime.now(), None)
 

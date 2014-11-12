@@ -2,3 +2,6 @@
 *.pyc
 lazysettings.py
 lazy_common
+*.dist-info*
+lib/pip*
+requirements.txt

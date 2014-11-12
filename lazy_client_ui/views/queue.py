@@ -223,8 +223,10 @@ class QueueManage(ListView):
             objects = DownloadItem.objects.select_related('imdbid', 'tvdbid').filter(status=DownloadItem.COMPLETE, dateadded__gt=some_day_last_week).order_by('-dateadded')
         elif self.dlget == DownloadItem.QUEUE:
             objects = DownloadItem.objects.select_related('imdbid', 'tvdbid').filter(retries__lte=settings.DOWNLOAD_RETRY_COUNT, status=self.dlget).order_by('priority','id')
+        elif self.dlget == DownloadItem.EXTRACT or self.dlget == DownloadItem.EXTRACT:
+            objects = DownloadItem.objects.select_related('imdbid', 'tvdbid').filter(Q(status=DownloadItem.RENAME) | Q(status=DownloadItem.EXTRACT), retries__lte=settings.DOWNLOAD_RETRY_COUNT).order_by('priority','id')
         elif self.dlget == 99:
-            objects = DownloadItem.objects.select_related('imdbid', 'tvdbid').filter(~Q(status=DownloadItem.COMPLETE), retries__gt=settings.DOWNLOAD_RETRY_COUNT).order_by('priority','id')
+            objects = DownloadItem.objects.select_related('imdbid', 'tvdbid').filter(~Q(status=DownloadItem.COMPLETE), retries__gte=settings.DOWNLOAD_RETRY_COUNT).order_by('priority','id')
         else:
             objects = DownloadItem.objects.select_related('imdbid', 'tvdbid').filter(status=self.dlget, retries__lte=settings.DOWNLOAD_RETRY_COUNT)
 
