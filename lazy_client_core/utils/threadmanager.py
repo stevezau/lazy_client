@@ -17,6 +17,7 @@ import ftplib
 from lazy_common import ftpmanager
 from lazy_common import utils
 from lazy_common.exceptions import FTPException
+from django.core.exceptions import ObjectDoesNotExist
 from lazy_client_core.utils import renamer
 from lazy_client_core.exceptions import *
 from lazy_client_core.utils import extractor
@@ -223,16 +224,17 @@ class QueueManager(Thread):
             else:
                 #Didnt finish properly
                 if not dlitem.message or len(dlitem.message) == 0:
-                    dlitem.message = "didn't download properly"
-                dlitem.log(dlitem.message)
-
-                if dlitem.retries >= settings.DOWNLOAD_RETRY_COUNT:
-                    #Failed download
-                    dlitem.retries += 1
-                else:
-                    #Didnt download properly, put it back in the queue and let others try download first.
-                    dlitem.retries += 1
                     dlitem.status = DownloadItem.QUEUE
+                else:
+                    dlitem.log(dlitem.message)
+
+                    if dlitem.retries >= settings.DOWNLOAD_RETRY_COUNT:
+                        #Failed download
+                        dlitem.retries += 1
+                    else:
+                        #Didnt download properly, put it back in the queue and let others try download first.
+                        dlitem.retries += 1
+                        dlitem.status = DownloadItem.QUEUE
             dlitem.save()
 
     def pause(self, errors=False):
@@ -417,8 +419,8 @@ class Downloader(Thread):
                     connection.close()
                     self.queue.put(self.active)
                     logger.info("Resetting mysql connection due to %s" % str(e))
-                except Extractor as e:
-                        logger.exception("Some error while downloading %s" % str(e))
+                except Exception as e:
+                    logger.exception("Some error while downloading %s" % str(e))
 
             self.sleep()
 
@@ -689,6 +691,58 @@ class Maintenance(Thread):
             if not t.isAlive():
                 #remove the job
                 tvshow.fix_threads.remove(t)
+
+        logger.info("Task 6: Maintain TVShow paths")
+        for show in TVShow.objects.all():
+            if not show.exists():
+                logger.info("Resetting TVShow path as it no longer exists")
+                show.localpath = None
+                show.save()
+
+        from lazy_common.tvdb_api import Tvdb
+        tvdbapi = Tvdb()
+        for folder in os.listdir(settings.TV_PATH):
+            dir_clean = TVShow.clean_title(folder)
+            path = os.path.join(settings.TV_PATH, folder)
+
+            #lets see if it already belongs to a tvshow
+            try:
+                TVShow.objects.get(localpath=path)
+            except ObjectDoesNotExist:
+                #does not exist
+                logger.info("FOLDER: %s is not associated with any tvdb object.. lets try fix" % folder)
+                try:
+                    show = TVShow.find_by_title(dir_clean)
+
+                    if show:
+                        if show.exists():
+                            pass
+                        show.localpath = path
+                        show.save()
+                        logger.info("FOLDER: %s found tvshow by title id %s" % (folder, show.id))
+                        continue
+
+                    showobj = tvdbapi[folder]
+                    tvdbid = int(showobj['id'])
+
+                    try:
+                        tvdbobj = TVShow.objects.get(id=int(showobj['id']))
+                        tvdbobj.localpath = path
+                        tvdbobj.save()
+                        logger.info("FOLDER: %s was associated with tvdb object id %s" % (folder, tvdbobj.id))
+                    except:
+                        #does not exist in tvdbcache, lets create it
+                        new_tvdbcache = TVShow()
+                        new_tvdbcache.id = tvdbid
+                        new_tvdbcache.localpath = path
+                        logger.info("FOLDER: %s create new tvdb object" % folder)
+                        new_tvdbcache.save()
+
+                except Exception as e:
+                    logger.info("DIR: %s Failed while searching via tvdb.com %s" % (path, e.message))
+            except Exception as e:
+                logger.exception("DIR: %s Failed %s" % (path, e.message))
+
 
         cache.set("maintenance_run", datetime.now(), None)
 

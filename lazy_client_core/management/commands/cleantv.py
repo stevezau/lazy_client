@@ -2,7 +2,7 @@ from __future__ import division
 from optparse import make_option
 import logging
 import os
-from django.utils import timezone
+from datetime import datetime
 import time
 
 from django.core.management.base import BaseCommand
@@ -102,90 +102,6 @@ class Command(BaseCommand):
 
                 else:
                     logger.info("Doco folder does not exist, skipping")
-
-
-        if options['updateimgs']:
-            for tvdb_obj in TVShow.objects.all():
-                tvdb_obj.update_from_tvdb()
-                tvdb_obj.save()
-
-        if options['all'] or options['updatecache']:
-            logger.info('Performing tvdb update')
-
-            for tvdb_obj in TVShow.objects.all():
-
-                #Step 1 - Lets remove all imdbcache objects with path is zero size
-                if os.path.exists(str(tvdb_obj.get_local_path())):
-                    size = get_size(tvdb_obj.get_local_path())
-                    if size < 204800:
-                        logger.info("%s: empty folder, deleteing" % tvdb_obj.get_local_path())
-                        delete(tvdb_obj.get_local_path())
-                        tvdb_obj.localpath = None
-
-                #Step 2 - Get the latest info
-                try:
-                    #Do we need to update it
-                    curTime = timezone.now()
-                    tvdb_date = tvdb_obj.updated
-
-                    if tvdb_date:
-                            diff = curTime - tvdb_obj.updated.replace(tzinfo=None)
-                            hours = diff.total_seconds() / 60 / 60
-                            if hours > 168:
-                                tvdb_obj.update_from_tvdb()
-                                tvdb_obj.save()
-                    else:
-                        tvdb_obj.update_from_tvdb()
-                        tvdb_obj.save()
-                except Exception as e:
-                    logger.info("%s: failed getting latest data from tvdb.com %s" % (tvdb_obj.title, e.message))
-                    pass
-
-                tvdb_obj.save()
-
-
-        if options['updatecache'] or options['fixpaths'] or options['all']:
-
-            for dir in os.listdir(settings.TV_PATH):
-                dir_clean = TVShow.clean_title(dir)
-                path = os.path.join(settings.TV_PATH, dir)
-
-                #lets see if it already belongs to a tvshow
-                try:
-                    TVShow.objects.get(localpath=path)
-                except ObjectDoesNotExist:
-                    #does not exist
-                    logger.info("FOLDER: %s is not associated with any tvdb object.. lets try fix" % dir)
-                    try:
-                        show = TVShow.find_by_title(dir_clean)
-
-                        if show:
-                            show.localpath = path
-                            show.save()
-                            logger.info("FOLDER: %s found tvshow by title id %s" % (dir, show.id))
-                            continue
-
-                        showobj = tvdbapi[dir]
-                        tvdbid = int(showobj['id'])
-
-                        try:
-                            tvdbobj = TVShow.objects.get(id=int(showobj['id']))
-                            tvdbobj.localpath = path
-                            tvdbobj.save()
-                            logger.info("FOLDER: %s was associated with tvdb object id %s" % (dir, tvdbobj.id))
-                        except:
-                            #does not exist in tvdbcache, lets create it
-                            new_tvdbcache = TVShow()
-                            new_tvdbcache.id = tvdbid
-                            new_tvdbcache.localpath = path
-                            logger.info("FOLDER: %s create new tvdb object" % dir)
-                            new_tvdbcache.save()
-
-                    except Exception as e:
-                        logger.info("DIR: %s Failed while searching via tvdb.com %s" % (path, e.message))
-                except Exception as e:
-                    logger.exception("DIR: %s Failed %s" % (path, e.message))
-
 
         if options['all'] or options['removedups']:
             logger.info('Finding duplicate shows')

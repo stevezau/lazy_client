@@ -8,6 +8,7 @@ import os
 import pytz
 import inspect
 from picklefield.fields import PickledObjectField
+
 from django.core.files import File
 from django.core.files.temp import NamedTemporaryFile
 from django.dispatch import receiver
@@ -179,7 +180,7 @@ class TVShow(models.Model):
     description = models.TextField(max_length=255, blank=True, null=True)
     updated = models.DateTimeField(blank=True, null=True)
     imdbid = models.ForeignKey('Movie', blank=True, null=True, on_delete=models.DO_NOTHING)
-    localpath = models.CharField(max_length=255, blank=True, null=True)
+    localpath = models.CharField(max_length=255, blank=True, null=True, unique=True)
     ignored = models.BooleanField(default=False)
     favorite = models.BooleanField(default=False)
     status = models.IntegerField(choices=STATUS_CHOICES, blank=True, null=True)
@@ -240,9 +241,6 @@ class TVShow(models.Model):
         fix_threads.append(scanner_thread)
 
     def get_local_path(self):
-        if self.localpath and  self.localpath.rstrip("/").lower() == settings.TV_PATH.rstrip("/").lower():
-            self.localpath = None
-
         if not self.localpath:
             #lets try find
             for title in self.get_titles():
@@ -257,7 +255,6 @@ class TVShow(models.Model):
             if not self.localpath:
                 if self.title and len(self.title) > 1:
                     self.localpath = os.path.join(settings.TV_PATH, self.title)
-                    self.save()
 
         return self.localpath
 
@@ -497,8 +494,10 @@ class TVShow(models.Model):
         return self.posterimg
 
     def get_size(self):
-        if os.path.exists(self.get_local_path()):
+        try:
             return utils.get_size(self.get_local_path())
+        except:
+            return 0
 
     def set_imdb(self, imdbid_id):
         self.imdbid_id = int(imdbid_id)

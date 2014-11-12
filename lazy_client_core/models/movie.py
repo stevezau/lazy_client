@@ -36,7 +36,7 @@ class Movie(models.Model):
     posterimg = models.ImageField(upload_to=".", storage=OverwriteStorage(), blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     updated = models.DateTimeField(blank=True, null=True)
-    localpath = models.CharField(max_length=255, blank=True, null=True)
+    localpath = models.CharField(max_length=255, blank=True, null=True, unique=True)
     ignored = models.BooleanField(default=False)
 
     def get_genres(self):

@@ -11,7 +11,7 @@ django-jquery-ui==1.10.3.1
 django-picklefield==0.3.1
 django-mobile==0.3.0
 easy_extract==0.1.1
-guessit==0.9.3
+guessit==0.9.4
 pytz
 pillow
 netaddr==0.7.11

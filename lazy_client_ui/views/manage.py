@@ -101,8 +101,8 @@ def tvshows(request):
                 #Find all shows that have no watched eps
                 context['none_watched'] = []
 
-                for tvshow in TVShow.objects.filter(status=TVShow.ENDED):
-                    if not os.path.exists(tvshow.get_local_path()):
+                for tvshow in TVShow.objects.all().exclude(localpath__isnull=True).exclude(localpath__exact=''):
+                    if tvshow.get_local_path() is None or not os.path.exists(tvshow.get_local_path()):
                         continue
 
                     none_watched = True
