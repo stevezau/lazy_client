@@ -348,7 +348,7 @@ class Downloader(Thread):
                 files, remotesize = ftpmanager.get_required_folders_for_multi(ftppath, onlyget)
             else:
                 files, remotesize = ftpmanager.get_files_for_download(ftppath)
-        except ftplib.eror_perm as e:
+        except ftplib.error_perm as e:
             resp = e.args[0]
 
             #It does not exist?
