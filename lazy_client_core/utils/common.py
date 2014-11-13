@@ -207,7 +207,7 @@ def get_fs_freespace(pathname):
     stat = os.statvfs(pathname)
     # use f_bfree for superuser, or f_bavail if filesystem
     # has reserved space for superuser
-    return stat.f_bfree*stat.f_bsize
+    return stat.f_bavail*stat.f_bsize
 
 def get_fs_percent_used(pathname):
     "Get the free space of the filesystem containing pathname"

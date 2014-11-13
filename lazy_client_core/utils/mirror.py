@@ -104,6 +104,7 @@ class FTPMirror(Thread):
         self.start()
 
     def log(self, msg):
+        logger.debug(msg)
         log = DownloadLog(download_id_id=self.id, message=msg)
         log.save()
 

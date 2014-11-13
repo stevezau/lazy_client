@@ -15,3 +15,28 @@ Movies
 -ADD SUPPORT FOR SUBS
 -manual rename for files not found
 -Make Actions movies etc lower rating on imdb accept on lazy server
+
+==============================================
+=========== INSTALL FOR QNAP =================
+==============================================
+ipkg install py27-setuptools
+ipkg install gcc automake
+
+#####setup pip
+curl -O https://pypi.python.org/packages/source/p/pip/pip-1.4.1.tar.gz -k
+tar xf pip-1.4.1.tar.gz
+cd pip-1.4.1
+python setup.py install
+
+vim /share/HDA_DATA/.qpkg/Python/python.sh
+
+#Insert following two statements in "#create symbolic links" section
+/bin/ln -sf ${QPKG_BASE}/.qpkg/Python/bin/pip /usr/bin/pip
+/bin/ln -sf ${QPKG_BASE}/.qpkg/Python/bin/pip-2.7 /usr/bin/pip-2.7
+
+#ADD PIP CONFIG FOR SSL
+~/.pip/pip.conf
+
+[global]
+cert = /share/MD0_DATA/.qpkg/PlexMediaServer/Resources/cacert.pem
+

@@ -113,6 +113,7 @@ def start_server():
 
     # Unsubscribe the default server
     cherrypy.server.unsubscribe()
+    cherrypy.engine.subscribe("stop", stop_server)
 
     cherrypy.config.update({'engine.autoreload.on': False})
     cherrypy.config.update({'environment': 'embedded'})
