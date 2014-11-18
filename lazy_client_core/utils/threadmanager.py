@@ -256,13 +256,13 @@ class QueueManager(Thread):
         self.download_threads = []
 
     def abort_extractor(self):
-        if self.extractor_thread.isAlive():
+        if self.extractor_thread and self.extractor_thread.isAlive():
             logger.info("Aborting extractor thread")
             self.extractor_thread.put("abort")
             self.extractor_thread.join()
 
     def abort_maintenance(self):
-        if self.maintenance_thread.isAlive():
+        if self.maintenance_thread and self.maintenance_thread.isAlive():
             logger.info("Aborting maintenance thread")
             self.maintenance_thread.abort = True
             self.maintenance_thread.join()
@@ -388,7 +388,7 @@ class Downloader(Thread):
             if e.errno and e.errno in self.retry_errors:
                 update_dlitem(id, message=e.message, failed=1)
             else:
-                logger.exception("Exception getting files and folders for download" % str(e))
+                logger.exception("Exception getting files and folders for download")
                 update_dlitem(id, message=str(e), failed=1)
             return
 
@@ -409,7 +409,7 @@ class Downloader(Thread):
         try:
             while True:
                 sleep(0.5)
-                if not self.mirror_thread.isAlive():
+                if self.mirror_thread and not self.mirror_thread.isAlive():
                     return
 
         except Exception as e:
