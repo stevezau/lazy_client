@@ -49,7 +49,17 @@ class Command(BaseCommand):
         cache.clear()
 
         # Run the setup command to sync the db etc
-        call_command('setup', interactive=False)
+        print green_color("Running Syncdb")
+        call_command('syncdb', interactive=True)
+
+        print green_color("Running Migrate")
+        call_command('migrate', interactive=True)
+
+        print green_color("Loading menu data")
+        call_command('sitetreeload', 'lazy_client_ui/fixtures/lazyui_initialdata.json', mode="replace", interactive=True)
+
+        print green_color("Running collectstatic")
+        call_command('collectstatic',  interactive=False)
 
         #stop all
         self.stop_all()
