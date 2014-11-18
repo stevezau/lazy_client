@@ -60,6 +60,8 @@ class QueueManager(Thread):
 
     def __init__(self):
         Thread.__init__(self)
+        self.maintenance_thread = None
+        self.extractor_thread = None
         self.download_threads = []  # thread list
         self.extractor_thread = None
         self.createThreads()
