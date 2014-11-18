@@ -12,6 +12,8 @@ from django.conf import settings
 from lazy_common import ftpmanager
 from lazy_common.utils import bytes2human
 from lazy_client_core.models import DownloadLog, DownloadItem
+from django.db.utils import OperationalError
+from django.db import connection
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +108,14 @@ class FTPMirror(Thread):
     def log(self, msg):
         logger.debug(msg)
         log = DownloadLog(download_id_id=self.id, message=msg)
-        log.save()
+
+        for i in range(0, 1):
+            try:
+                log.save()
+                return
+            except OperationalError:
+                connection.close()
+                pass
 
     def cleanup(self):
         # Cleanup
@@ -350,7 +359,7 @@ class FTPMirror(Thread):
                 while 1:
                     num_q, ok_list, err_list = self.m.info_read()
                     for c in ok_list:
-                        logger.debug("Closing file %s" % c.fp)
+                        self.log("Closing file %s" % c.fp)
 
                         common.close_file(c.fp)
 

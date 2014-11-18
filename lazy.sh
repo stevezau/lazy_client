@@ -66,7 +66,6 @@ function upgrade {
     if [ "$2" != "-l" ]; then
         pull_git
     fi
-    upgrade_reqs
     $MANAGE_SCRIPT migrate
     $MANAGE_SCRIPT $ARGS
 }
@@ -88,27 +87,7 @@ function pull_git() {
 
 }
 
-function upgrade_reqs() {
-    #First we need to install all the requirements
-    if [ "$UID" == "0" ]; then
-        $PIP_BIN install -r "requirements.txt"
-        $EASY_INSTALL_BIN --upgrade http://drifthost.com/lazy_common-0.1-py2.7.egg
-    else
-        /usr/bin/env sudo $PIP_BIN install -r "requirements.txt"
-        /usr/bin/env sudo $EASY_INSTALL_BIN --upgrade http://drifthost.com/lazy_common-0.1-py2.7.egg
-    fi
-
-    if [ "$?" == "0" ]; then
-        echo "Installed requirements"
-    else
-        echo -e "${RED}Error installing requirements${NC}"
-        exit 1
-    fi
-
-}
-
 function setup {
-    upgrade_reqs
     $MANAGE_SCRIPT setup
 }
 

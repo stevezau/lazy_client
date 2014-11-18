@@ -29,10 +29,7 @@ class Command(BaseCommand):
         try:
             call_command('createcachetable', 'lazy_cache', interactive=True)
         except CommandError as e:
-            if 'already exists' in str(e):
-                pass
-            else:
-                raise e
+            pass
 
         print green_color("Running Migrate")
         call_command('migrate', interactive=True)

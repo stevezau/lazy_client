@@ -13,6 +13,7 @@ from flexget.utils.imdb import ImdbSearch, ImdbParser
 from lazy_client_core.utils.common import OverwriteStorage
 from lazy_common import utils
 from django.conf import settings
+from requests.exceptions import Timeout
 
 from django.db import models
 
@@ -39,6 +40,8 @@ class Movie(models.Model):
     localpath = models.CharField(max_length=255, blank=True, null=True, unique=True)
     ignored = models.BooleanField(default=False)
 
+    imdb_obj = None
+
     def get_genres(self):
         genres = []
 
@@ -46,6 +49,42 @@ class Movie(models.Model):
             for genre in self.genres.split("|"):
                 genres.append(genre)
         return genres
+
+    def get_imdb_obj(self):
+
+        if self.imdb_obj is not None:
+            return self.imdb_obj
+
+        if self.id:
+            imdbtt = "tt" + str(self.id).zfill(7)
+
+
+            try:
+                imdbobj = ImdbParser()
+                imdbobj.parse(imdbtt)
+
+                if imdbobj:
+                    self.imdb_obj = imdbobj
+                    return self.imdb_obj
+            except:
+                pass
+        elif self.title:
+            try:
+                self.tvdb_obj = self.tvdbapi[self.title]
+                logger.info("Found matching tvdbcache item %s" % self.tvdb_obj['id'])
+                return self.tvdb_obj
+            except:
+                pass
+        else:
+            for name in self.get_titles():
+                try:
+                    self.tvdb_obj = self.tvdbapi[name]
+                    logger.info("Found matching tvdbcache item %s" % self.tvdb_obj['id'])
+                    return self.tvdb_obj
+                except:
+                    pass
+
+        return self.tvdb_obj
 
     def update_from_imdb(self):
         imdbtt = "tt" + str(self.id).zfill(7)
@@ -89,8 +128,12 @@ class Movie(models.Model):
             self.save()
         except HTTPError as e:
             if e.errno == 404:
-                logger.error("Error entry was not found in imdn!")
+                logger.error("Error entry was not found in imdb!")
                 raise ObjectDoesNotExist()
+        except Timeout:
+            #Try again later..
+            self.updated = None
+            return
 
 
 @receiver(post_save, sender=Movie)

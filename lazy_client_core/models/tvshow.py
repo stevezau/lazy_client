@@ -494,7 +494,7 @@ class TVShow(models.Model):
             img_tmp.close()
 
         except Exception as e:
-            logger.exception("error saving image: %s" % e.message)
+            logger.exception("error saving image: %s" % str(e))
             pass
 
     def get_posterimg(self):

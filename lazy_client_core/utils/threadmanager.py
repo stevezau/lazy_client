@@ -31,8 +31,6 @@ logger = logging.getLogger(__name__)
 
 queue_manager = None
 
-import threading, sys, traceback
-
 ## THREAD SAFE QUERIES for sqlite ###
 def get_attr(id, attr):
     dlitem = DownloadItem.objects.get(id=id)
@@ -113,8 +111,13 @@ class QueueManager(Thread):
         thread = self.get_dlitem_thread(id)
 
         if thread:
+            logger.info("Aborting downloaditem id: %s" % id)
             #lets try kill it
-            thread.abort_download = True
+            thread.abort_download()
+
+            #Lets wait for it to abort
+        else:
+            logger.info("Tried to abort downloaditem with id: %s but it was not found" % id)
 
     def createThreads(self):
         if self.queue_running():
@@ -239,6 +242,28 @@ class QueueManager(Thread):
                         dlitem.status = DownloadItem.QUEUE
             dlitem.save()
 
+    def abort_downloaders(self):
+        #Abort downloads
+        for t in self.download_threads:
+            t.abort_download()
+            t.put("abort")
+
+        for t in self.download_threads:
+            print "Waiting for thread to abort %s " % t
+            t.join()
+
+    def abort_extractor(self):
+        if self.extractor_thread.isAlive():
+            logger.info("Aborting extractor thread")
+            self.extractor_thread.put("abort")
+            self.extractor_thread.join()
+
+    def abort_maintenance(self):
+        if self.maintenance_thread.isAlive():
+            logger.info("Aborting maintenance thread")
+            self.maintenance_thread.abort = True
+            self.maintenance_thread.join()
+
     def pause(self, errors=False):
         #Stop the queue
         if errors:
@@ -247,16 +272,8 @@ class QueueManager(Thread):
             cache.set("stop_queue", "true", None)
 
         self.paused = True
-
-        #Abort download
-        for t in self.download_threads:
-            t.abort_download = True
-            t.put("abort")
-
-        for t in self.download_threads:
-            print "Waiting for thread to abort %s " % t
-            t.join()
-
+        self.abort_downloaders()
+        self.abort_extractor()
         self.download_threads = []
 
     def resume(self):
@@ -269,7 +286,9 @@ class QueueManager(Thread):
         sleep(2)
 
     def quit(self):
-        self.pause()
+        self.abort_downloaders()
+        self.abort_extractor()
+        self.abort_maintenance()
         self.exit = True
 
     def run(self):
@@ -295,7 +314,7 @@ class QueueManager(Thread):
                 self.assign_download()
                 self.check_finished()
                 self.extract()
-            except OperationalError:
+            except OperationalError as e:
                 connection.close()
                 logger.info("Resetting mysql connection due to %s" % str(e))
             except Exception as e:
@@ -318,21 +337,22 @@ class Downloader(Thread):
         Thread.__init__(self)
         self.queue = Queue()
         self.mirror_thread = None
-        self.abort_download = False
         self.active = False
+        self.abort = False
         self.start()
 
-    def sleep(self):
-        sleep(0.5)
-
     def abort_mirror(self):
-        try:
-            if self.mirror_thread:
-                self.mirror_thread.abort = True
-                self.mirror_thread.join()
-        except:
-            pass
+        if self.mirror_thread:
+            logger.info("Waiting for mirror thread to abort")
+            self.mirror_thread.abort = True
+            self.mirror_thread.join()
+            logger.info("Mirror thread aborted")
 
+    def abort_download(self):
+        id = self.active
+        if id:
+            self.abort_mirror()
+            update_dlitem(id, status=DownloadItem.QUEUE)
 
     def download(self, id):
         update_dlitem(id, message="", dlstart=timezone.now())
@@ -343,6 +363,8 @@ class Downloader(Thread):
 
         #Get files and folders for download
         try:
+            if self.abort:
+                update_dlitem(id, status=DownloadItem.QUEUE)
             if onlyget:
                 #we dont want to get everything.. lets figure this out
                 files, remotesize = ftpmanager.get_required_folders_for_multi(ftppath, onlyget)
@@ -374,21 +396,16 @@ class Downloader(Thread):
             return
 
         #Time to start the downloading
+        if self.abort:
+            update_dlitem(id, status=DownloadItem.QUEUE)
+            return
+
         update_dlitem(id, status=DownloadItem.DOWNLOADING)
         self.mirror_thread = FTPMirror(id, files)
 
         try:
             while True:
-                sleep(1)
-
-                try:
-                    if self.abort_download:
-                        self.abort_mirror()
-                        update_dlitem(id, status=DownloadItem.QUEUE)
-                        return
-                except:
-                    return
-
+                sleep(0.5)
                 if not self.mirror_thread.isAlive():
                     return
 
@@ -402,38 +419,26 @@ class Downloader(Thread):
         while True:
             self.active = False
             self.mirror_thread = None
-            self.abort_download = False
             self.active = self.queue.get()
 
             if self.active == "abort":
-                print "Aborting download"
+                print "Aborting downloader thread"
                 return
-
-            if not self.active:
-                self.sleep()
-                continue
 
             if isinstance(self.active, long) or isinstance(self.active, int):
                 try:
                     id = self.active
                     self.download(id)
-                except OperationalError:
+                except OperationalError as e:
                     connection.close()
                     self.queue.put(self.active)
                     logger.info("Resetting mysql connection due to %s" % str(e))
                 except Exception as e:
                     logger.exception("Some error while downloading %s" % str(e))
 
-            self.sleep()
-
     def put(self, job):
         """passing job to thread"""
         self.queue.put(job)
-
-
-    def stop(self):
-        """stops the thread"""
-        self.put("abort_download")
 
 
 ####################
@@ -458,9 +463,6 @@ class Extractor(Thread):
 
         dlitem.retries += 1
         dlitem.save()
-
-    def sleep(self):
-        sleep(2)
 
     def extract(self, dlitem_id):
 
@@ -556,16 +558,9 @@ class Extractor(Thread):
                     print "Aborting Extractor"
                     return
 
-                if not self.active:
-                    self.sleep()
-                    continue
-
                 if isinstance(self.active, int) or isinstance(self.active, long):
                     self.extract(self.active)
-                else:
-                    self.sleep()
-                    continue
-            except OperationalError:
+            except OperationalError as e:
                 self.queue.put(self.active)
                 connection.close()
                 logger.info("Resetting mysql connection due to %s" % str(e))
@@ -575,12 +570,6 @@ class Extractor(Thread):
     def put(self, job):
         """passing job to thread"""
         self.queue.put(job)
-
-
-    def stop(self):
-        """stops the thread"""
-        self.put("abort_download")
-
 
 #####################
 #### Maintenance ####
@@ -592,9 +581,10 @@ class Maintenance(Thread):
         Thread.__init__(self)
         self.start()
         self.tvdb = Tvdb()
+        self.abort = False
 
     def sleep(self):
-        sleep(60)
+        sleep(2)
 
     def update_tvshow(self, tvshow):
         try:
@@ -616,6 +606,9 @@ class Maintenance(Thread):
 
     def do_maintenance(self):
         logger.info("Task 1 - Cleanup downloaditem logs")
+        if self.abort:
+            return
+
         time_threshold = timezone.now() - timedelta(days=60)
         dl_items = DownloadItem.objects.all().filter(dlstart__lt=time_threshold)
 
@@ -623,6 +616,8 @@ class Maintenance(Thread):
             dlitem.clear_log()
 
         logger.info("Task 2 - Lets set the favs")
+        if self.abort:
+            return
         try:
             from lazy_client_core.models.tvshow import update_show_favs
             update_show_favs()
@@ -653,6 +648,7 @@ class Maintenance(Thread):
 
                     for id in series_ids:
                         try:
+                            if self.abort: return
                             show = TVShow.objects.get(id=id)
                             logger.debug("TVShow %s info has expired, updating" % show.title)
                             self.update_tvshow(tvshow)
@@ -671,11 +667,16 @@ class Maintenance(Thread):
         tvshows = TVShow.objects.all().filter(updated__lt=time_threshold)
 
         for tvshow in tvshows:
+            if self.abort:
+                return
+
             self.update_tvshow(tvshow)
 
         logger.info("Task 3.3 - Update tvshow objects with no title")
         tvshows = TVShow.objects.filter(Q(title__isnull=True) | Q(title__exact=''))
         for tvshow in tvshows:
+            if self.abort:
+                return
             self.update_tvshow(tvshow)
 
         logger.info("Task 4: Clean library from xbmc")
@@ -696,6 +697,7 @@ class Maintenance(Thread):
 
         logger.info("Task 6: Maintain TVShow paths")
         for show in TVShow.objects.filter(localpath__isnull=False):
+            if self.abort: return
             if not show.exists():
                 logger.info("Resetting TVShow path as it no longer exists")
                 show.localpath = None
@@ -704,6 +706,7 @@ class Maintenance(Thread):
         from lazy_common.tvdb_api import Tvdb
         tvdbapi = Tvdb()
         for folder in os.listdir(settings.TV_PATH):
+            if self.abort: return
             dir_clean = TVShow.clean_title(folder)
             path = os.path.join(settings.TV_PATH, folder)
             #lets see if it already belongs to a tvshow
@@ -756,9 +759,16 @@ class Maintenance(Thread):
 
         cache.set("maintenance_run", datetime.now(), None)
 
+    def abort(self):
+        self.abort = True
+
     def run(self):
 
         while True:
+
+            if self.abort:
+                return
+
             last_run = cache.get("maintenance_run")
 
             if None is last_run:
@@ -772,7 +782,7 @@ class Maintenance(Thread):
             if hours >= 24:
                 try:
                     self.do_maintenance()
-                except OperationalError:
+                except OperationalError as e:
                     connection.close()
                     logger.info("Resetting mysql connection due to %s" % str(e))
                 except Exception as e:

@@ -57,10 +57,6 @@ class Command(BaseCommand):
         #delete all old pyc files
         self.remove_old_pyc()
 
-        #pull down github
-        #if git:
-        #    self.git_pull()
-
         self.upgrade_scripts()
         self.start_all()
 
