@@ -17,7 +17,6 @@ LAZY_PID="$BASE_PATH/lazy.pid"
 
 FLEXGET_BIN="env flexget"
 GIT_BIN="env git"
-EASY_INSTALL_BIN="env easy_install"
 PIP_BIN="env pip"
 FLEXGET_HOME="$HOME/.flexget/"
 
@@ -25,7 +24,6 @@ chmod +x $MANAGE_SCRIPT
 
 if [ -f "/proc/sysinfo" ] && grep -q "QNAP" /proc/sysinfo; then
     export C_FORCE_ROOT="true"
-    EASY_INSTALL_BIN="/share/MD0_DATA/.qpkg/Python/bin/easy_install-2.7"
     GIT_BIN="/opt/bin/git"
     FLEXGET_BIN="/opt/../Python/bin/flexget"
 
