@@ -67,13 +67,6 @@ class QueueManager(Thread):
         self.paused = False
         self.last_check = None
 
-        #create a extractor thread
-        thread = Extractor()
-        self.extractor_thread = thread
-
-        #maintenance
-        self.maintenance_thread = Maintenance()
-
         self.start()
 
     def queue_running(self):
@@ -125,6 +118,14 @@ class QueueManager(Thread):
             for i in range(settings.MAX_SIM_DOWNLOAD_JOBS):
                 thread = Downloader()
                 self.download_threads.append(thread)
+
+            #create a extractor thread
+            thread = Extractor()
+            self.extractor_thread = thread
+
+            #maintenance
+            self.maintenance_thread = Maintenance()
+
         else:
             self.download_threads = []
 
@@ -252,6 +253,8 @@ class QueueManager(Thread):
             print "Waiting for thread to abort %s " % t
             t.join()
 
+        self.download_threads = []
+
     def abort_extractor(self):
         if self.extractor_thread.isAlive():
             logger.info("Aborting extractor thread")
@@ -274,7 +277,7 @@ class QueueManager(Thread):
         self.paused = True
         self.abort_downloaders()
         self.abort_extractor()
-        self.download_threads = []
+        self.abort_maintenance()
 
     def resume(self):
         cache.delete("stop_queue")
