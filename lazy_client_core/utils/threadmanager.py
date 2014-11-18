@@ -61,7 +61,6 @@ class QueueManager(Thread):
     def __init__(self):
         Thread.__init__(self)
         self.maintenance_thread = None
-        self.extractor_thread = None
         self.download_threads = []  # thread list
         self.extractor_thread = None
         self.createThreads()
@@ -122,8 +121,7 @@ class QueueManager(Thread):
                 self.download_threads.append(thread)
 
             #create a extractor thread
-            thread = Extractor()
-            self.extractor_thread = thread
+            self.extractor_thread = Extractor()
 
             #maintenance
             self.maintenance_thread = Maintenance()
