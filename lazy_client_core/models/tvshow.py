@@ -920,14 +920,13 @@ class TVShowScanner(Thread):
         from lazy_client_core.models import DownloadItem
 
         try:
-            existing = DownloadItem.objects.get(ftp_path=ftp_path.strip())
-            existing.delete()
+            new_download = DownloadItem.objects.get(ftp_path=ftp_path.strip())
+            new_download.delete()
         except ObjectDoesNotExist:
-            pass
-
-        try:
             new_download = DownloadItem()
             new_download.ftppath = ftp_path.strip()
+
+        try:
             new_download.tvdbid_id = self.tvshow_obj.id
             new_download.requested = requested
             new_download.type = metaparser.TYPE_TVSHOW
