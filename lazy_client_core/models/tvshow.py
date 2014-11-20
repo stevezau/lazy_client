@@ -920,7 +920,7 @@ class TVShowScanner(Thread):
         from lazy_client_core.models import DownloadItem
 
         try:
-            new_download = DownloadItem.objects.get(ftp_path=ftp_path.strip())
+            new_download = DownloadItem.objects.get(ftppath=ftp_path.strip())
 
             if new_download.status == DownloadItem.COMPLETE:
                 new_download.delete()
