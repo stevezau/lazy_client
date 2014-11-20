@@ -921,12 +921,15 @@ class TVShowScanner(Thread):
 
         try:
             new_download = DownloadItem.objects.get(ftp_path=ftp_path.strip())
-            new_download.delete()
+
+            if new_download.status == DownloadItem.COMPLETE:
+                new_download.delete()
+                new_download = DownloadItem()
         except ObjectDoesNotExist:
             new_download = DownloadItem()
-            new_download.ftppath = ftp_path.strip()
 
         try:
+            new_download.ftppath = ftp_path.strip()
             new_download.tvdbid_id = self.tvshow_obj.id
             new_download.requested = requested
             new_download.type = metaparser.TYPE_TVSHOW
