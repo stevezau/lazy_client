@@ -918,6 +918,13 @@ class TVShowScanner(Thread):
 
     def add_new_download(self, ftp_path, season=None, eps=None, requested=False):
         from lazy_client_core.models import DownloadItem
+
+        try:
+            existing = DownloadItem.objects.get(ftp_path=ftp_path.strip())
+            existing.delete()
+        except ObjectDoesNotExist:
+            pass
+
         try:
             new_download = DownloadItem()
             new_download.ftppath = ftp_path.strip()
