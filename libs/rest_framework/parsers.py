@@ -5,13 +5,16 @@ They give us a generic way of being able to handle various media types
 on the request, such as form content or json encoded data.
 """
 from __future__ import unicode_literals
+
 from django.conf import settings
 from django.core.files.uploadhandler import StopFutureHandlers
 from django.http import QueryDict
 from django.http.multipartparser import MultiPartParser as DjangoMultiPartParser
 from django.http.multipartparser import MultiPartParserError, parse_header, ChunkIter
 from django.utils import six
-from rest_framework.compat import etree, yaml, force_text, urlparse
+from django.utils.six.moves.urllib import parse as urlparse
+from django.utils.encoding import force_text
+from rest_framework.compat import etree, yaml
 from rest_framework.exceptions import ParseError
 from rest_framework import renderers
 import json
@@ -48,7 +51,7 @@ class JSONParser(BaseParser):
     """
 
     media_type = 'application/json'
-    renderer_class = renderers.UnicodeJSONRenderer
+    renderer_class = renderers.JSONRenderer
 
     def parse(self, stream, media_type=None, parser_context=None):
         """
@@ -132,7 +135,7 @@ class MultiPartParser(BaseParser):
             data, files = parser.parse()
             return DataAndFiles(data, files)
         except MultiPartParserError as exc:
-            raise ParseError('Multipart form parse error - %s' % str(exc))
+            raise ParseError('Multipart form parse error - %s' % six.text_type(exc))
 
 
 class XMLParser(BaseParser):
@@ -255,23 +258,24 @@ class FileUploadParser(BaseParser):
         chunks = ChunkIter(stream, chunk_size)
         counters = [0] * len(upload_handlers)
 
-        for handler in upload_handlers:
+        for index, handler in enumerate(upload_handlers):
             try:
                 handler.new_file(None, filename, content_type,
                                  content_length, encoding)
             except StopFutureHandlers:
+                upload_handlers = upload_handlers[:index + 1]
                 break
 
         for chunk in chunks:
-            for i, handler in enumerate(upload_handlers):
+            for index, handler in enumerate(upload_handlers):
                 chunk_length = len(chunk)
-                chunk = handler.receive_data_chunk(chunk, counters[i])
-                counters[i] += chunk_length
+                chunk = handler.receive_data_chunk(chunk, counters[index])
+                counters[index] += chunk_length
                 if chunk is None:
                     break
 
-        for i, handler in enumerate(upload_handlers):
-            file_obj = handler.file_complete(counters[i])
+        for index, handler in enumerate(upload_handlers):
+            file_obj = handler.file_complete(counters[index])
             if file_obj:
                 return DataAndFiles(None, {'file': file_obj})
         raise ParseError("FileUpload parse error - "

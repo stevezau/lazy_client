@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------------------
-#   Copyright (c) 2008-2014, David P. D. Moss. All rights reserved.
+#   Copyright (c) 2008-2015, David P. D. Moss. All rights reserved.
 #
 #   Released under the BSD license. See the LICENSE file for details.
 #-----------------------------------------------------------------------------
@@ -15,7 +15,7 @@ from netaddr.strategy import ipv4 as _ipv4, ipv6 as _ipv6
 from netaddr.compat import _sys_maxint, _iter_range, _is_str, _int_type, \
     _str_type
 
-#-----------------------------------------------------------------------------
+
 class BaseIP(object):
     """
     An abstract base class for common operations shared between various IP
@@ -228,7 +228,7 @@ class BaseIP(object):
         return self._module.version
 
 
-#-----------------------------------------------------------------------------
+
 class IPAddress(BaseIP):
     """
     An individual IPv4 or IPv6 address without a net mask or subnet prefix.
@@ -389,7 +389,7 @@ class IPAddress(BaseIP):
 
         :param num: size of IP address increment.
         """
-        new_value = self._value + num
+        new_value = int(self._value + num)
         if 0 <= new_value <= self._module.max_int:
             self._value = new_value
             return self
@@ -404,7 +404,7 @@ class IPAddress(BaseIP):
 
         :param num: size of IP address decrement.
         """
-        new_value = self._value - num
+        new_value = int(self._value - num)
         if 0 <= new_value <= self._module.max_int:
             self._value = new_value
             return self
@@ -419,7 +419,7 @@ class IPAddress(BaseIP):
 
         :return: a new IPAddress object with its numerical value increased by num.
         """
-        new_value = self._value + num
+        new_value = int(self._value + num)
         if 0 <= new_value <= self._module.max_int:
             return self.__class__(new_value, self._module.version)
         raise IndexError('result outside valid IP address boundary!')
@@ -435,7 +435,7 @@ class IPAddress(BaseIP):
 
         :return: a new IPAddress object with its numerical value decreased by num.
         """
-        new_value = self._value - num
+        new_value = int(self._value - num)
         if 0 <= new_value <= self._module.max_int:
             return self.__class__(new_value, self._module.version)
         raise IndexError('result outside valid IP address boundary!')
@@ -449,7 +449,7 @@ class IPAddress(BaseIP):
 
         :return: a new IPAddress object with its numerical value decreased by num.
         """
-        new_value = num - self._value
+        new_value = int(num - self._value)
         if 0 <= new_value <= self._module.max_int:
             return self.__class__(new_value, self._module.version)
         raise IndexError('result outside valid IP address boundary!')
@@ -656,7 +656,7 @@ class IPAddress(BaseIP):
         """:return: Python statement to create an equivalent object"""
         return "%s('%s')" % (self.__class__.__name__, self)
 
-#-----------------------------------------------------------------------------
+
 class IPListMixin(object):
     """
     A mixin class providing shared list-like functionality to classes
@@ -756,7 +756,7 @@ class IPListMixin(object):
 
     __bool__ = __nonzero__  #   Python 3.x.
 
-#-----------------------------------------------------------------------------
+
 def parse_ip_network(module, addr, implicit_prefix=False, flags=0):
     if isinstance(addr, tuple):
         #   CIDR integer tuple
@@ -824,7 +824,7 @@ def parse_ip_network(module, addr, implicit_prefix=False, flags=0):
 
     return value, prefixlen
 
-#-----------------------------------------------------------------------------
+
 class IPNetwork(BaseIP, IPListMixin):
     """
     An IPv4 or IPv6 network or subnet.
@@ -1313,7 +1313,7 @@ class IPNetwork(BaseIP, IPListMixin):
         """:return: Python statement to create an equivalent object"""
         return "%s('%s')" % (self.__class__.__name__, self)
 
-#-----------------------------------------------------------------------------
+
 class IPRange(BaseIP, IPListMixin):
     """
     An arbitrary IPv4 or IPv6 address range.
@@ -1422,7 +1422,7 @@ class IPRange(BaseIP, IPListMixin):
         return "%s('%s', '%s')" % (self.__class__.__name__,
             self._start, self._end)
 
-#-----------------------------------------------------------------------------
+
 def iter_unique_ips(*args):
     """
     :param args: A list of IP addresses and subnets passed in as arguments.
@@ -1434,7 +1434,7 @@ def iter_unique_ips(*args):
         for ip in cidr:
             yield ip
 
-#-----------------------------------------------------------------------------
+
 def cidr_abbrev_to_verbose(abbrev_cidr):
     """
     A function that converts abbreviated IPv4 CIDRs to their more verbose
@@ -1456,7 +1456,7 @@ def cidr_abbrev_to_verbose(abbrev_cidr):
         192.168             - 192.168.0.0/16
 
     :return: A verbose CIDR from an abbreviated CIDR or old-style classful \
-        network address, The original value if it was not recognised as a \
+        network address. The original value if it was not recognised as a \
         supported abbreviation.
     """
     #   Internal function that returns a prefix value based on the old IPv4
@@ -1475,51 +1475,36 @@ def cidr_abbrev_to_verbose(abbrev_cidr):
             return 4
         return 32                   #   Default.
 
-    start = ''
-    tokens = []
-    prefix = None
-
     if _is_str(abbrev_cidr):
-        if ':' in abbrev_cidr:
+        if ':' in abbrev_cidr or abbrev_cidr == '':
             return abbrev_cidr
+
     try:
         #   Single octet partial integer or string address.
         i = int(abbrev_cidr)
-        tokens = [str(i), '0', '0', '0']
-        return "%s%s/%s" % (start, '.'.join(tokens), classful_prefix(i))
-
+        return "%s.0.0.0/%s" % (i, classful_prefix(i))
     except ValueError:
         #   Multi octet partial string address with optional prefix.
-        part_addr = abbrev_cidr
-        tokens = []
+        if '/' in abbrev_cidr:
+            part_addr, prefix = abbrev_cidr.split('/', 1)
 
-        if part_addr == '':
-            #   Not a recognisable format.
-            return abbrev_cidr
-
-        if '/' in part_addr:
-            (part_addr, prefix) = part_addr.split('/', 1)
-
-        #   Check prefix for validity.
-        if prefix is not None:
+            #   Check prefix for validity.
             try:
                 if not 0 <= int(prefix) <= 32:
                     raise ValueError('prefixlen in address %r out of range' \
                         ' for IPv4!' % abbrev_cidr)
             except ValueError:
                 return abbrev_cidr
-
-        if '.' in part_addr:
-            tokens = part_addr.split('.')
         else:
-            tokens = [part_addr]
+            part_addr = abbrev_cidr
+            prefix = None
 
-        if 1 <= len(tokens) <= 4:
-            for i in range(4 - len(tokens)):
-                tokens.append('0')
-        else:
+        tokens = part_addr.split('.')
+        if len(tokens) > 4:
             #   Not a recognisable format.
             return abbrev_cidr
+        for i in range(4 - len(tokens)):
+            tokens.append('0')
 
         if prefix is None:
             try:
@@ -1527,17 +1512,13 @@ def cidr_abbrev_to_verbose(abbrev_cidr):
             except ValueError:
                 return abbrev_cidr
 
-        return "%s%s/%s" % (start, '.'.join(tokens), prefix)
+        return "%s/%s" % ('.'.join(tokens), prefix)
+    except (TypeError, IndexError):
+        #   Not a recognisable format.
+        return abbrev_cidr
 
-    except TypeError:
-        pass
-    except IndexError:
-        pass
 
-    #   Not a recognisable format.
-    return abbrev_cidr
 
-#-----------------------------------------------------------------------------
 def cidr_merge(ip_addrs):
     """
     A function that accepts an iterable sequence of IP addresses and subnets
@@ -1583,7 +1564,7 @@ def cidr_merge(ip_addrs):
             merged.extend(iprange_to_cidrs(range_start, range_stop))
     return merged
 
-#-----------------------------------------------------------------------------
+
 def cidr_exclude(target, exclude):
     """
     Removes an exclude IP address or subnet from target IP subnet.
@@ -1657,7 +1638,7 @@ def cidr_partition(target, exclude):
 
     return left, [exclude], right[::-1]
 
-#-----------------------------------------------------------------------------
+
 def spanning_cidr(ip_addrs):
     """
     Function that accepts a sequence of IP addresses and subnets returning
@@ -1691,7 +1672,7 @@ def spanning_cidr(ip_addrs):
 
     return IPNetwork( (ipnum, prefixlen), version=lowest_ip.version )
 
-#-----------------------------------------------------------------------------
+
 def iter_iprange(start, end, step=1):
     """
     A generator that produces IPAddress objects between an arbitrary start
@@ -1738,7 +1719,7 @@ def iter_iprange(start, end, step=1):
         yield IPAddress(index, version)
 
 
-#-----------------------------------------------------------------------------
+
 def iprange_to_cidrs(start, end):
     """
     A function that accepts an arbitrary start and end IP address or subnet
@@ -1774,7 +1755,7 @@ def iprange_to_cidrs(start, end):
 
     return cidr_list
 
-#-----------------------------------------------------------------------------
+
 def smallest_matching_cidr(ip, cidrs):
     """
     Matches an IP address or subnet against a given sequence of IP addresses
@@ -1803,7 +1784,7 @@ def smallest_matching_cidr(ip, cidrs):
 
     return match
 
-#-----------------------------------------------------------------------------
+
 def largest_matching_cidr(ip, cidrs):
     """
     Matches an IP address or subnet against a given sequence of IP addresses
@@ -1830,7 +1811,7 @@ def largest_matching_cidr(ip, cidrs):
 
     return match
 
-#-----------------------------------------------------------------------------
+
 def all_matching_cidrs(ip, cidrs):
     """
     Matches an IP address or subnet against a given sequence of IP addresses

@@ -1,13 +1,35 @@
+import sys
+from json import loads
+
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
+    
+try:
+    from unittest import mock
+except ImportError:
+    import mock
+
 from django.conf import settings
 from django.utils import unittest
 from django.utils.translation import activate
 from django import template
 from django.contrib.auth.models import Permission
-from django.core import urlresolvers
+from django.contrib.admin.sites import site
+from django.core.management import call_command
+from django.core.exceptions import ImproperlyConfigured
 
 from sitetree.models import Tree, TreeItem
-from sitetree.utils import tree, item
-from sitetree.sitetreeapp import SiteTree, SiteTreeError, register_items_hook, register_i18n_trees, register_dynamic_trees, compose_dynamic_tree
+from sitetree.management.commands.sitetree_resync_apps import Command as ResyncCommand
+from sitetree.forms import TreeItemForm
+from sitetree.admin import TreeAdmin, TreeItemAdmin, redirects_handler
+from sitetree.utils import (
+    tree, item, get_app_n_model, import_app_sitetree_module, import_project_sitetree_modules, get_model_class
+)
+from sitetree.sitetreeapp import (
+    SiteTree, SiteTreeError, register_items_hook, register_i18n_trees, register_dynamic_trees, compose_dynamic_tree
+)
 
 from django.conf.urls import patterns, url
 
@@ -20,12 +42,21 @@ urlpatterns = patterns('',
 
 
 class MockRequest(object):
-    def __init__(self, path, user_authorized):
+
+    def __init__(self, path=None, user_authorized=None, meta=None):
+        if path is None:
+            path = '/'
+
+        if user_authorized is None:
+            user_authorized = True
+
         self.path = path
         self.user = MockUser(user_authorized)
+        self.META = meta
 
 
 class MockUser(object):
+
     def __init__(self, authorized):
         self.authorized = authorized
 
@@ -41,6 +72,7 @@ def get_mock_context(app=None, path=None, user_authorized=False, tree_item=None,
 
 
 class TreeModelTest(unittest.TestCase):
+
     def test_create_rename_delete(self):
         tree = Tree(alias='mytree')
         tree.save(force_insert=True)
@@ -60,6 +92,7 @@ class TreeModelTest(unittest.TestCase):
 
 
 class TreeItemModelTest(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
         cls.sitetree = SiteTree()
@@ -130,14 +163,6 @@ class TreeItemModelTest(unittest.TestCase):
         cls.t2_root5 = t2_root5
         cls.t2_root6 = t2_root6
         cls.t2_root7 = t2_root7
-
-        # set urlconf to test's one
-        cls.old_urlconf = urlresolvers.get_urlconf()
-        urlresolvers.set_urlconf('sitetree.tests')
-
-    @classmethod
-    def tearDownClass(cls):
-        urlresolvers.set_urlconf(cls.old_urlconf)
 
     def test_url_resolve(self):
         self.sitetree.menu('tree1', 'trunk', get_mock_context(path='/', put_var='abrakadabra'))
@@ -281,7 +306,6 @@ class TreeItemModelTest(unittest.TestCase):
         self.assertIn(self.t2_root3, st2)
         self.assertEqual(len(st2), 6)
 
-
     def test_items_hook_tree(self):
         def my_processor(tree_items, tree_sender):
             for item in tree_items:
@@ -320,6 +344,7 @@ class TreeItemModelTest(unittest.TestCase):
 
 
 class TreeTest(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
         cls.sitetree = SiteTree()
@@ -345,7 +370,7 @@ class TreeTest(unittest.TestCase):
         t1_root_child5 = TreeItem(title='child5', tree=t1, parent=t1_root, url='/4/', inmenu=True, hidden=True)
         t1_root_child5.save(force_insert=True)
 
-        t2 = Tree(alias='tree3_en')
+        t2 = Tree(alias='tree3_en', title='tree3en_title')
         t2.save(force_insert=True)
 
         t2_root = TreeItem(title='root_en', tree=t2, url='/')
@@ -365,7 +390,15 @@ class TreeTest(unittest.TestCase):
         cls.t1_root_child2 = t1_root_child4
         cls.t1_root_child2 = t1_root_child5
 
+        cls.t2 = t2
         cls.t2_root = t2_root
+
+    def test_str(self):
+        self.assertEqual(self.t1.alias, str(self.t1))
+
+    def test_get_title(self):
+        self.assertEqual(self.t1.get_title(), 'tree3')
+        self.assertEqual(self.t2.get_title(), 'tree3en_title')
 
     def test_children_filtering(self):
         self.sitetree._global_context = get_mock_context(path='/')
@@ -413,8 +446,14 @@ class DynamicTreeTest(unittest.TestCase):
         cls.t1 = t1
         cls.t1_root = t1_root
 
-    def test_basic(self):
-        register_dynamic_trees((
+    def test_basic_old(self):
+        self.basic_test()
+
+    def test_basic_new(self):
+        self.basic_test(new_style=True)
+
+    def basic_test(self, new_style=False, reset_cache=False):
+        trees = (
             compose_dynamic_tree((
                 tree('dynamic_main_root', items=(
                     item('dynamic_main_root_1', 'dynamic_main_root_1_url', url_as_pattern=False),
@@ -435,10 +474,20 @@ class DynamicTreeTest(unittest.TestCase):
                     item('dynamic_2', 'dynamic_2_url', url_as_pattern=False),
                 )),
             )),
-        ))
+        )
+
+        kwargs = {
+            'reset_cache': reset_cache
+        }
+
+        if new_style:
+            register_dynamic_trees(*trees, **kwargs)
+        else:
+            register_dynamic_trees(trees, **kwargs)
 
         self.sitetree._global_context = get_mock_context(path='/the_same_url/')
         tree_alias, sitetree_items = self.sitetree.get_sitetree('main')
+
         self.assertEqual(len(sitetree_items), 5)
         self.assertEqual(sitetree_items[3].title, 'dynamic_main_root_1')
         self.assertEqual(sitetree_items[4].title, 'dynamic_main_root_2')
@@ -472,9 +521,25 @@ class UtilsItemTest(unittest.TestCase):
         i1 = item('root', 'url', access_by_perms=[1, 2, 3])
         self.assertEqual(i1.permissions, [1, 2, 3])
 
+    def test_import_project_sitetree_modules(self):
+        cls = get_model_class('MODEL_TREE')
+        self.assertIs(cls, Tree)
+
+    def test_get_model_class(self):
+        import_project_sitetree_modules()
+
+    def test_import_app_sitetree_module(self):
+        self.assertRaises(ImportError, import_app_sitetree_module, 'sitetre')
+
+    def test_get_app_n_model(self):
+        app, model = get_app_n_model('MODEL_TREE')
+        self.assertEqual(app, 'sitetree')
+        self.assertEqual(model, 'Tree')
+        self.assertRaises(ImproperlyConfigured, get_app_n_model, 'ALIAS_TRUNK')
+
     def test_valid_string_permissions(self):
         perm = Permission.objects.all()[0]
-        perm_name = "{}.{}".format(perm.content_type.app_label, perm.codename)
+        perm_name = '%s.%s' % (perm.content_type.app_label, perm.codename)
 
         i1 = item('root', 'url', access_by_perms=perm_name)
         self.assertEqual(i1.permissions, [perm])
@@ -487,6 +552,8 @@ class UtilsItemTest(unittest.TestCase):
 
     def test_bad_string_permissions(self):
         self.assertRaises(ValueError, item, 'root', 'url', access_by_perms='bad name')
+        self.assertRaises(ValueError, item, 'root', 'url', access_by_perms='unknown.name')
+        self.assertRaises(ValueError, item, 'root', 'url', access_by_perms=42.2)
 
     def test_access_restricted(self):
         # Test that default is False
@@ -496,3 +563,131 @@ class UtilsItemTest(unittest.TestCase):
         # True is respected
         i1 = item('root', 'url')
         self.assertEqual(i1.access_restricted, False)
+
+
+class TestAdmin(unittest.TestCase):
+
+    def test_redirects_handler(self):
+
+        def get_handler(referer, item_id=None):
+            req = MockRequest(referer, True, {
+                'HTTP_REFERER': referer
+            })
+
+            args = [req]
+            kwargs = {}
+            if item_id is not None:
+                kwargs['item_id'] = item_id
+            return redirects_handler(*args, **kwargs)
+
+        handler = get_handler('/')
+        self.assertEqual(handler._headers['location'][1], '/../')
+
+        handler = get_handler('/delete/')
+        self.assertEqual(handler._headers['location'][1], '/delete/../../')
+
+        handler = get_handler('/history/')
+        self.assertEqual(handler._headers['location'][1], '/history/../../')
+
+        handler = get_handler('/history/', 42)
+        self.assertEqual(handler._headers['location'][1], '/history/../')
+
+    def test_tree_item_admin(self):
+        admin = TreeItemAdmin(TreeItem, site)
+        admin.tree = Tree.objects.get(pk=1)
+        form = admin.get_form(MockRequest())
+        self.assertEqual(len(form.known_url_names), 3)
+        self.assertIn('articles_list', form.known_url_names)
+        self.assertIn('articles_detailed', form.known_url_names)
+        self.assertIn('url', form.known_url_names)
+
+    def test_tree_item_admin_get_tree(self):
+        admin = TreeItemAdmin(TreeItem, site)
+        tree = admin.get_tree(MockRequest(), 1)
+        self.assertEqual(tree.alias, 'main')
+        tree = admin.get_tree(MockRequest(), None, 1)
+        self.assertEqual(tree.alias, 'main')
+
+    def test_tree_item_admin_item_move(self):
+        admin = TreeItemAdmin(TreeItem, site)
+
+        new_item_1 = TreeItem(title='title_1', sort_order=1, tree_id=1)
+        new_item_1.save()
+
+        new_item_2 = TreeItem(title='title_2', sort_order=2, tree_id=1)
+        new_item_2.save()
+
+        new_item_3 = TreeItem(title='title_3', sort_order=3, tree_id=1)
+        new_item_3.save()
+
+        admin.item_move(None, None, new_item_2.id, 'up')
+
+        self.assertEqual(TreeItem.objects.get(pk=new_item_1.id).sort_order, 2)
+        self.assertEqual(TreeItem.objects.get(pk=new_item_2.id).sort_order, 1)
+        self.assertEqual(TreeItem.objects.get(pk=new_item_3.id).sort_order, 3)
+
+        admin.item_move(None, None, new_item_1.id, 'down')
+
+        self.assertEqual(TreeItem.objects.get(pk=new_item_1.id).sort_order, 3)
+        self.assertEqual(TreeItem.objects.get(pk=new_item_2.id).sort_order, 1)
+        self.assertEqual(TreeItem.objects.get(pk=new_item_3.id).sort_order, 2)
+
+    def test_tree_item_admin_save_model(self):
+        admin = TreeItemAdmin(TreeItem, site)
+        tree_item = TreeItem.objects.get(pk=1)
+        admin.tree = Tree.objects.get(pk=1)
+        admin.save_model(MockRequest(), tree_item, None, change=True)
+        self.assertIs(tree_item.tree, admin.tree)
+
+    def test_tree_admin(self):
+        admin = TreeAdmin(Tree, site)
+        urls = admin.get_urls()
+        self.assertIn('tree_id', urls[1]._regex)
+
+
+class TestForms(unittest.TestCase):
+
+    def test_basic(self):
+        form = TreeItemForm(tree='main', tree_item='root')
+        self.assertIn('tree_item', form.fields)
+
+        self.assertEqual(form.fields['tree_item'].tree, 'main')
+        self.assertEqual(form.fields['tree_item'].initial, 'root')
+        self.assertEqual(form.fields['tree_item'].choices[1][1], 'root')
+
+
+class TestManagementCommands(unittest.TestCase):
+
+    def setUp(self):
+        self.file_contents = '[{"pk": 2, "fields": {"alias": "/tree1/", "title": "tree one"}, "model": "sitetree.tree"}, {"pk": 3, "fields": {"alias": "/tree2/", "title": "tree two"}, "model": "sitetree.tree"}, {"pk": 7, "fields": {"access_restricted": false, "inmenu": true, "title": "tree item one", "hidden": false, "description": "", "alias": null, "url": "/tree1/item1/", "access_loggedin": false, "urlaspattern": false, "access_perm_type": 1, "tree": 2, "hint": "", "inbreadcrumbs": true, "access_permissions": [], "sort_order": 7, "access_guest": false, "parent": null, "insitetree": true}, "model": "sitetree.treeitem"}]'
+
+    def test_sitetreedump(self):
+        stdout = sys.stdout
+        sys.stdout = StringIO()
+
+        call_command('sitetreedump')
+
+        output = loads(sys.stdout.getvalue())
+        sys.stdout = stdout
+
+        self.assertEqual(output[0]['model'], 'sitetree.tree')
+        self.assertEqual(output[1]['model'], 'sitetree.treeitem')
+
+    def test_sitetreeload(self):
+        try:
+            import __builtin__
+            patch_val = '__builtin__.open'
+        except ImportError:
+            # python3
+            patch_val = 'builtins.open'
+
+        with mock.patch(patch_val) as mock_file:
+            mock_file.return_value.__enter__ = lambda s: s
+            mock_file.return_value.__exit__ = mock.Mock()
+            mock_file.return_value.read.return_value = self.file_contents
+
+            call_command('sitetreeload', 'somefile.json')
+
+            self.assertTrue(Tree.objects.filter(title='tree one').exists())
+            self.assertTrue(Tree.objects.filter(title='tree two').exists())
+            self.assertTrue(TreeItem.objects.filter(title='tree item one').exists())

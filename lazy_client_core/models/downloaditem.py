@@ -503,53 +503,6 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
         if 'series' in parser.details:
             title = TVShow.clean_title(parser.details['series'])
 
-        if title:
-            logger.info("Looking for existing %s in the queue" % title)
-
-            type = instance.get_type()
-
-            #Check if already in queue (maybe this is higher quality or proper).
-            for dlitem in DownloadItem.objects.all().filter(Q(status=DownloadItem.QUEUE) | Q(status=DownloadItem.DOWNLOADING) | Q(status=DownloadItem.PENDING)):
-
-                #If its a tvshow and the tvdbid does not match then skip
-                if type == metaparser.TYPE_TVSHOW and dlitem.tvdbid_id and instance.tvdbid_id:
-                    if instance.tvdbid_id != dlitem.tvdbid_id:
-                        continue
-
-                if type == metaparser.TYPE_MOVIE and dlitem.imdbid_id and instance.imdbid_id:
-                    if instance.imdbid_id != dlitem.imdbid_id:
-                        continue
-
-                dlitem_title = None
-                dlitem_parser = dlitem.metaparser()
-
-                if 'title' in dlitem_parser.details:
-                    dlitem_title = dlitem_parser.details['title']
-
-                if 'series' in dlitem_parser.details:
-                    dlitem_title = TVShow.clean_title(dlitem_parser.details['series'])
-
-                if dlitem_title and dlitem_title.lower() == title.lower():
-
-                    check = False
-                    if parser.type == metaparser.TYPE_TVSHOW:
-                        if 'season' in parser.details and 'episodeNumber' in parser.details and 'season' in dlitem_parser.details and 'episodeNumber' in dlitem_parser.details:
-                            if parser.details['season'] == dlitem_parser.details['season'] and parser.details['episodeNumber'] == dlitem_parser.details['episodeNumber']:
-                                check = True
-                    else:
-                        check = True
-
-                    if check:
-
-                        logger.info("Found %s already in queue, lets see what is better quality" % dlitem.title)
-
-                        if dlitem_parser.quality > parser.quality:
-                            logger.info("Download already existsin queue with better quality will ignore this one")
-                            raise AlradyExists_Updated(dlitem)
-                        else:
-                            logger.info("Deleting %s from queue as it has a lower quality" % dlitem.title)
-                            dlitem.delete()
-
         #Ok now we know its a valid downloaditem lets add it to the db
         tvdbapi = Tvdb()
         type = instance.get_type()
@@ -687,3 +640,58 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
             if instance.imdbid.ignored:
                 logger.info("Movie wont be added as it is marked as ignored")
                 raise Ignored("Movie cannot be added as it is marked as ignored")
+
+        if title:
+            logger.info("Looking for existing %s in the queue" % title)
+
+            type = instance.get_type()
+
+            if instance.tvdbid_id:
+                #Check if already in queue (maybe this is higher quality or proper).
+                existing_items = [dlitem for dlitem in DownloadItem.objects.all().filter(Q(status=DownloadItem.QUEUE) | Q(status=DownloadItem.DOWNLOADING) | Q(status=DownloadItem.PENDING) | Q(tvdbid_id=instance.tvdbid_id))]
+            elif instance.imdbid_id:
+                #Check if already in queue (maybe this is higher quality or proper).
+                existing_items = [dlitem for dlitem in DownloadItem.objects.all().filter(Q(status=DownloadItem.QUEUE) | Q(status=DownloadItem.DOWNLOADING) | Q(status=DownloadItem.PENDING) | Q(imdbid_id=instance.imdbid_id))]
+            else:
+                existing_items = [dlitem for dlitem in DownloadItem.objects.all().filter(Q(status=DownloadItem.QUEUE) | Q(status=DownloadItem.DOWNLOADING) | Q(status=DownloadItem.PENDING))]
+
+            for dlitem in existing_items:
+
+                #If its a tvshow and the tvdbid does not match then skip
+                if type == metaparser.TYPE_TVSHOW and dlitem.tvdbid_id and instance.tvdbid_id:
+                    if instance.tvdbid_id != dlitem.tvdbid_id:
+                        continue
+
+                if type == metaparser.TYPE_MOVIE and dlitem.imdbid_id and instance.imdbid_id:
+                    if instance.imdbid_id != dlitem.imdbid_id:
+                        continue
+
+                dlitem_title = None
+                dlitem_parser = dlitem.metaparser()
+
+                if 'title' in dlitem_parser.details:
+                    dlitem_title = dlitem_parser.details['title']
+
+                if 'series' in dlitem_parser.details:
+                    dlitem_title = TVShow.clean_title(dlitem_parser.details['series'])
+
+                if dlitem_title and dlitem_title.lower() == title.lower():
+
+                    check = False
+                    if parser.type == metaparser.TYPE_TVSHOW:
+                        if 'season' in parser.details and 'episodeNumber' in parser.details and 'season' in dlitem_parser.details and 'episodeNumber' in dlitem_parser.details:
+                            if parser.details['season'] == dlitem_parser.details['season'] and parser.details['episodeNumber'] == dlitem_parser.details['episodeNumber']:
+                                check = True
+                    else:
+                        check = True
+
+                    if check:
+
+                        logger.info("Found %s already in queue, lets see what is better quality" % dlitem.title)
+
+                        if dlitem_parser.quality > parser.quality:
+                            logger.info("Download already existsin queue with better quality will ignore this one")
+                            raise AlradyExists_Updated(dlitem)
+                        else:
+                            logger.info("Deleting %s from queue as it has a lower quality" % dlitem.title)
+                            dlitem.delete()

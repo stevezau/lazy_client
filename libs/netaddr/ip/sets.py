@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------------------
-#   Copyright (c) 2008-2014, David P. D. Moss. All rights reserved.
+#   Copyright (c) 2008-2015, David P. D. Moss. All rights reserved.
 #
 #   Released under the BSD license. See the LICENSE file for details.
 #-----------------------------------------------------------------------------
@@ -7,14 +7,12 @@
 
 import itertools as _itertools
 
-from netaddr.strategy import ipv4 as _ipv4, ipv6 as _ipv6
-
 from netaddr.ip import IPNetwork, IPAddress, IPRange, cidr_merge, \
     cidr_exclude, iprange_to_cidrs
 
 from netaddr.compat import _sys_maxint, _dict_keys, _int_type
 
-#-----------------------------------------------------------------------------
+
 def _subtract(supernet, subnets, subnet_idx, ranges):
     """Calculate IPSet([supernet]) - IPSet(subnets).
 
@@ -82,7 +80,7 @@ def _iter_merged_ranges(sorted_ranges):
     yield (IPAddress(current_start, current_version),
             IPAddress(current_stop, current_version))
 
-#-----------------------------------------------------------------------------
+
 class IPSet(object):
     """
     Represents an unordered collection (set) of unique IP addresses and

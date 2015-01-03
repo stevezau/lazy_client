@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------------------
-#   Copyright (c) 2008-2014, David P. D. Moss. All rights reserved.
+#   Copyright (c) 2008-2015, David P. D. Moss. All rights reserved.
 #
 #   Released under the BSD license. See the LICENSE file for details.
 #-----------------------------------------------------------------------------
@@ -16,7 +16,7 @@ from netaddr.ip import IPAddress
 
 from netaddr.compat import _is_int, _is_str
 
-#-----------------------------------------------------------------------------
+
 class BaseIdentifier(object):
     """Base class for all IEEE identifiers."""
     __slots__ = ('_value',)
@@ -63,7 +63,7 @@ class BaseIdentifier(object):
             return NotImplemented
 
 
-#-----------------------------------------------------------------------------
+
 class OUI(BaseIdentifier):
     """
     An individual IEEE OUI (Organisationally Unique Identifier).
@@ -138,7 +138,7 @@ class OUI(BaseIdentifier):
 
             if '(hex)' in line:
                 record['idx'] = self._value
-                record['org'] = ' '.join(line.split()[2:])
+                record['org'] = line.split(None, 2)[2]
                 record['oui'] = str(self)
             elif '(base 16)' in line:
                 continue
@@ -167,18 +167,16 @@ class OUI(BaseIdentifier):
     def __str__(self):
         """:return: string representation of this OUI"""
         int_val = self._value
-        words = []
-        for _ in range(3):
-            word = int_val & 0xff
-            words.append('%02x' % word)
-            int_val >>= 8
-        return '-'.join(reversed(words)).upper()
+        return "%02X-%02X-%02X" % (
+                (int_val >> 16) & 0xff,
+                (int_val >> 8) & 0xff,
+                int_val & 0xff)
 
     def __repr__(self):
         """:return: executable Python string to recreate equivalent object."""
         return "OUI('%s')" % self
 
-#-----------------------------------------------------------------------------
+
 class IAB(BaseIdentifier):
     """
     An individual IEEE IAB (Individual Address Block) identifier.
@@ -244,10 +242,11 @@ class IAB(BaseIdentifier):
             #TODO: '00-50-C2' is actually invalid.
             #TODO: Should be '00-50-C2-00-00-00' (i.e. a full MAC/EUI-48)
             int_val = int(iab.replace('-', ''), 16)
-            (iab_int, user_int) = IAB.split_iab_mac(int_val, strict)
+            iab_int, user_int = self.split_iab_mac(int_val,
+                    strict=strict)
             self._value = iab_int
         elif _is_int(iab):
-            (iab_int, user_int) = IAB.split_iab_mac(iab, strict)
+            iab_int, user_int = self.split_iab_mac(iab, strict=strict)
             self._value = iab_int
         else:
             raise TypeError('unexpected IAB format: %r!' % iab)
@@ -282,7 +281,7 @@ class IAB(BaseIdentifier):
 
             if '(hex)' in line:
                 self.record['idx'] = self._value
-                self.record['org'] = ' '.join(line.split()[2:])
+                self.record['org'] = line.split(None, 2)[2]
                 self.record['iab'] = str(self)
             elif '(base 16)' in line:
                 continue
@@ -290,24 +289,25 @@ class IAB(BaseIdentifier):
                 self.record['address'].append(line)
 
     def registration(self):
-        """ The IEEE registration details for this IAB"""
+        """The IEEE registration details for this IAB"""
         return DictDotLookup(self.record)
 
     def __str__(self):
         """:return: string representation of this IAB"""
-        int_val = self._value << 12
-        words = []
-        for _ in range(6):
-            word = int_val & 0xff
-            words.append('%02x' % word)
-            int_val >>= 8
-        return '-'.join(reversed(words)).upper()
+        int_val = self._value << 4
+
+        return "%02X-%02X-%02X-%02X-%02X-00" % (
+                (int_val >> 32) & 0xff,
+                (int_val >> 24) & 0xff,
+                (int_val >> 16) & 0xff,
+                (int_val >> 8) & 0xff,
+                int_val & 0xff)
 
     def __repr__(self):
         """:return: executable Python string to recreate equivalent object."""
         return "IAB('%s')" % self
 
-#-----------------------------------------------------------------------------
+
 class EUI(BaseIdentifier):
     """
     An IEEE EUI (Extended Unique Identifier).
@@ -328,8 +328,8 @@ class EUI(BaseIdentifier):
             an unsigned integer. May also be another EUI object (copy \
             construction).
 
-        :param version: (optional) the explict EUI address version. Mainly \
-            used to distinguish between EUI-48 and EUI-64 identifiers \
+        :param version: (optional) the explicit EUI address version, either \
+            48 or 64. Mainly used to distinguish EUI-48 and EUI-64 identifiers \
             specified as integers which may be numerically equivalent.
 
         :param dialect: (optional) the mac_* dialect to be used to configure \
@@ -461,9 +461,9 @@ class EUI(BaseIdentifier):
     def ei(self):
         """The EI (Extension Identifier) for this EUI"""
         if self._module == _eui48:
-            return '-'.join(["%02x" % i for i in self[3:6]]).upper()
+            return '%02X-%02X-%02X' % tuple(self[3:6])
         elif self._module == _eui64:
-            return '-'.join(["%02x" % i for i in self[3:8]]).upper()
+            return '%02X-%02X-%02X-%02X-%02X' % tuple(self[3:8])
 
     def is_iab(self):
         """:return: True if this EUI is an IAB address, False otherwise"""
@@ -503,7 +503,7 @@ class EUI(BaseIdentifier):
             raise TypeError('unsupported type %r!' % idx)
 
     def __setitem__(self, idx, value):
-        """Sets the value of the word referenced by index in this address"""
+        """Set the value of the word referenced by index in this address"""
         if isinstance(idx, slice):
             #   TODO - settable slices.
             raise NotImplementedError('settable slices are not supported!')
@@ -621,18 +621,49 @@ class EUI(BaseIdentifier):
         """
         - If this object represents an EUI-48 it is converted to EUI-64 \
             as per the standard.
-        - If this object is already and EUI-64, it just returns a new, \
-            numerically equivalent object is returned instead.
+        - If this object is already an EUI-64, a new, numerically \
+            equivalent object is returned instead.
 
         :return: The value of this EUI object as a new 64-bit EUI object.
         """
         if self.version == 48:
-            eui64_words = ["%02x" % i for i in self[0:3]] + ['ff', 'fe'] + \
-                     ["%02x" % i for i in self[3:6]]
-
-            return self.__class__('-'.join(eui64_words))
+            # Convert 11:22:33:44:55:66 into 11:22:33:FF:FE:44:55:66.
+            first_three = self._value >> 24
+            last_three = self._value & 0xffffff
+            new_value = (first_three << 40) | 0xfffe000000 | last_three
         else:
-            return EUI(str(self))
+            # is already a EUI64
+            new_value = self._value
+        return self.__class__(new_value, version=64)
+
+    def modified_eui64(self):
+        """
+        - create a new EUI object with a modified EUI-64 as described in RFC 4291 section 2.5.1
+
+        :return: a new and modified 64-bit EUI object.
+        """
+        # Modified EUI-64 format interface identifiers are formed by inverting
+        # the "u" bit (universal/local bit in IEEE EUI-64 terminology) when
+        # forming the interface identifier from IEEE EUI-64 identifiers.  In
+        # the resulting Modified EUI-64 format, the "u" bit is set to one (1)
+        # to indicate universal scope, and it is set to zero (0) to indicate
+        # local scope.
+        eui64 = self.eui64()
+        eui64._value ^= 0x00000000000000000200000000000000
+        return eui64
+
+    def ipv6(self, prefix):
+        """
+        .. note:: This poses security risks in certain scenarios. \
+            Please read RFC 4941 for details. Reference: RFCs 4291 and 4941.
+
+        :param prefix: ipv6 prefix
+
+        :return: new IPv6 `IPAddress` object based on this `EUI` \
+            using the technique described in RFC 4291.
+        """
+        int_val = int(prefix) + int(self.modified_eui64())
+        return IPAddress(int_val, version=6)
 
     def ipv6_link_local(self):
         """
@@ -642,24 +673,7 @@ class EUI(BaseIdentifier):
         :return: new link local IPv6 `IPAddress` object based on this `EUI` \
             using the technique described in RFC 4291.
         """
-        int_val = 0xfe800000000000000000000000000000
-
-        if self.version == 48:
-            eui64_tokens = ["%02x" % i for i in self[0:3]] + ['ff', 'fe'] + \
-                ["%02x" % i for i in self[3:6]]
-            int_val += int(''.join(eui64_tokens), 16)
-        else:
-            int_val += self._value
-        
-        # Modified EUI-64 format interface identifiers are formed by inverting
-        # the "u" bit (universal/local bit in IEEE EUI-64 terminology) when
-        # forming the interface identifier from IEEE EUI-64 identifiers.  In
-        # the resulting Modified EUI-64 format, the "u" bit is set to one (1)
-        # to indicate universal scope, and it is set to zero (0) to indicate
-        # local scope.
-        int_val ^= 0x00000000000000000200000000000000
-
-        return IPAddress(int_val, 6)
+        return self.ipv6(0xfe800000000000000000000000000000)
 
     @property
     def info(self):

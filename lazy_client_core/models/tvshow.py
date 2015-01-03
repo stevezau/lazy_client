@@ -910,7 +910,6 @@ class TVShowScanner(Thread):
                                 if self.valid_torrent_title(os.path.basename(f['path'])):
                                     self.ftp_entries.append(f['path'])
                         self.log("Found %s matching ftp entries " % len(self.ftp_entries))
-                        print self.ftp_entries
                         break
                     except LazyServerExcpetion as e:
                         self.log("Error searching ftp for %s as %s" % (name, str(e)))
@@ -1294,7 +1293,7 @@ class Seasons(models.Model):
 
         tvshow_path = self.tvdbid.get_local_path()
 
-        if not tvshow_path:
+        if not tvshow_path or not os.path.exists(tvshow_path):
             return
 
         from lazy_common import metaparser

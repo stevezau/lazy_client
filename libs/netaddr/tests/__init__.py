@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #-----------------------------------------------------------------------------
-#   Copyright (c) 2008-2014, David P. D. Moss. All rights reserved.
+#   Copyright (c) 2008-2015, David P. D. Moss. All rights reserved.
 #
 #   Released under the BSD license. See the LICENSE file for details.
 #-----------------------------------------------------------------------------
@@ -14,7 +14,7 @@ import unittest
 
 sys.path.insert(0, abspath(pathjoin(dirname(__file__), '..', '..')))
 
-#-----------------------------------------------------------------------------
+
 def test_suite_all():
 
     test_dirs = [
@@ -62,11 +62,12 @@ def test_suite_all():
 
     return suite
 
-#-----------------------------------------------------------------------------
+
 def run():
     runner = unittest.TextTestRunner()
-    runner.run(test_suite_all())
+    return runner.run(test_suite_all())
 
-#-----------------------------------------------------------------------------
+
 if __name__ == "__main__":
-    run()
+    result = run()
+    sys.exit(not result.wasSuccessful())
