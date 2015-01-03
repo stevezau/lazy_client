@@ -94,10 +94,10 @@ class PluginLazy(object):
             imdb_id = None
             tvdb_id = None
 
-            if 'imdb_id' in entry:
+            if 'imdb_id' in entry and entry['imdb_id']:
                  imdb_id = int(extract_id(entry['imdb_id']))
 
-            if 'tvdb_id' in entry:
+            if 'tvdb_id' in entry and entry['tvdb_id']:
                  tvdb_id = int(entry['tvdb_id'])
 
             status = 1
