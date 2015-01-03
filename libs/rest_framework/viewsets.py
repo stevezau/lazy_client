@@ -44,15 +44,9 @@ class ViewSetMixin(object):
         instantiated view, we need to totally reimplement `.as_view`,
         and slightly modify the view function that is created and returned.
         """
-        # The suffix initkwarg is reserved for identifying the viewset type
+        # The suffix initkwarg is reserved for identifing the viewset type
         # eg. 'List' or 'Instance'.
         cls.suffix = None
-
-        # actions must not be empty
-        if not actions:
-            raise TypeError("The `actions` argument must be provided when "
-                            "calling `.as_view()` on a ViewSet. For example "
-                            "`.as_view({'get': 'list'})`")
 
         # sanitize keyword arguments
         for key in initkwargs:
@@ -98,12 +92,12 @@ class ViewSetMixin(object):
         view.suffix = initkwargs.get('suffix', None)
         return csrf_exempt(view)
 
-    def initialize_request(self, request, *args, **kwargs):
+    def initialize_request(self, request, *args, **kargs):
         """
         Set the `.action` attribute on the view,
         depending on the request method.
         """
-        request = super(ViewSetMixin, self).initialize_request(request, *args, **kwargs)
+        request = super(ViewSetMixin, self).initialize_request(request, *args, **kargs)
         self.action = self.action_map.get(request.method.lower())
         return request
 

@@ -5,10 +5,10 @@ from __future__ import unicode_literals
 
 from django.core.exceptions import PermissionDenied
 from django.http import Http404
-from django.utils.encoding import smart_text
+from django.utils.datastructures import SortedDict
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status, exceptions
-from rest_framework.compat import HttpResponseBase, View
+from rest_framework.compat import smart_text, HttpResponseBase, View
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
@@ -51,8 +51,7 @@ def exception_handler(exc):
     Returns the response that should be used for any given exception.
 
     By default we handle the REST framework `APIException`, and also
-    Django's built-in `ValidationError`, `Http404` and `PermissionDenied`
-    exceptions.
+    Django's builtin `Http404` and `PermissionDenied` exceptions.
 
     Any unhandled exceptions may return `None`, which will cause a 500 error
     to be raised.
@@ -62,22 +61,20 @@ def exception_handler(exc):
         if getattr(exc, 'auth_header', None):
             headers['WWW-Authenticate'] = exc.auth_header
         if getattr(exc, 'wait', None):
+            headers['X-Throttle-Wait-Seconds'] = '%d' % exc.wait
             headers['Retry-After'] = '%d' % exc.wait
 
-        if isinstance(exc.detail, (list, dict)):
-            data = exc.detail
-        else:
-            data = {'detail': exc.detail}
-
-        return Response(data, status=exc.status_code, headers=headers)
+        return Response({'detail': exc.detail},
+                        status=exc.status_code,
+                        headers=headers)
 
     elif isinstance(exc, Http404):
-        data = {'detail': 'Not found'}
-        return Response(data, status=status.HTTP_404_NOT_FOUND)
+        return Response({'detail': 'Not found'},
+                        status=status.HTTP_404_NOT_FOUND)
 
     elif isinstance(exc, PermissionDenied):
-        data = {'detail': 'Permission denied'}
-        return Response(data, status=status.HTTP_403_FORBIDDEN)
+        return Response({'detail': 'Permission denied'},
+                        status=status.HTTP_403_FORBIDDEN)
 
     # Note: Unhandled exceptions will raise a 500 error.
     return None
@@ -92,9 +89,8 @@ class APIView(View):
     throttle_classes = api_settings.DEFAULT_THROTTLE_CLASSES
     permission_classes = api_settings.DEFAULT_PERMISSION_CLASSES
     content_negotiation_class = api_settings.DEFAULT_CONTENT_NEGOTIATION_CLASS
-    metadata_class = api_settings.DEFAULT_METADATA_CLASS
 
-    # Allow dependency injection of other settings to make testing easier.
+    # Allow dependancy injection of other settings to make testing easier.
     settings = api_settings
 
     @classmethod
@@ -412,8 +408,22 @@ class APIView(View):
     def options(self, request, *args, **kwargs):
         """
         Handler method for HTTP 'OPTIONS' request.
+        We may as well implement this as Django will otherwise provide
+        a less useful default implementation.
         """
-        if self.metadata_class is None:
-            return self.http_method_not_allowed(request, *args, **kwargs)
-        data = self.metadata_class().determine_metadata(request, self)
-        return Response(data, status=status.HTTP_200_OK)
+        return Response(self.metadata(request), status=status.HTTP_200_OK)
+
+    def metadata(self, request):
+        """
+        Return a dictionary of metadata about the view.
+        Used to return responses for OPTIONS requests.
+        """
+        # By default we can't provide any form-like information, however the
+        # generic views override this implementation and add additional
+        # information for POST and PUT methods, based on the serializer.
+        ret = SortedDict()
+        ret['name'] = self.get_view_name()
+        ret['description'] = self.get_view_description()
+        ret['renders'] = [renderer.media_type for renderer in self.renderer_classes]
+        ret['parses'] = [parser.media_type for parser in self.parser_classes]
+        return ret

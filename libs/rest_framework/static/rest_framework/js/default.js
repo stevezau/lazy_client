@@ -24,8 +24,7 @@ prettyPrint();
 
 // Bootstrap tooltips.
 $('.js-tooltip').tooltip({
-    delay: 1000,
-    container: 'body'
+    delay: 1000
 });
 
 // Deal with rounded tab styling after tab clicks.

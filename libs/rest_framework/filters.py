@@ -3,7 +3,6 @@ Provides generic filtering backends that can be used to filter the results
 returned by list views.
 """
 from __future__ import unicode_literals
-
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models
 from django.utils import six
@@ -65,7 +64,7 @@ class DjangoFilterBackend(BaseFilterBackend):
         filter_class = self.get_filter_class(view, queryset)
 
         if filter_class:
-            return filter_class(request.query_params, queryset=queryset).qs
+            return filter_class(request.QUERY_PARAMS, queryset=queryset).qs
 
         return queryset
 
@@ -79,7 +78,7 @@ class SearchFilter(BaseFilterBackend):
         Search terms are set by a ?search=... query parameter,
         and may be comma and/or whitespace delimited.
         """
-        params = request.query_params.get(self.search_param, '')
+        params = request.QUERY_PARAMS.get(self.search_param, '')
         return params.replace(',', ' ').split()
 
     def construct_search(self, field_name):
@@ -98,7 +97,7 @@ class SearchFilter(BaseFilterBackend):
         if not search_fields:
             return queryset
 
-        orm_lookups = [self.construct_search(six.text_type(search_field))
+        orm_lookups = [self.construct_search(str(search_field))
                        for search_field in search_fields]
 
         for search_term in self.get_search_terms(request):
@@ -122,7 +121,7 @@ class OrderingFilter(BaseFilterBackend):
         the `ordering_param` value on the OrderingFilter or by
         specifying an `ORDERING_PARAM` value in the API settings.
         """
-        params = request.query_params.get(self.ordering_param)
+        params = request.QUERY_PARAMS.get(self.ordering_param)
         if params:
             return [param.strip() for param in params.split(',')]
 
@@ -148,7 +147,7 @@ class OrderingFilter(BaseFilterBackend):
                 if not getattr(field, 'write_only', False)
             ]
         elif valid_fields == '__all__':
-            # View explicitly allows filtering on any model field
+            # View explictly allows filtering on any model field
             valid_fields = [field.name for field in queryset.model._meta.fields]
             valid_fields += queryset.query.aggregates.keys()
 

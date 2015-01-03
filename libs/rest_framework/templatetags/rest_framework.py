@@ -3,12 +3,11 @@ from django import template
 from django.core.urlresolvers import reverse, NoReverseMatch
 from django.http import QueryDict
 from django.utils import six
-from django.utils.six.moves.urllib import parse as urlparse
-from django.utils.encoding import iri_to_uri, force_text
+from django.utils.encoding import iri_to_uri
 from django.utils.html import escape
 from django.utils.safestring import SafeData, mark_safe
 from django.utils.html import smart_urlquote
-from rest_framework.renderers import HTMLFormRenderer
+from rest_framework.compat import urlparse, force_text
 import re
 
 register = template.Library()
@@ -31,13 +30,6 @@ class_re = re.compile(r'(?<=class=["\'])(.*)(?=["\'])')
 
 
 # And the template tags themselves...
-
-@register.simple_tag
-def render_field(field, style=None):
-    style = style or {}
-    renderer = style.get('renderer', HTMLFormRenderer())
-    return renderer.render_field(field, style)
-
 
 @register.simple_tag
 def optional_login(request):

@@ -129,7 +129,7 @@ class SessionAuthentication(BaseAuthentication):
         reason = CSRFCheck().process_view(request, None, (), {})
         if reason:
             # CSRF failed, bail with explicit error message
-            raise exceptions.PermissionDenied('CSRF Failed: %s' % reason)
+            raise exceptions.AuthenticationFailed('CSRF Failed: %s' % reason)
 
 
 class TokenAuthentication(BaseAuthentication):
@@ -267,7 +267,7 @@ class OAuthAuthentication(BaseAuthentication):
     def authenticate_header(self, request):
         """
         If permission is denied, return a '401 Unauthorized' response,
-        with an appropriate 'WWW-Authenticate' header.
+        with an appropraite 'WWW-Authenticate' header.
         """
         return 'OAuth realm="%s"' % self.www_authenticate_realm
 

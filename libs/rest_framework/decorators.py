@@ -10,16 +10,15 @@ from __future__ import unicode_literals
 from django.utils import six
 from rest_framework.views import APIView
 import types
+import warnings
 
 
-def api_view(http_method_names=None):
+def api_view(http_method_names):
 
     """
     Decorator that converts a function-based view into an APIView subclass.
     Takes a list of allowed methods for the view as an argument.
     """
-    if http_method_names is None:
-        http_method_names = ['GET']
 
     def decorator(func):
 
@@ -130,4 +129,38 @@ def list_route(methods=['get'], **kwargs):
         func.detail = False
         func.kwargs = kwargs
         return func
+    return decorator
+
+
+# These are now pending deprecation, in favor of `detail_route` and `list_route`.
+
+def link(**kwargs):
+    """
+    Used to mark a method on a ViewSet that should be routed for detail GET requests.
+    """
+    msg = 'link is pending deprecation. Use detail_route instead.'
+    warnings.warn(msg, PendingDeprecationWarning, stacklevel=2)
+
+    def decorator(func):
+        func.bind_to_methods = ['get']
+        func.detail = True
+        func.kwargs = kwargs
+        return func
+
+    return decorator
+
+
+def action(methods=['post'], **kwargs):
+    """
+    Used to mark a method on a ViewSet that should be routed for detail POST requests.
+    """
+    msg = 'action is pending deprecation. Use detail_route instead.'
+    warnings.warn(msg, PendingDeprecationWarning, stacklevel=2)
+
+    def decorator(func):
+        func.bind_to_methods = methods
+        func.detail = True
+        func.kwargs = kwargs
+        return func
+
     return decorator

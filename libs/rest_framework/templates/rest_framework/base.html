@@ -26,42 +26,44 @@
     </head>
 
     {% block body %}
-    <body class="{% block bodyclass %}{% endblock %}">
+    <body class="{% block bodyclass %}{% endblock %} container">
 
         <div class="wrapper">
 
             {% block navbar %}
-                <div class="navbar navbar-static-top {% block bootstrap_navbar_variant %}navbar-inverse{% endblock %}">
-                    <div class="container">
-                        <span>
-                            {% block branding %}
-                                <a class='navbar-brand' rel="nofollow" href='http://www.django-rest-framework.org'>
-                                    Django REST framework <span class="version">{{ version }}</span>
-                                </a>
-                            {% endblock %}
-                        </span>
-                        <ul class="nav navbar-nav pull-right">
-                            {% block userlinks %}
-                                {% if user.is_authenticated %}
-                                    {% optional_logout request user %}
-                                {% else %}
-                                    {% optional_login request %}
-                                {% endif %}
-                            {% endblock %}
-                        </ul>
+                <div class="navbar {% block bootstrap_navbar_variant %}navbar-inverse{% endblock %}">
+                    <div class="navbar-inner">
+                        <div class="container-fluid">
+                            <span>
+                                {% block branding %}
+                                    <a class='brand' rel="nofollow" href='http://www.django-rest-framework.org'>
+                                        Django REST framework <span class="version">{{ version }}</span>
+                                    </a>
+                                {% endblock %}
+                            </span>
+                            <ul class="nav pull-right">
+                                {% block userlinks %}
+                                    {% if user.is_authenticated %}
+                                        {% optional_logout request user %}
+                                    {% else %}
+                                        {% optional_login request %}
+                                    {% endif %}
+                                {% endblock %}
+                            </ul>
+                        </div>
                     </div>
                 </div>
             {% endblock %}
 
-            <div class="container">
             {% block breadcrumbs %}
                 <ul class="breadcrumb">
                     {% for breadcrumb_name, breadcrumb_url in breadcrumblist %}
-                        {% if forloop.last %}
-                            <li class="active"><a href="{{ breadcrumb_url }}">{{ breadcrumb_name }}</a></li>
-                        {% else %}
-                            <li><a href="{{ breadcrumb_url }}">{{ breadcrumb_name }}</a></li>
-                        {% endif %}
+                        <li>
+                            <a href="{{ breadcrumb_url }}" {% if forloop.last %}class="active"{% endif %}>
+                                {{ breadcrumb_name }}
+                            </a>
+                            {% if not forloop.last %}<span class="divider">&rsaquo;</span>{% endif %}
+                        </li>
                     {% endfor %}
                 </ul>
             {% endblock %}
@@ -152,7 +154,7 @@
                                     <div class="tab-pane" id="post-object-form">
                                         {% with form=post_form %}
                                             <form action="{{ request.get_full_path }}"
-                                                  method="POST" enctype="multipart/form-data" class="form-horizontal" novalidate>
+                                                  method="POST" enctype="multipart/form-data" class="form-horizontal">
                                                 <fieldset>
                                                     {{ post_form }}
                                                     <div class="form-actions">
@@ -197,7 +199,7 @@
                                 {% if put_form %}
                                     <div class="tab-pane" id="put-object-form">
                                         <form action="{{ request.get_full_path }}"
-                                              method="POST" enctype="multipart/form-data" class="form-horizontal" novalidate>
+                                              method="POST" enctype="multipart/form-data" class="form-horizontal">
                                             <fieldset>
                                                 {{ put_form }}
                                                 <div class="form-actions">
@@ -236,7 +238,13 @@
                 {% endif %}
             </div>
             <!-- END Content -->
-            </div><!-- /.container -->
+
+            <footer>
+                {% block footer %}
+                    <p>Sponsored by <a href="http://dabapps.com/">DabApps</a>.</p>
+                {% endblock %}
+            </footer>
+
         </div><!-- ./wrapper -->
 
         {% block script %}
