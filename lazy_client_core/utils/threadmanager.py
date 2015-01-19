@@ -547,6 +547,7 @@ class Extractor(Thread):
 
                 self._fail_dlitem(dlitem_id, error=msg)
             except Exception as e:
+                logger.exception(e)
                 self._fail_dlitem(dlitem_id, error=str(e))
                 return
 
