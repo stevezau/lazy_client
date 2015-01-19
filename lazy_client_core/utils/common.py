@@ -395,6 +395,9 @@ def find_archives(path):
 
 def find_season_folder(path, season):
 
+    if not path:
+        return
+
     if not os.path.exists(path):
         return
 

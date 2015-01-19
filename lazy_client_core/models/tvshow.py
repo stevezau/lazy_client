@@ -260,7 +260,9 @@ class TVShow(models.Model):
 
             #If didn't find existing find one
             if not self.localpath:
-                if self.title and len(self.title) > 1:
+                if not self.title:
+                    self.update_from_tvdb()
+                if self.title:
                     self.localpath = os.path.join(settings.TV_PATH, self.title)
 
         return self.localpath

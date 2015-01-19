@@ -303,6 +303,8 @@ class TVRenamer:
 
             dest_folder = tvdbcache_obj.get_local_path()
 
+            self.log("Dest_folder is %s" % dest_folder)
+
             season_folder = common.find_season_folder(dest_folder, int(tvshow_file_season))
 
 
