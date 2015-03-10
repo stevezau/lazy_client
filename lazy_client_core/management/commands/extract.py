@@ -74,9 +74,9 @@ class Command(BaseCommand):
                     for f in e.fix_files:
                         logger.info("Unable to rename %s rename, please manually fix" % f)
 
-                if get_size(self.path) < 5000:
+                if get_size(path) < 5000:
                     logger.info("deleting %s" % self.path)
-                    delete(self.path)
+                    delete(path)
 
     def _process_dlitem(self, dlitem):
         logger.info("Processing Download Item: %s" % dlitem.localpath)
