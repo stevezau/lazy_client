@@ -10,7 +10,7 @@ class LazyServerExcpetion(Exception):
 
 logger = logging.getLogger(__name__)
 
-lazy_server_api = "http://drifthost.com:8000/api/"
+lazy_server_api = "http://media.drifthost.com:8000/api/"
 
 default_sites = [
     'SCC',
