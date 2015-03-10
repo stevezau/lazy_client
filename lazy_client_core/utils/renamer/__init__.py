@@ -49,6 +49,8 @@ def rename(path, type=metaparser.TYPE_UNKNOWN, id=None):
     if id:
         from lazy_client_core.models import DownloadItem
         dlitem = DownloadItem.objects.get(id=id)
+    else:
+        dlitem = None
 
     if None is dlitem:
         renamer = get_renamer(path)
