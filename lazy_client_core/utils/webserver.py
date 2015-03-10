@@ -141,9 +141,7 @@ def start_server():
 
     cherrypy.engine.start()
     #Initalise the thead maangers
-    from lazy_client_core.utils import threadmanager
-    from lazy_client_core.utils.threadmanager import QueueManager
-
-    threadmanager.queue_manager = QueueManager()
+    from lazy_client_core.utils.threadmanager import queue_manager
+    queue_manager.start()
 
     cherrypy.engine.block()
