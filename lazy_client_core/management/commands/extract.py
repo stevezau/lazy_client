@@ -15,7 +15,6 @@ from lazy_common.utils import delete, get_size
 from lazy_client_core.utils import renamer
 from lazy_client_core.exceptions import *
 from lazy_common import metaparser
-from lazy_client_core.utils.queuemanager import QueueManager
 from lazy_client_core.utils import common
 
 
@@ -178,10 +177,6 @@ class Command(BaseCommand):
             extract_path = options['extract_path']
         else:
             extract_path = None
-
-        if not QueueManager.queue_running():
-            logger.info("Queue is paused, exiting")
-            return
 
         lock_id = "extract_command-lock"
         acquire_lock = lambda: cache.add(lock_id, "true", LOCK_EXPIRE)
