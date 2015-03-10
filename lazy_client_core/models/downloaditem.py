@@ -185,7 +185,7 @@ class DownloadItem(models.Model):
             quality.append(parser.details['format'])
 
         self.quality = []
-        for q in self.quality:
+        for q in quality:
             if q.lower() == "hdtv":
                 q = "HDTV"
             if q.lower() == "xvid":
