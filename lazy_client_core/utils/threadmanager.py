@@ -29,8 +29,6 @@ from lazy_common.tvdb_api.tvdb_exceptions import tvdb_shownotfound
 
 logger = logging.getLogger(__name__)
 
-queue_manager = QueueManager()
-
 ## THREAD SAFE QUERIES for sqlite ###
 def get_attr(id, attr):
     dlitem = DownloadItem.objects.get(id=id)
@@ -792,3 +790,4 @@ class Maintenance(Thread):
 
             self.sleep()
 
+queue_manager = QueueManager()
