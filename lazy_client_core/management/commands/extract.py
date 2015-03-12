@@ -80,8 +80,8 @@ class Command(BaseCommand):
 
 
                     if get_size(path) < 5000:
-                        logger.info("deleting %s" % self.path)
-                        delete(path)
+                        logger.info("deleting %s" % full_path)
+                        delete(full_path)
                 except Exception as e:
                     logger.exception(e)
 
