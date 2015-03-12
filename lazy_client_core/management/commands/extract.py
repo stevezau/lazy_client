@@ -49,7 +49,7 @@ class Command(BaseCommand):
                 #we dont want to process so pass
                 pass
             except ObjectDoesNotExist:
-                logger.info("Will try extract %s" % str(full_path))
+                logger.info("Will try extract %s" % full_path.encode('ascii', 'ignore'))
 
                 if get_size(full_path) == 0:
                     logger.info("Empty folder %s, will delete" % full_path)
@@ -59,9 +59,9 @@ class Command(BaseCommand):
                 try:
                     extractor.extract(full_path)
                 except ExtractException as e:
-                    logger.debug("Error extracting %s %s" % (str(e), full_path))
+                    logger.debug("Error extracting %s %s" % (str(e), full_path.encode('ascii', 'ignore')))
                 except ExtractCRCException as e:
-                    logger.debug("Error extracting %s %s" % (str(e), full_path))
+                    logger.debug("Error extracting %s %s" % (str(e), full_path.encode('ascii', 'ignore')))
 
 
                 logger.info("Will try rename %s" % full_path)
@@ -69,12 +69,12 @@ class Command(BaseCommand):
                 try:
                     renamer.rename(full_path, type=parser_type)
                 except RenameException as e:
-                    logger.info("Error renaming %s %s" % (full_path, str(e)))
+                    logger.info("Error renaming %s %s" % (full_path.encode('ascii', 'ignore'), str(e)))
                 except ManuallyFixException as e:
                     for f in e.fix_files:
                         logger.info("Unable to rename %s rename, please manually fix" % f)
                 except Exception as e:
-                    logger.info("Error renaming %s %s" % (full_path, str(e)))
+                    logger.info("Error renaming %s %s" % (full_path.encode('ascii', 'ignore'), str(e)))
 
 
                 if get_size(path) < 5000:
