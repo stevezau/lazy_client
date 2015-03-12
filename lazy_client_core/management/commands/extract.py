@@ -79,7 +79,7 @@ class Command(BaseCommand):
                         logger.info("Error renaming %s %s" % (full_path.encode('ascii', 'ignore'), str(e)))
 
 
-                    if get_size(path) < 5000:
+                    if get_size(full_path) < 5000:
                         logger.info("deleting %s" % full_path)
                         delete(full_path)
                 except Exception as e:
