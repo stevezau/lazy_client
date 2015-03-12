@@ -75,6 +75,7 @@ class Command(BaseCommand):
                         for f in e.fix_files:
                             logger.info("Unable to rename %s rename, please manually fix" % f)
                     except Exception as e:
+                        logger.exception(e)
                         logger.info("Error renaming %s %s" % (full_path.encode('ascii', 'ignore'), str(e)))
 
 
