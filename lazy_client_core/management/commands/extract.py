@@ -49,7 +49,7 @@ class Command(BaseCommand):
                 #we dont want to process so pass
                 pass
             except ObjectDoesNotExist:
-                logger.info("Will try extract %s" % full_path)
+                logger.info("Will try extract %s" % str(full_path))
 
                 if get_size(full_path) == 0:
                     logger.info("Empty folder %s, will delete" % full_path)
