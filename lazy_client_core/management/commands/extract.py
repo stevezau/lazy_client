@@ -77,13 +77,13 @@ class Command(BaseCommand):
                     except Exception as e:
                         logger.exception(e)
                         logger.info("Error renaming %s %s" % (full_path.encode('ascii', 'ignore'), str(e)))
-
-
-                    if get_size(full_path) < 5000:
-                        logger.info("deleting %s" % full_path)
-                        delete(full_path)
                 except Exception as e:
                     logger.exception(e)
+
+            if get_size(full_path) < 5000000:
+                logger.info("deleting %s" % full_path)
+                delete(full_path)
+
 
     def _process_dlitem(self, dlitem):
         logger.info("Processing Download Item: %s" % dlitem.localpath)
