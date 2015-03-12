@@ -73,6 +73,9 @@ class Command(BaseCommand):
                 except ManuallyFixException as e:
                     for f in e.fix_files:
                         logger.info("Unable to rename %s rename, please manually fix" % f)
+                except Exception as e:
+                    logger.info("Error renaming %s %s" % (full_path, str(e)))
+
 
                 if get_size(path) < 5000:
                     logger.info("deleting %s" % self.path)
