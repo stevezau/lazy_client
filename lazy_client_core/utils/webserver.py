@@ -34,12 +34,6 @@ def stop_server():
     First try SIGTERM and if it fails, SIGKILL. If process is still running, an exception is raised.
     """
 
-    #Shut down threads
-    from lazy_client_core.utils import threadmanager
-    if threadmanager.queue_manager:
-        threadmanager.queue_manager.quit()
-        threadmanager.queue_manager.join()
-
     if os.path.exists(pidfile):
         pid = int(open(pidfile).read())
         try:
