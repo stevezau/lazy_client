@@ -133,7 +133,7 @@ class MovieRenamer:
                         f_title = file_parser.details['title']
 
                     #Look for override
-                    if self.download_item.video_files:
+                    if self.download_item and self.download_item.video_files:
                         for video_file in self.download_item.video_files:
                             video_file_path = video_file['file']
 

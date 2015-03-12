@@ -53,7 +53,7 @@ def rename(path, type=metaparser.TYPE_UNKNOWN, id=None):
         dlitem = None
 
     if None is dlitem:
-        renamer = get_renamer(path)
+        renamer = get_renamer(path, type=type)
     else:
         renamer = get_renamer_dlitem(dlitem)
 
