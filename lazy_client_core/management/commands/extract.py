@@ -80,13 +80,9 @@ class Command(BaseCommand):
                 except Exception as e:
                     logger.exception(e)
 
-            if get_size(full_path) < 5000000:
+            if os.path.isdir(full_path) and get_size(full_path) < 5000000:
                 logger.info("deleting %s" % full_path)
-                try:
-                    delete(full_path)
-                except:
-                    pass
-
+                delete(full_path)
 
     def _process_dlitem(self, dlitem):
         logger.info("Processing Download Item: %s" % dlitem.localpath)
