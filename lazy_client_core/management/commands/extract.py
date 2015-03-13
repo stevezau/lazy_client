@@ -82,7 +82,10 @@ class Command(BaseCommand):
 
             if get_size(full_path) < 5000000:
                 logger.info("deleting %s" % full_path)
-                delete(full_path)
+                try:
+                    delete(full_path)
+                except:
+                    pass
 
 
     def _process_dlitem(self, dlitem):
