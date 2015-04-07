@@ -342,6 +342,7 @@ class TVShow(models.Model):
 
                 for dlitem in dlitems:
                     if dlitem.is_downloading(season_obj.season, ep.epsiode):
+                        print dlitem.title
                         ep.downloading = True
 
             if len(missing_eps) > 0:
