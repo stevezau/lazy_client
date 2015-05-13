@@ -5,6 +5,7 @@ import json
 import logging
 from requests.exceptions import *
 from django.conf import settings
+from requests.auth import HTTPBasicAuth
 
 class LazyServerExcpetion(Exception):
     """ Error in search """
