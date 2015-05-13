@@ -4,13 +4,14 @@ import urlparse
 import json
 import logging
 from requests.exceptions import *
+from django.conf import settings
 
 class LazyServerExcpetion(Exception):
     """ Error in search """
 
 logger = logging.getLogger(__name__)
 
-lazy_server_api = "http://media.drifthost.com:8000/legacy/"
+lazy_server_api = "http://media.drifthost.com:5050/legacy/"
 
 default_sites = [
     'SCC',
@@ -23,12 +24,16 @@ default_sites = [
     'TL_PACKS',
     ]
 
+
+auth = HTTPBasicAuth(settings.lazy_user, settings.lazy_pwd)
+
+
 def seconds_left(dlitem):
     try:
         headers = {'Content-type': 'application/json', "Accept": "application/json"}
         data = {"title": dlitem.title, "ftppath": dlitem.ftppath}
 
-        r = requests.post(urlparse.urljoin(lazy_server_api, "seconds_remaining/"), data=json.dumps(data), headers=headers)
+        r = requests.post(urlparse.urljoin(lazy_server_api, "seconds_remaining/"), data=json.dumps(data), headers=headers, auth=auth)
 
         try:
             json_response = r.json()
@@ -46,7 +51,7 @@ def download_torrents(torrents):
         headers = {'Content-type': 'application/json', "Accept": "application/json"}
         downloads = {"download": torrents}
 
-        r = requests.post(urlparse.urljoin(lazy_server_api, "download_torrents/"), data=json.dumps(downloads), headers=headers)
+        r = requests.post(urlparse.urljoin(lazy_server_api, "download_torrents/"), data=json.dumps(downloads), headers=headers, auth=auth)
         json_response = r.json()
 
         if 'status' in json_response and json_response['status'] == "success":
@@ -67,7 +72,6 @@ def download_torrents(torrents):
         raise LazyServerExcpetion(str(e))
     finally:
         requests.session.timeout = old_timeout
-
 def search_ftp(search):
     payload = {
         'search': search,
@@ -75,7 +79,7 @@ def search_ftp(search):
 
     try:
         headers = {'Content-type': 'application/json', "Accept": "application/json"}
-        r = requests.post(urlparse.urljoin(lazy_server_api, "search_ftp/"), data=json.dumps(payload), headers=headers)
+        r = requests.post(urlparse.urljoin(lazy_server_api, "search_ftp/"), data=json.dumps(payload), headers=headers, auth=auth)
         json_response = r.json()
 
         if 'status' in json_response and json_response['status'] == "success":
@@ -102,7 +106,7 @@ def search_torrents(search, sites=default_sites, max_results=100):
 
     try:
         headers = {'Content-type': 'application/json', "Accept": "application/json"}
-        r = requests.post(urlparse.urljoin(lazy_server_api, "find_torrents/"), data=json.dumps(payload), headers=headers)
+        r = requests.post(urlparse.urljoin(lazy_server_api, "find_torrents/"), data=json.dumps(payload), headers=headers, auth=auth)
         json_response = r.json()
 
         if 'status' in json_response and json_response['status'] == "success":
