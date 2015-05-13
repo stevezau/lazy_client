@@ -431,8 +431,8 @@ ftpmanager.FTP_PORT = lazysettings.FTP_PORT
 ftpmanager.FTP_USER = lazysettings.FTP_USER
 ftpmanager.FTP_PASS = lazysettings.FTP_PASS
 
-lazy_user = lazysettings.lazy_user
-lazy_pwd = lazysettings.lazy_pwd
+LAZY_USER = lazysettings.LAZY_USER
+LAZY_PWD = lazysettings.LAZY_PWD
 
 #########################
 ### CHECK LAZY PATHTS ###

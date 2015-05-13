@@ -26,7 +26,7 @@ default_sites = [
     ]
 
 
-auth = HTTPBasicAuth(settings.lazy_user, settings.lazy_pwd)
+auth = HTTPBasicAuth(settings.LAZY_USER, settings.LAZY_PWD)
 
 
 def seconds_left(dlitem):
