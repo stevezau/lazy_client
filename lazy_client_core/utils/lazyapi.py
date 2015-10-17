@@ -21,8 +21,8 @@ default_sites = [
     'REVTT',
     'REVTT_PACKS',
     'HD',
-    'TL',
-    'TL_PACKS',
+#    'TL',
+#    'TL_PACKS',
     ]
 
 
