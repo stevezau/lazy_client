@@ -804,13 +804,13 @@ class TVShowScanner(Thread):
             revtt = {'results': []}
             tl = {'results': []}
 
-            self.pre_scan = {'tl': tl, 'revtt': revtt, 'scc': scc}
+            self.pre_scan = {'revtt': revtt, 'scc': scc}
 
             for name in self.tvshow_obj.get_titles():
                 for x in range(0, 2):
                     try:
                         self.log("Getting a list from sites for %s" % name)
-                        found = lazyapi.search_torrents(name, sites=["TL", "SCC", "REVTT"], max_results=400)
+                        found = lazyapi.search_torrents(name, sites=["SCC", "REVTT"], max_results=400)
 
                         for site in found:
                             site_name = site['site'].lower()
@@ -819,9 +819,7 @@ class TVShowScanner(Thread):
                                 self.log("Error searching torrents for %s as %s" % (site_name, site['message']))
                             else:
                                 site_dict = None
-                                if site_name == "tl":
-                                    site_dict = tl
-                                elif site_name == "revtt":
+                                if site_name == "revtt":
                                     site_dict = revtt
                                 elif site_name == "scc":
                                     site_dict = scc
@@ -853,16 +851,15 @@ class TVShowScanner(Thread):
     def get_season_pre_scan(self):
         #First lets scan for all packs for show
         if not self.season_pre_scan:
-            tl_packs = {'results': []}
             scc_archive = {'results': []}
             revtt_packs = {'results': []}
-            self.season_pre_scan = {'tl_packs': tl_packs, 'scc_archive': scc_archive, 'revtt_packs': revtt_packs}
+            self.season_pre_scan = {'scc_archive': scc_archive, 'revtt_packs': revtt_packs}
 
             for name in self.tvshow_obj.get_titles():
                 for x in range(0, 2):
                     try:
                         self.log("Getting a list of season packs from sites for %s" % name)
-                        found = lazyapi.search_torrents(name, sites=["TL_PACKS", "SCC_ARCHIVE", "REVTT_PACKS"], max_results=400)
+                        found = lazyapi.search_torrents(name, sites=["SCC_ARCHIVE", "REVTT_PACKS"], max_results=400)
 
                         for site in found:
                             site_name = site['site'].lower()
@@ -871,9 +868,7 @@ class TVShowScanner(Thread):
                                 self.log("Error searching torrents for %s as %s" % (site_name, site['message']))
                             else:
                                 site_dict = None
-                                if site_name == "tl_packs":
-                                    site_dict = tl_packs
-                                elif site_name == "revtt_packs":
+                                if site_name == "revtt_packs":
                                     site_dict = revtt_packs
                                 elif site_name == "scc_archive":
                                     site_dict = scc_archive
@@ -1159,7 +1154,7 @@ class TVShowScanner(Thread):
 
                     #Step 3 check the prescan
                     self.log("Step 2: Looking for ep %s, via the torrents (prescan)" % ep_no)
-                    site_names = ['scc', 'revtt', 'tl']
+                    site_names = ['scc', 'revtt']
                     do_continue = False
                     do_break = False
                     for site_name in site_names:
