@@ -25,14 +25,14 @@ chmod +x $MANAGE_SCRIPT
 
 if [ -f "/proc/sysinfo" ] && grep -q "QNAP" /proc/sysinfo; then
     export C_FORCE_ROOT="true"
-    EASY_INSTALL_BIN="/share/MD0_DATA/.qpkg/Python/bin/easy_install-2.7"
+    EASY_INSTALL_BIN="/opt/bin/easy_install-2.7"
     GIT_BIN="/opt/bin/git"
-    FLEXGET_BIN="/opt/../Python/bin/flexget"
+    FLEXGET_BIN="/opt/local/bin/flexget"
 
     FLEXGET_HOME="$BASE_PATH/.flexget"
     FLEXGET_HOME_ADMIN="/root/.flexget"
     TVDB_TMP_FOLDER="$BASE_PATH/tvdb_api-u0"
-    PIP_BIN="/share/MD0_DATA/.qpkg/Python/bin/pip-2.7"
+    PIP_BIN="/opt/bin/pip-2.7"
     PIP_BUILD="/tmp/pip-build"
     PIP_BUILD_TEMP="$BASE_PATH/pip-build"
 
