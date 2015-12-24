@@ -32,7 +32,7 @@ if [ -f "/proc/sysinfo" ] && grep -q "QNAP" /proc/sysinfo; then
     FLEXGET_HOME="$BASE_PATH/.flexget"
     FLEXGET_HOME_ADMIN="/root/.flexget"
     TVDB_TMP_FOLDER="$BASE_PATH/tvdb_api-u0"
-    PIP_BIN="/opt/bin/pip-2.7"
+    PIP_BIN="/opt/local/bin/pip-2.7"
     PIP_BUILD="/tmp/pip-build"
     PIP_BUILD_TEMP="$BASE_PATH/pip-build"
 
