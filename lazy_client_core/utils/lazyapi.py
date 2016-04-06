@@ -12,7 +12,7 @@ class LazyServerExcpetion(Exception):
 
 logger = logging.getLogger(__name__)
 
-lazy_server_api = "http://media.drifthost.com:5050/legacy/"
+lazy_server_api = "http://media.stevez0.com:5050/legacy/"
 
 default_sites = [
     'SCC',

@@ -143,15 +143,6 @@ TEMPLATE_DIRS = [
 #ALLOWED_HOSTS = []
 
 
-DEFAULT_FROM_EMAIL = 'support@drifthost.com'
-EMAIL_HOST = 'aspmx.l.google.com'
-SERVER_EMAIL = 'support@drifthost.com'
-
-
-ADMINS = (
-    ('Steve Adams', 'support@drifthost.com'),
-)
-
 PAGINATION_SETTINGS = {
     'PAGE_RANGE_DISPLAYED': 3,
     'MARGIN_PAGES_DISPLAYED': 1,
@@ -180,10 +171,6 @@ INSTALLED_APPS = (
     'pure_pagination',
     'raven.contrib.django.raven_compat',
 )
-
-RAVEN_CONFIG = {
-    'dsn': 'http://fc6b36d8e68342b9bbddbc84cfea32e0:3ec333e1679d408fb9aab774158d31ec@south.drifthost.com:9000/2',
-}
 
 
 CACHES = {
