@@ -169,7 +169,6 @@ INSTALLED_APPS = (
     'lazy_client_ui',
     'lazy_common',
     'pure_pagination',
-    'raven.contrib.django.raven_compat',
 )
 
 
@@ -278,10 +277,6 @@ LOGGING = {
         'handlers': ['sentry', 'console', 'logfile'],
     },
     'handlers': {
-        'sentry': {
-            'level': 'ERROR',
-            'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler',
-        },
         'null': {
             'level':'DEBUG',
             'class':'django.utils.log.NullHandler',
@@ -380,9 +375,6 @@ LOGGING = {
 
 import lazysettings
 from lazysettings import *
-
-if hasattr(lazysettings, "SERVER_NAME"):
-    RAVEN_CONFIG['name'] = lazysettings.SERVER_NAME
 
 if DEBUG:
     INSTALLED_APPS = INSTALLED_APPS + ("debug_toolbar",)
