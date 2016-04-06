@@ -274,7 +274,7 @@ LOGGING = {
     },
     'root': {
         'level': 'DEBUG',
-        'handlers': ['sentry', 'console', 'logfile'],
+        'handlers': ['console', 'logfile'],
     },
     'handlers': {
         'null': {
@@ -297,7 +297,7 @@ LOGGING = {
     },
     'loggers': {
         'django': {
-            'handlers':['console', 'logfile', 'sentry'],
+            'handlers':['console', 'logfile'],
             'propagate': True,
             'level':'DEBUG',
         },
@@ -362,11 +362,11 @@ LOGGING = {
             'propagate': False,
         },
         'tvdb_api': {
-            'handlers': ['console', 'logfile', 'sentry'],
+            'handlers': ['console', 'logfile'],
             'level': 'DEBUG',
         },
         '': {
-            'handlers': ['console', 'logfile', 'sentry'],
+            'handlers': ['console', 'logfile'],
             'level': 'DEBUG',
         },
     }
