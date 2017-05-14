@@ -14,7 +14,7 @@ requests==2.14.2
 netaddr==0.7.19
 django-picklefield==0.3.2
 django-jquery==3.1.0
-htmlmin==0.1.10
+django-htmlmin==0.10.0
 django-jquery-ui==1.11.4.1
 django-pure-pagination==0.3.0
 babelfish==0.5.5
