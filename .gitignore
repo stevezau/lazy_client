@@ -4,4 +4,4 @@ lazysettings.py
 lazy_common
 /lib/*.dist-info*
 /lib/pip*
-requirements.txt
+venv

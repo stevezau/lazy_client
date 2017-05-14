@@ -740,8 +740,8 @@ class TVShowScanner(Thread):
     def is_season_pack(self, title):
         parser = metaparser.get_parser_cache(title, metaparser.TYPE_TVSHOW)
 
-        if 'videoCodec' not in parser.details:
-            if 'format' in parser.details or 'releaseGroup' in parser.details:
+        if 'video_codec' not in parser.details:
+            if 'format' in parser.details or 'release_group' in parser.details:
                 return False
 
         #We don't want Disk or Part seasons

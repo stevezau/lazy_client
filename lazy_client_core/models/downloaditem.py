@@ -148,8 +148,8 @@ class DownloadItem(models.Model):
         self.epsiodes = []
         if 'episodeList' in parser.details:
             self.epsiodes = parser.details['episodeList']
-        elif 'episodeNumber' in parser.details:
-            self.epsiodes = [parser.details['episodeNumber']]
+        elif 'episode_number' in parser.details:
+            self.epsiodes = [parser.details['episode_number']]
 
         #Title_clean
         self.title_clean = ""
@@ -679,8 +679,8 @@ def add_new_downloaditem_pre(sender, instance, **kwargs):
 
                     check = False
                     if parser.type == metaparser.TYPE_TVSHOW:
-                        if 'season' in parser.details and 'episodeNumber' in parser.details and 'season' in dlitem_parser.details and 'episodeNumber' in dlitem_parser.details:
-                            if parser.details['season'] == dlitem_parser.details['season'] and parser.details['episodeNumber'] == dlitem_parser.details['episodeNumber']:
+                        if 'season' in parser.details and 'episode_number' in parser.details and 'season' in dlitem_parser.details and 'episode_number' in dlitem_parser.details:
+                            if parser.details['season'] == dlitem_parser.details['season'] and parser.details['episode_number'] == dlitem_parser.details['episode_number']:
                                 check = True
                     else:
                         check = True

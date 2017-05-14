@@ -152,8 +152,8 @@ class TVRenamer:
             #Lets figure out the series_ep and series_season
             if 'season' in tvshow_file_metaparser.details:
                 tvshow_file_season = tvshow_file_metaparser.details['season']
-            if 'episodeNumber' in tvshow_file_metaparser.details:
-                tvshow_file_ep = tvshow_file_metaparser.details['episodeNumber']
+            if 'episode_number' in tvshow_file_metaparser.details:
+                tvshow_file_ep = tvshow_file_metaparser.details['episode_number']
 
             """
             xem_exists = False

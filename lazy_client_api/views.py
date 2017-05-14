@@ -372,8 +372,8 @@ def get_tvdb_eps(request, showid, season):
         for ep in eps.keys():
             ep_obj = eps[ep]
             tvshow_json = {}
-            tvshow_json['label'] = "Ep %s - %s" % (ep_obj['episodenumber'], ep_obj['episodename'])
-            tvshow_json['value'] = ep_obj['episodenumber']
+            tvshow_json['label'] = "Ep %s - %s" % (ep_obj['episode_number'], ep_obj['episodename'])
+            tvshow_json['value'] = ep_obj['episode_number']
             results.append(tvshow_json)
 
         data = json.dumps(results)
