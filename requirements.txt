@@ -19,3 +19,4 @@ django-jquery-ui==1.11.4.1
 django-pure-pagination==0.3.0
 babelfish==0.5.5
 Pillow==4.1.1
+http://drifthost.com/lazy_common-0.2-py2.7.egg
